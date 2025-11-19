@@ -1,0 +1,19 @@
+Subregion: Eroded Pipeline
+Subregion: Soulless Desert
+Subregion: Cold Caves
+
+Room Setting Templates: SpikyCaves, Desert, IcyCaves
+
+overseersSpawnChance: 0
+earlyCycleChance: 0
+Room_Attr: BTWSD_COLD8: PinkLizard-Stay,GreenLizard-Stay,BlueLizard-Stay,YellowLizard-Stay,WhiteLizard-Stay,RedLizard-Stay,BlackLizard-Stay,Salamander-Stay,CyanLizard-Stay,
+Room_Attr: BTWSD_CAVE1: PinkLizard-Avoid,GreenLizard-Avoid,BlueLizard-Avoid,YellowLizard-Avoid,WhiteLizard-Avoid,RedLizard-Avoid,BlackLizard-Avoid,Salamander-Avoid,CyanLizard-Avoid,
+Room_Attr: BTWSD_CAVE2: PinkLizard-Avoid,GreenLizard-Avoid,BlueLizard-Avoid,YellowLizard-Avoid,WhiteLizard-Avoid,RedLizard-Avoid,BlackLizard-Avoid,Salamander-Avoid,CyanLizard-Avoid,
+Room_Attr: BTWSD_CAVE3: PinkLizard-Avoid,GreenLizard-Avoid,BlueLizard-Avoid,YellowLizard-Avoid,WhiteLizard-Avoid,RedLizard-Avoid,BlackLizard-Avoid,Salamander-Avoid,CyanLizard-Avoid,
+Room_Attr: BTWSD_CAVE4: PinkLizard-Avoid,GreenLizard-Avoid,BlueLizard-Avoid,YellowLizard-Avoid,WhiteLizard-Avoid,RedLizard-Avoid,BlackLizard-Avoid,Salamander-Avoid,CyanLizard-Avoid,
+Room_Attr: BTWSD_CAVE5: PinkLizard-Avoid,GreenLizard-Avoid,BlueLizard-Avoid,YellowLizard-Avoid,WhiteLizard-Avoid,RedLizard-Avoid,BlackLizard-Avoid,Salamander-Avoid,CyanLizard-Avoid,
+Room_Attr: BTWSD_CAVE6: PinkLizard-Avoid,GreenLizard-Avoid,BlueLizard-Avoid,YellowLizard-Avoid,WhiteLizard-Avoid,RedLizard-Avoid,BlackLizard-Avoid,Salamander-Avoid,CyanLizard-Avoid,
+Room_Attr: BTWSD_CAVE7: PinkLizard-Avoid,GreenLizard-Avoid,BlueLizard-Avoid,YellowLizard-Avoid,WhiteLizard-Avoid,RedLizard-Avoid,BlackLizard-Avoid,Salamander-Avoid,CyanLizard-Avoid,
+Room_Attr: BTWSD_CAVESHELTER1: PinkLizard-Avoid,GreenLizard-Avoid,BlueLizard-Avoid,YellowLizard-Avoid,WhiteLizard-Avoid,RedLizard-Avoid,BlackLizard-Avoid,Salamander-Avoid,CyanLizard-Avoid,
+Room_Attr: BTWSD_CAVESHELTER2: PinkLizard-Forbidden,GreenLizard-Forbidden,BlueLizard-Forbidden,YellowLizard-Forbidden,WhiteLizard-Forbidden,RedLizard-Forbidden,BlackLizard-Forbidden,Salamander-Forbidden,CyanLizard-Forbidden,
+Room_Attr: GATE_BTWCC_BTWSD: PinkLizard-Avoid,GreenLizard-Avoid,BlueLizard-Avoid,YellowLizard-Avoid,WhiteLizard-Avoid,RedLizard-Avoid,BlackLizard-Avoid,Salamander-Avoid,CyanLizard-Avoid,

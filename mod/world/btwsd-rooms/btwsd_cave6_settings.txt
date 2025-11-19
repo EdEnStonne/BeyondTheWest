@@ -1,0 +1,11 @@
+RainIntensity: 0
+WaveSpeed: 0.5
+WaveLength: 1
+WaveAmplitude: 4.833132E-06
+SecondWaveLength: 0.1666667
+SecondWaveAmplitude: 0
+RandomItemDensity: 0.75
+RandomItemSpearChance: 0.3586957
+Effects: DayNight-1-768-585, BorderPushBack-1-670.3334-347.8667, 
+PlacedObjects: NoSpearStickZone><515.3602><3416.858><-4~-118, NoSpearStickZone><990.639><3429.395><0~100, DayNightSettings><100.0><100.0><76~8.660254~10~32, PlayerPushback><541.1393><3507.707><6.103516E-05~-40.08887, 
+FadePalette: 18, 0.6086956, 0.5543478, 0.5217391, 0.5, 0.4565217, 0.4021739

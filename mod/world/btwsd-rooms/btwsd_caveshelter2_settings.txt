@@ -1,0 +1,4 @@
+Template: btwsd_settingstemplate_desert
+TerrainDepth: 5
+PlacedObjects: DayNightSettings><100.0><100.0><76~8.660254~10~32,
+FadePalette: 26, 0.2065217

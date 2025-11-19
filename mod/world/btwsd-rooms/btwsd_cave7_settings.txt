@@ -1,0 +1,13 @@
+Template: btwsd_settingstemplate_desert
+WaveSpeed: 0.5
+WaveLength: 1
+WaveAmplitude: 0.002178528
+SecondWaveLength: 0.1666667
+SecondWaveAmplitude: 0
+Clouds: 0.101739
+RandomItemDensity: 0.05760856
+TerrainDepth: 2.044837
+TerrainPalette: test_sand_3
+PlacedObjects: TerrainHandle><143.815><642.5668><-19.58333~-12.53333~0~-42.06665~39.28888, TerrainHandle><-34.44995><545.9965><-41~-10~37~14~131.2444, NoSpearStickZone><1120.442><1305.059><-2~-324, NoSpearStickZone><363.8072><1539.303><7~-215, DayNightSettings><100><100><76~8.660254~10~32, DayNightSettings><284.9904><906.4495><-159~56.66025~38~10, 
+FadePalette: 26, 0.1086956, 0.1521739, 0.4021739
+TerrainFadePalette: badlands, 0.1521739, 0.2065217, 0.7065217

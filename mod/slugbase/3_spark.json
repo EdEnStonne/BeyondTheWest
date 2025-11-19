@@ -1,0 +1,52 @@
+{
+	"id": "Spark",
+	"name": "The Spark",
+	"description": "WIP",
+	"features": {
+		"color": "a6c4ff",
+
+		"weight": [0.95,0.9],
+		"tunnel_speed": [1.05,0.86],
+		"climb_speed": [0.95,0.8],
+		"walk_speed": 1.0,
+		"crouch_stealth": 0.5,
+		"throw_skill": 0,
+		"lung_capacity": 1.0,
+		"loudness": 0.85,
+
+		"diet": {
+			"base": "White",
+			"corpses": 0,
+			"meat": 2,
+			"plants": 0.5,
+			"overrides": {
+			}
+		},
+		"custom_colors": [
+			{ "name": "Body", "story": "a6c4ff", "arena": [ "FFFFFF", "fff780", "FF8080", "a6c4ff" ] },
+			{ "name": "Eyes", "story": "ffffff", "arena": [ "010101", "010101", "010101", "ffffff" ]}
+		],
+
+		"auto_grab_batflies": false,
+		"back_spear": false,
+		"can_maul": false,
+
+		"karma_cap": 4,
+		"karma": 0,
+		"the_mark": false,
+		"the_glow": false,
+		"has_dreams": false,
+		"cycle_length_min": 3,
+		"cycle_length_max": 8,
+		"perma_unlock_gates": false,
+		"food_min": 4,
+		"food_max": 8,
+
+		"expedition_enabled": false,
+		
+		"select_menu_scene": "Slugcat_WIP_Empty",
+		"select_menu_scene_ascended": "Slugcat_WIP_Empty",
+
+		"world_state": "Red"
+	}
+}

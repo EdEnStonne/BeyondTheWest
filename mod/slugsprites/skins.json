@@ -1,0 +1,17 @@
+{
+  "Spark": {
+    "atlases": "Spark",
+    "body": [
+      {
+        "order": 0,
+        "sprite": "SparkBody"
+      }
+    ],
+    "hips": [
+      {
+        "order": 0,
+        "sprite": "SparkHips"
+      }
+    ]
+  }
+}

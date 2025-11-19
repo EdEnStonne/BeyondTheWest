@@ -1,0 +1,9 @@
+{
+	"id": "Slugcat_WIP_Empty",
+	"images": [],
+	"idle_depths": [ 2.8 ],
+	"glow_pos": [688, 484],
+	"mark_pos": [689, 583],
+	"select_menu_pos": [0, 0],
+	"slugcat_depth": 2.8
+}

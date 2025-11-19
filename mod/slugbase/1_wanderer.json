@@ -1,0 +1,55 @@
+{
+	"id": "Trailseeker",
+	"name": "The Trailseeker",
+	"description": "WIP",
+	"features": {
+		"color": "cc7b52",
+
+		"weight": [1.05,0.8],
+		"tunnel_speed": [1.1,1],
+		"climb_speed": [1.15, 1.05],
+		"walk_speed": [1.05, 0.95],
+		"crouch_stealth": [0.4, 0.2],
+		"throw_skill": 1,
+		"lung_capacity": [1.15, 0.7],
+		"loudness": [1.1, 1.15],
+
+		"diet": {
+			"base": "White",
+			"corpses": 0.25,
+			"meat": 0.75,
+			"plants": 1,
+			"overrides": {
+			}
+		},
+		"custom_colors": [
+			{ "name": "Body", "story": "cc7b52", "arena": [ "FFFFFF", "fff780", "FF8080", "cc7b52" ] },
+			{ "name": "Eyes", "story": "010101", "arena": [ "010101", "010101", "010101", "010101" ] }
+		],
+
+		"auto_grab_batflies": true,
+		"back_spear": false,
+		"can_maul": true,
+		"maul_damage": 0.5,
+		"maul_blacklist": [ "Slugcat", "LizardTemplate" ],
+
+		"karma_cap": 4,
+		"karma": 4,
+		"the_mark": false,
+		"the_glow": false,
+		"has_dreams": false,
+		"cycle_length_min": 7,
+		"cycle_length_max": 11,
+		"perma_unlock_gates": false,
+		"food_min": 5,
+		"food_max": 8,
+
+		"expedition_enabled": false,
+		
+		"select_menu_scene": "Slugcat_WIP_Empty",
+		"select_menu_scene_ascended": "Slugcat_WIP_Empty",
+
+		"world_state": "Red",
+		"start_room": "BTWSD_CAVE2"
+	}
+}

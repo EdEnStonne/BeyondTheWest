@@ -1,0 +1,33 @@
+DangerType: Flood
+CeilingDrips: 0.2065217
+RainIntensity: 0
+RumbleIntensity: 0.2065217
+WaveSpeed: 0.5
+WaveLength: 1
+WaveAmplitude: 0.1193845
+SecondWaveLength: 0.1666667
+SecondWaveAmplitude: 0
+Clouds: 0.05
+Grime: 0.1086956
+BkgDroneVolume: 0.5
+BkgDroneNoThreatVolume: 1
+RandomItemDensity: 0.05434782
+RandomItemSpearChance: 0.75
+WaterReflectionAlpha: 1
+Palette: 3
+EffectColorA: 6
+EffectColorB: 10
+TerrainLight: 0.9021739
+TerrainStainAmount: 0
+TerrainStainHeight: 0.3043478
+TerrainWaves: 0
+TerrainEdgeRadius: 200
+TerrainGooHeight: 1
+TerrainGrain: 0.186956
+TerrainDepth: 1.195646
+TerrainSkyFade: 1
+TerrainPalette: test_dune
+Effects: Desaturation-0.1014494-12.29167-95.42223, HeatWave-0.5072463-20-20, DayNight-1-280.7501-94.00002, SkyBloom-0.5-281.9583-173.9556, LightBurn-1-289-246, SandPuffs-1-10-158, Dustpuffs-0.25-285-29, SkyAndLightBloom-0.25-11-232, Darkness-0.1086956-2-297, Bloom-0.25-285-308, 
+PlacedObjects: DayNightSettings><100.0><100.0><5~8.660254~26~32,
+SilenceWater-1-490-411, 
+AmbientSounds: OMNI><AM_ENV-CricketsWnd.ogg><146.2052><517.6098><0.5><1, 
