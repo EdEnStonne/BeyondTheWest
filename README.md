@@ -21,9 +21,29 @@ The Spark may be weak in nature, but has the uncommon ability to be able to gere
 
 
 ## My plans : 
+
+### Long term :
 For now, the top priority is fixing all bugs, balance issues and problem the mod has.
 If I decide to develop it more, I'll go and add new arenas and items, before finally heading toward the actual campaign of those 3.
 Let's see how far I go with this one.
+
+### Short term planned additions :
+- **Meadow**
+  - piggyback power steal
+- **Trailseeker**
+  - Hold spec to ignore poles
+  - Better Whiplash
+- **Core**
+  - DUNK SLAM
+  - Explosion resistance 
+  - oxygen to radius
+- **Spark**
+  - Electric spears are batteries 
+  - Coil does "electric" damage
+  - NO DEN HYPERCHARGE
+  - Particles update after death
+  - Slide jump momentum
+  - NO DAMAGE TO HELD CREATURE
 
 
 ## Credits : 
