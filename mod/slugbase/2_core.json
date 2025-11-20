@@ -16,10 +16,11 @@
 
 		"diet": {
 			"base": "Red",
-			"corpses": 1.25,
+			"corpses": 1.0,
 			"meat": 1.0,
 			"plants": 0.25,
 			"overrides": {
+				"Fly": 0.5
 			}
 		},
 		"custom_colors": [

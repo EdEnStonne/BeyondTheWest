@@ -286,9 +286,14 @@ public class SparkObject
                 {
                     float amountOvercharge = this.Charge - this.FullECharge;
                     float fractOvercharge = amountOvercharge / (this.MaxECharge - this.FullECharge);
+                    const float criticAmount = 0.25f;
 
                     this.slideSpeedMult = Math.Max(this.slideSpeedMult, 1f + fractOvercharge / 2f);
-                    this.Charge -= amountOvercharge * Mathf.Pow(fractOvercharge, 4);
+                    if (fractOvercharge >= criticAmount)
+                    {
+                        this.Charge -= amountOvercharge * Mathf.Pow((fractOvercharge - criticAmount) / (1 - criticAmount), 4);
+                    }
+                    
                 }
             }
             else
@@ -299,7 +304,32 @@ public class SparkObject
                 this.slideSpearBounceFrames = 0;
             }
         }
+        private void MovementUpdate()
+        {
+            Player player = this.Player;
+            oldpos = newpos;
 
+            if (player != null)
+            {
+                Vector2 pos = Vector2.zero;
+                foreach (BodyChunk bodyChunk in player.bodyChunks)
+                {
+                    pos += bodyChunk.pos;
+                }
+                pos /= player.bodyChunks.Length;
+
+                if (oldpos == Vector2.negativeInfinity)
+                {
+                    oldpos = pos;
+                }
+                newpos = pos;
+            }
+            else
+            {
+                oldpos = Vector2.negativeInfinity;
+                newpos = Vector2.negativeInfinity;
+            }
+        }
         //-------------- Override Functions
         public void Update()
         {
@@ -316,7 +346,7 @@ public class SparkObject
                     this.staticChargeBatteryUI = new StaticChargeBatteryUI(this);
                     this.Room.AddObject(this.staticChargeBatteryUI);
                 }
-                if (this.Room != this.staticChargeBatteryUI.room)
+                if (this.staticChargeBatteryUI != null && this.Room != this.staticChargeBatteryUI.room)
                 {
                     this.staticChargeBatteryUI.RemoveFromRoom();
                     this.Room.AddObject(this.staticChargeBatteryUI);
@@ -329,9 +359,9 @@ public class SparkObject
                 this.staticChargeBatteryUI = null;
             }
 
-            if (this.Room != null && !this.Player.dead)
+            if (this.Room != null)
             {
-                if (this.active)
+                if (this.active && !this.Player.dead)
                 {
                     if (Plugin.meadowEnabled && this.isMeadowArenaTimerCountdown && OnlineTimerOn())
                     {
@@ -344,7 +374,7 @@ public class SparkObject
                     }
                     if (this.MaxEBounce > 0 && !this.isMeadowArenaTimerCountdown) { BounceUpdate(); }
                     if (!this.isMeadowArenaTimerCountdown) { DischargeUpdate(); }
-                    if (this.RechargeMult > 0 && !this.isMeadowFakePlayer) { RechargeUpdate(); }
+                    if (this.RechargeMult > 0 && !this.isMeadowFakePlayer) { MovementUpdate(); RechargeUpdate(); }
                     if (!this.isMeadowFakePlayer) { SlideUpdate(); }
                     if (this.IsOvercharged && !this.isMeadowFakePlayer && !this.isMeadowArenaTimerCountdown) { OverchargeUpdate(); }
                 }
@@ -672,6 +702,8 @@ public class SparkObject
         public bool isMeadow = false;
         public bool isMeadowArena = false;
         public bool isMeadowArenaTimerCountdown = false;
+        public Vector2 oldpos = Vector2.negativeInfinity;
+        public Vector2 newpos = Vector2.negativeInfinity;
 
         // Get Set Variables
         public Player Player
@@ -708,8 +740,14 @@ public class SparkObject
                     float ContactFriction = 0f;
                     Vector2 intDir = this.IntDirectionalInput;
 
-                    ContactFriction += (float)Math.Pow(this.Player.mainBodyChunk.vel.x, 2) / 50f;
-                    ContactFriction += (float)Math.Pow(this.Player.mainBodyChunk.vel.y, 2) / 50f;
+                    if (oldpos == Vector2.negativeInfinity || newpos == Vector2.negativeInfinity)
+                    {
+                        ContactFriction = 0f;
+                    }
+                    else
+                    {
+                        ContactFriction += Mathf.Pow(newpos.magnitude - oldpos.magnitude, 2) / 50f;
+                    }
 
                     if (intDir == Vector2.zero)
                     {
@@ -893,11 +931,13 @@ public class SparkObject
         public void ApplyPalette(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, RoomPalette palette) { }
         public void DrawSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
         {
-            if (this.slatedForDeletetion || this.room != rCam.room)
+            if (this.SCM.Player == null || this.slatedForDeletetion || this.room != rCam.room)
             {
                 sLeaser.CleanSpritesAndRemove();
+                this.Destroy();
+                return;
             }
-            if (this.SCM.init && this.SCM.active && this.SCM.Player != null && !this.SCM.Player.inShortcut)
+            if (this.SCM.init && this.SCM.active && !this.SCM.Player.inShortcut)
             {
                 Vector2 pos = this.SpriteHeadPos == Vector2.negativeInfinity ?
                     this.SCM.Player.firstChunk.pos + new Vector2(0f, 40f)

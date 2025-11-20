@@ -1,5 +1,3 @@
-<A attempt at modding.>
-
 [h1] Discover 3 new Slugcats from a far land [/h1]
 
 [h2]Description :[/h2]
@@ -22,52 +20,7 @@ I will not more slugcats here though. 3 is enough for this mod.
 
 
 [h2]The Slugcats :[/h2]
-As said above, 3 slugcats awaits you : The Trailseeker, The Core and The Spark !
-
-[h3]The Trailseeker[/h3]
-The Trailseeker has specialized itself into exploring every corner of the world. Its pounce are shorter but longer, and it has alot of new movement tech regarding walls !
-
-[b]Abilities :[/b]
-[list]
-    [*][u]Modified Movement Tech : [/u] Most of the movement tech involving jumping goes for a shorter height, but way longer. The flip has the opposite effect (high height). 
-    [*][u]Wall Grip : [/u] While against a wall, hold up to grip on in. 
-    [*][u]Wall Throw : [/u] While against a wall, you can throw directly downward.
-    [*][u]Wall Kick : [/u] While leaving a wall, quickly press jump to kick the wall behind you and propel yourself forward.
-    [*][u]Wall Climb : [/u] While against a wall, hold up and press jump to hop a short distance vertically. You can do this up to 3 times, but not in a row ! This tech can also be extended like a slide.
-    [*][u]Wall Kick : [/u] While leaving a wall, quickly press jump to kick the wall behind you and propel yourself forward. You can also do this by holding the opposite direction of the wall at the end of a Wall Climb.
-    [*][u]Wall Vertical Pounce : [/u] You heard that correctly, vertical pounce. At the end of a Wall Climb, press jump again to do a pounce... upward !
-    [*][u]Wall Kick Flip : [/u] At the start of a Wall Climb, quickly flick to the opposite direction to do a Wall Kick Flip ! You can also do this by holding the opposite direction in mid-air of a Wall Vertical Pounce, and pressing jump right before you touch the wall again.
-[/list]
-
-[h3]The Core[/h3]
-The Core uses the full capacity of its core to its advantage. As long as you have energy, it has the best mobility of the 3 slugcats. Your jump is replaced by a leap you can charge !
-
-[b]Abilities :[/b]
-[list]
-    [*][u]Your Core, or Cell : [/u] Your core is a vital part of your slugcat. It gather energy over time that you can use to do basically every ability of this slug. You can guess the energy left by the brightness of the core. 
-    [*][u]Meltdown state : [/u] Your core will enter meltdown state when hit by a weapon or if its energy reaches 0. To repair your core, hold grab while not moving for a while. Staying in meltdown state for too long will result of your slucat dying a horrible death. 
-    [*][u]Leap : [/u] Your jump had been replaced with a leap ! Hold jump to go further, it can even be used up to 2 times mid-air ! You can hold special while charging a leap to charge faster. If you really hate having your jump replaced, you can put the leap abaility (and every other abilities that is set to the jump button) on the special button in the Remix menu (you will of course lose the ability to charge faster).
-    [*][u]Anti-Gravity : [/u] While doing a flip, hold jump to be more floaty !
-    [*][u]Low Gravity Boosting : [/u] While in a low-gravity environment, you can hold jump to move quickly in any direction.
-    [*][u]Underwater Breathing : [/u] Your core will automatically use energy when breathing isn't possible for your slugcat. Quite practical for underwater exploration !
-[/list]
-
-
-[h3]The Spark[/h3]
-The Spark may be weak in nature, but has the uncommon ability to be able to gerenerate static electricity. It can be used for defense as well as for movement, but be careful to not eletrocute yourself !
-
-[b]Abilities :[/b]
-[list]
-    [*][u]Your Charge : [/u] You accumulate charge by moving around. The faster you move, the more static charges you get. The context also influence how fast you'll recharge (for example, moving while crouching will allow you to charge way faster than walking). You can estimate your charge by the frequency of teh particles emited by the slugcat, or simply having the Battery UI activated in the Remix menu (it's on by default).
-    [*][u]Overcharge : [/u] You can go beyond your maximum charge capacity. This will make every of you electric ability way stronger, and sometimes even alter them ! Be careful : while overcharge, you have a chance to stun yourself if you are in contact with the ground or water. Going above your overcharge limit will plainly kill you.
-    [*][u]Discharge : [/u] You can press special to discharge part of your accumulated charge on the direction you are holding. This will deal knockback and damage to all creature in a small area. Context also matter on the size, damage and energy usage of the Discharge. For example : when on a pole, you'll deal way less damage, but will have a greater reach !
-    [*][u]Weak Spear Throw : [/u] You are weak in nature, and don't have enough force to throw spear. Fortunately, you learned to use your electricity to have a semi-decent throw. Every spear throw will have the force of the Monk, and will use a small amount of energy. If you are Overcharged, you'll throw spear way further, and the damage will double !
-    [*][u]Bounce Jump : [/u] While doing a roll or a slide, you can press special instead of jump to pounce way further and higher than normal, at the cost of some of your charge.
-    [*][u]Bounce Up : [/u] While doing a flip, you can hold down and press jump to bounce upward, like a double jump, at the cost of some of your charge.
-    [*][u]Bounce Back : [/u] While doing a rocket jump, you hold the opposite direction and quickly press special to bounce back, at the cost of some of your charge.
-    [*][u]Sliding : [/u] You can slide infinitely ! Sliding is a great way to gain charge, as well as moving fast in a straight line. This will however drain some energy if you reach overcharge, making you faster and stopping you from... over-overcharging.
-    [*][u]Sliding Boost : [/u] While sliding, press downward, backward and special will make you go faster for a short period of time, at the cost of energy. To keep the momentum, you do need to press forward again quickly to keep sliding.
-[/list]
+Learn more about the slugcat abilities on the [url=https://rainworldmods.miraheze.org/wiki/Beyond_The_West] Rain World Modded Wiki [/url]!
 
 
 [h2]My plans :[/h2]

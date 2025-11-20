@@ -23,7 +23,7 @@ using On;
 
 namespace BeyondTheWest 
 {
-    [BepInPlugin(MOD_ID, "Beyond The West", "1.0.8")]
+    [BepInPlugin(MOD_ID, "Beyond The West", "1.0.9")]
     [BepInDependency("slime-cubed.slugbase")]
     class Plugin : BaseUnityPlugin
     {

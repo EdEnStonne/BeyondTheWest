@@ -20,6 +20,7 @@
 			"meat": 2,
 			"plants": 0.5,
 			"overrides": {
+				"Fly": 0.5
 			}
 		},
 		"custom_colors": [

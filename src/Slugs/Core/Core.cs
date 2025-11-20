@@ -21,6 +21,7 @@ public class CoreFunc
         On.Player.ctor += Player_coreInit;
         On.Player.Jump += Player_CoreBetaJump;
         IL.Weapon.Update += Weapon_PassThroughCore;
+        On.Creature.Violence += Player_Explosion_Resistance;
         Plugin.Log("CoreFunc ApplyHooks Done !");
     }
 
@@ -44,7 +45,17 @@ public class CoreFunc
 
 
     // Hooks
-
+    private static void Player_Explosion_Resistance(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
+    {
+        if (self != null && self is Player player && type == Creature.DamageType.Explosion && IsCore(player))
+        {
+            orig(self, source, directionAndMomentum, hitChunk, hitAppendage, type, damage * 0.45f, stunBonus * 0.5f);
+        }
+        else
+        {
+            orig(self, source, directionAndMomentum, hitChunk, hitAppendage, type, damage, stunBonus);
+        }
+    }
 
     private static void Player_coreInit(On.Player.orig_ctor orig, Player self, AbstractCreature abstractCreature, World world)
     {

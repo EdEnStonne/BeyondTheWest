@@ -154,6 +154,8 @@ public class CoreObject
         public float CoreMeltdown = 600.0f;
         public float CoreShockwavePower = 300.0f;
         public float CoreOxygenEnergyUsage = 250.0f;
+        public float Core0GWaterEnergyUsage = 40.0f;
+        public float Core0GSpaceEnergyUsage = 10.0f;
         public float CoreAntiGravity = 0.85f;
         public int CoreMaxBoost = 2;
         public int CoreAntiGravityStartUp = 5;
@@ -658,7 +660,7 @@ public class CoreObject
                         b.vel *= antiGravity;
                     }
                 }
-                else if (ShouldZeroG && triggered && (this.AEC.energy > 0f))
+                else if (ShouldZeroG && this.AEC.boostingCount < 5 && triggered && (this.AEC.energy > 0f))
                 {
                     this.AEC.boostingCount = 0;
                     if (this.AEC.antiGravityCount == startUp)
@@ -698,7 +700,7 @@ public class CoreObject
                                 b.vel.y += this.player.gravity * antiGravity;
                             }
                         }
-                        this.AEC.energy -= this.AEC.antiGravityCount / (Underwater ? 40f : 100f);
+                        this.AEC.energy -= (Underwater ? this.AEC.Core0GWaterEnergyUsage : this.AEC.Core0GSpaceEnergyUsage) / BTWFunc.FrameRate;
                     }
 
                     if (this.AEC.energy < 0f)
@@ -989,7 +991,7 @@ public class CoreObject
                     
                     if (this.AEC.IsBetaBoost ? cinput.jmp : cinput.spec)
                     {
-                        if (this.ShouldZeroG && this.AEC.boostingCount <= 0)
+                        if (this.ShouldZeroG && this.AEC.boostingCount < 5)
                         {
                             if (this.AEC.antiGravityCount > 0 || this.AEC.coreBoostLeft > 0)
                             {
@@ -1005,7 +1007,7 @@ public class CoreObject
                                 if (this.AEC.boostingCount > 400)
                                 {
                                     if (this.AEC.isShockwaveEnabled) { ShockWave(true); }
-                                    else { MeltdownStart(); }
+                                    else { MeltdownStart(); this.AEC.boostingCount = 0; }
                                 }
                             }
                             else
