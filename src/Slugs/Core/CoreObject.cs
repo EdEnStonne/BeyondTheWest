@@ -1,29 +1,13 @@
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using SlugBase.Features;
 using UnityEngine;
-using static SlugBase.Features.FeatureTypes;
-using BepInEx;
-using BepInEx.Logging;
 using System;
-using MonoMod.Cil;
 using RWCustom;
 using BeyondTheWest;
-using Mono.Cecil.Cil;
-using System.Threading;
-using UnityEngine.PlayerLoop;
 
 public class CoreObject
 {
 
     public static AbstractPhysicalObject.AbstractObjectType EnergyCoreType;
-    public static void ApplyHooks()
-    {
-        EnergyCoreType = new("EnergyCore", true);
-        On.PlayerGraphics.PlayerObjectLooker.HowInterestingIsThisObject += Interest_Exepection_Hook;
-        On.Player.SpitOutOfShortCut += Player_MoveAbstractCore;
-        Plugin.Log("CoreObject ApplyHooks Done !");
-    }
 
     // My class
     public class AbstractEnergyCore : AbstractPhysicalObject
@@ -78,6 +62,13 @@ public class CoreObject
         {
             base.Update(time);
             // Plugin.Log("An update in " + time.ToString()); 
+
+            if (abstractPlayer == null)
+            {
+                this.realizedObject?.Destroy();
+                this.Destroy();
+                return;
+            }
 
             if (abstractPlayer.Room != this.Room) // all of those function doing literally nothing.
             {
@@ -150,10 +141,10 @@ public class CoreObject
         public int coreBoostLeft = 2;
 
         public float CoreMaxEnergy = 1200.0f;
-        public float CoreEnergyRecharge = 35.0f;
+        public float CoreEnergyRecharge = 40.0f;
         public float CoreMeltdown = 600.0f;
         public float CoreShockwavePower = 300.0f;
-        public float CoreOxygenEnergyUsage = 250.0f;
+        public float CoreOxygenEnergyUsage = 100.0f;
         public float Core0GWaterEnergyUsage = 40.0f;
         public float Core0GSpaceEnergyUsage = 10.0f;
         public float CoreAntiGravity = 0.85f;
@@ -244,11 +235,12 @@ public class CoreObject
         {
             this.AEC.state = GetCurrentState();
         }
-        void SetCoreMesh(RoomCamera.SpriteLeaser sLeaser)
+        private void SetCoreMesh(RoomCamera.SpriteLeaser sLeaser)
         {
+            if (sLeaser == null || sLeaser.sprites == null) { return; }
             TriangleMesh CoreMesh = (TriangleMesh)sLeaser.sprites[1];
 
-            if (this.player != null)
+            if (this.player != null && this.AEC != null && CoreMesh != null)
             {
                 byte state = this.AEC.state;
 
@@ -378,8 +370,26 @@ public class CoreObject
                             break;
                         }
                 }
+                sLeaser.sprites[1] = CoreMesh;
             }
-            sLeaser.sprites[1] = CoreMesh;
+        }
+        private void StateSyncFakePlayer()
+        {
+            if (this.player != null && this.AEC != null && this.room != null && this.player.room == this.room && !this.AEC.active && this.AEC.isMeadowFakePlayer)
+            {
+                byte state = this.AEC.state;
+                if (state == 5 && this.player.animation == Player.AnimationIndex.Flip)
+                {
+                    foreach (var b in this.player.bodyChunks)
+                    {
+                        b.vel.y += this.player.gravity * this.AEC.CoreAntiGravity;
+                    }
+                }
+                else if (state == 7)
+                {
+                    this.player.airInLungs = 0.85f;
+                }
+            }
         }
 
         //------------------ Public functions
@@ -421,6 +431,8 @@ public class CoreObject
                 var pos = this.firstChunk.pos;
                 Vector2 inputDir = this.DirectionalInput;
                 Vector2 intInput = this.IntDirectionalInput;
+
+                this.canSlam = false;
 
                 if (isReal && this.Landed)
                 {
@@ -516,14 +528,16 @@ public class CoreObject
                         y = (baseBoost.y + scaleBoost.y) * penaltyMultiplier.y
                     };
 
-
-
                     foreach (var b in this.player.bodyChunks)
                     {
                         b.vel.x = intInput.x != 0 && b.vel.x * intInput.x > Math.Abs(leapBoost.x) ? 
                             b.vel.x + scaleBoost.x * penaltyMultiplier.x : leapBoost.x;
                         b.vel.y = intInput.y != 0 && b.vel.y * intInput.y > Math.Abs(leapBoost.y) ? 
                             b.vel.y + scaleBoost.y * penaltyMultiplier.y : leapBoost.y;
+                    }
+                    if (!boostJump && intInput.y == -1 && pow > 40)
+                    {
+                        this.canSlam = true;
                     }
                     this.AEC.boostingCount = -15;
                 }
@@ -657,7 +671,7 @@ public class CoreObject
                     this.AEC.boostingCount = 0;
                     foreach (var b in this.player.bodyChunks)
                     {
-                        b.vel *= antiGravity;
+                        b.vel *= 0.85f;
                     }
                 }
                 else if (ShouldZeroG && this.AEC.boostingCount < 5 && triggered && (this.AEC.energy > 0f))
@@ -725,12 +739,28 @@ public class CoreObject
         {
             if (this.player != null)
             {
-                if (this.player.airInLungs <= 0.85f && this.AEC.energy > 50f && this.oxygenCooldown)
+                if (this.player.room != null && this.player.airInLungs <= 0.85f && this.AEC.energy > 100f && this.oxygenCooldown)
                 {
-                    this.AEC.energy -= this.AEC.CoreOxygenEnergyUsage * Mathf.Max(0f, 0.85f - this.player.airInLungs);
+                    List<BTWFunc.RadiusCheckResultObject> creatureList = 
+                        BTWFunc.GetAllCreatureInRadius(this.player.room, this.player.mainBodyChunk.pos, this.OxygenRange * 10f);
+                    
+                    foreach (BTWFunc.RadiusCheckResultObject resultCreature in creatureList)
+                    {
+                        if (resultCreature.physicalObject is Player otherplayer
+                            && (otherplayer.abstractPhysicalObject.rippleBothSides || this.player.abstractPhysicalObject.rippleBothSides || this.player.abstractPhysicalObject.rippleLayer == otherplayer.abstractPhysicalObject.rippleLayer)
+                            && otherplayer.airInLungs <= 0.85f)
+                        {
+                            this.AEC.energy -= this.AEC.CoreOxygenEnergyUsage * Mathf.Max(0f, 0.85f - otherplayer.airInLungs);
+                            otherplayer.airInLungs = 0.85f;
+
+                            if (this.AEC.isMeadow && this.AEC.active && otherplayer != this.player)
+                            {
+                                MeadowCompat.CoreMeadow_OxygenGiveRPC(this.AEC, otherplayer);
+                            }
+                        }
+                    }
                     this.AEC.oxygenCount++;
-                    this.player.airInLungs = 0.85f;
-                    if (this.AEC.energy <= 50f)
+                    if (this.AEC.energy <= 100f)
                     {
                         this.oxygenCooldown = false;
                         this.room?.PlaySound(SoundID.Death_Lightning_Spark_Object, this.firstChunk.pos, 0.75f, 0.75f);
@@ -795,6 +825,7 @@ public class CoreObject
 
                 if (this.Landed || this.Underwater || this.ZeroG)
                 {
+                    this.canSlam = false;
                     if (!this.Underwater && !this.ZeroG) { this.AEC.antiGravityCount = 0; }
                     this.AEC.coreBoostLeft = this.AEC.CoreMaxBoost;
                     this.flipFromBoost = false;
@@ -831,7 +862,37 @@ public class CoreObject
             }
             
         }
-        
+        private void DebugUpdate()
+        {
+            Player player = this.player;
+            Room room = this.room;
+            if (player == null || room == null || !room.game.devToolsActive)
+            {
+                return;
+            }
+            try
+            {
+                if (Input.GetKeyDown(KeyCode.T))
+                {
+                    if (Input.GetKey(KeyCode.LeftShift))
+                    {
+                        this.AEC.energy = 0;
+                    }
+                    else if (Input.GetKey(KeyCode.LeftControl))
+                    {
+                        this.AEC.energy = -this.AEC.CoreMeltdown;
+                    }
+                    else
+                    {
+                        this.AEC.energy = this.AEC.CoreMaxEnergy;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Plugin.logger.LogError(ex);
+            }
+        }
         //----------------- IDrawable
         public void AddToContainer(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, FContainer newContatiner)
         {
@@ -843,9 +904,10 @@ public class CoreObject
         public void ApplyPalette(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, RoomPalette palette) { }
         public virtual void DrawSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
         {
-            if (this.slatedForDeletetion || this.room != rCam.room)
+            if (this.slatedForDeletetion || this.room != rCam.room || this.AEC == null)
             {
                 sLeaser.CleanSpritesAndRemove();
+                return;
             }
             if (this.player != null && !this.player.inShortcut)
             {
@@ -876,7 +938,7 @@ public class CoreObject
                 //     );
                 // vector.x = Mathf.Lerp(base.firstChunk.lastPos.x, base.firstChunk.pos.x, timeStacker) - camPos.x;
                 // vector.y = Mathf.Lerp(base.firstChunk.lastPos.y, base.firstChunk.pos.y, timeStacker) - camPos.y;
-                Vector2 coreSpritePos = (player.graphicsModule != null && player.graphicsModule is PlayerGraphics playerGraphics ?
+                Vector2 coreSpritePos = (PlayerMiddleSpritePos != null ?
                     PlayerMiddleSpritePos : corePos - camPos) + new Vector2(1, 0);
                 coreSpritePos += new Vector2(1f * dir + 4f * CinputX, - Math.Abs(CinputX));
 
@@ -909,7 +971,7 @@ public class CoreObject
                 else if (this.AEC.state == 7 || (Underwater && this.oxygenCooldown && this.AEC.energy > 0f))
                 {
                     sLeaser.sprites[3].alpha = Mathf.Lerp(sLeaser.sprites[3].alpha, 0.10f + 0.20f * eRatio, 0.05f);
-                    sLeaser.sprites[3].scale = Mathf.Lerp(sLeaser.sprites[3].scale, 4f + 12f * eRatio, 0.05f);
+                    sLeaser.sprites[3].scale = Mathf.Lerp(sLeaser.sprites[3].scale, OxygenRange, 0.05f);
                     sLeaser.sprites[2].scale = this.scale * 16f * eRatio;
                 }
                 else
@@ -977,14 +1039,19 @@ public class CoreObject
         {
             base.Update(eu);
 
-            if (this.player != null && this.room != null && this.player.room == this.room)
+            if (this.player != null && this.AEC != null && this.room != null && this.player.room == this.room)
             {
+                if (this.room.game.devToolsActive) { DebugUpdate(); }
                 var cinput = this.player.input[0];
                 if (Plugin.meadowEnabled && this.AEC.isMeadowArenaTimerCountdown && !OnlineTimerOn())
                 {
                     this.AEC.isMeadowArenaTimerCountdown = false;
                 }
-                if (this.AEC.active) {
+                if (!this.AEC.active && this.AEC.isMeadowFakePlayer)
+                {
+                    StateSyncFakePlayer();
+                }
+                else if (this.AEC.active) {
                     SetCurrentState();
                     RepairUpdate();
                     RegenUpdate();
@@ -1020,7 +1087,7 @@ public class CoreObject
                     {
                         if (this.AEC.boostingCount < 5 && this.AEC.IsBetaBoost && this.player.canJump > 0)
                         {
-                            this.AEC.boostingCount = -1;
+                            this.AEC.boostingCount = -20;
                             this.player.Jump();
                         }
                         else
@@ -1034,6 +1101,10 @@ public class CoreObject
                     if (this.AEC.energy < -this.AEC.CoreMeltdown)
                     {
                         Explode(true);
+                    }
+                    if (this.canSlam && this.player.mainBodyChunk.vel.y >= 0)
+                    {
+                        this.canSlam = false;
                     }
                 }
             }
@@ -1080,6 +1151,7 @@ public class CoreObject
         // Basic
         public float scale = 1f;
         public bool flipFromBoost = false;
+        public bool canSlam = false;
         public bool oxygenCooldown = true;
         public int disableCooldown = 0;
 
@@ -1177,10 +1249,22 @@ public class CoreObject
                 if (this.player != null)
                 {
                     return this.player.animation != Player.AnimationIndex.GetUpOnBeam && 
-                        this.player.animation != Player.AnimationIndex.GetUpToBeamTip && 
+                        // this.player.animation != Player.AnimationIndex.GetUpToBeamTip && 
                         this.player.animation != Player.AnimationIndex.HangFromBeam;
                 }
                 return false;
+            }
+        }
+        public float OxygenRange
+        {
+            get
+            {
+                if (this.AEC != null)
+                {
+                    float eRatio = Mathf.Clamp01(this.AEC.energy / this.AEC.CoreMaxEnergy);
+                    return 4f + 12f * eRatio;
+                }
+                return 0f;
             }
         }
     }
@@ -1213,7 +1297,54 @@ public class CoreObject
         }
         return null;
     }
+
+    public static void ApplyHooks()
+    {
+        EnergyCoreType = new("EnergyCore", true);
+        On.PlayerGraphics.PlayerObjectLooker.HowInterestingIsThisObject += Interest_Exepection_Hook;
+        On.Player.SpitOutOfShortCut += Player_MoveAbstractCore;
+        On.AbstractCreature.ChangeRooms += AbstractPlayer_ChangeRooms;
+        On.ItemSymbol.SymbolDataFromItem += ItemSymbol_SetCoreDataToNone;
+        On.Player.SlugSlamConditions += Player_CoreSLAM;
+        Plugin.Log("CoreObject ApplyHooks Done !");
+    }
+    
+
     // Ma hooks
+    private static bool Player_CoreSLAM(On.Player.orig_SlugSlamConditions orig, Player self, PhysicalObject otherObject)
+    {
+        if (CoreFunc.cwtCore.TryGetValue(self.abstractCreature, out var abstractEnergyCore) 
+            && abstractEnergyCore.realizedObject != null
+            && abstractEnergyCore.RealizedCore.canSlam
+            && otherObject is Creature creature)
+        {
+            foreach (Creature.Grasp grasp in self.grabbedBy)
+            {
+                if (grasp.pacifying || grasp.grabber == creature)
+                {
+                    return false;
+                }
+            }
+            if (creature.grabbedBy.Exists(x => x.grabber == self)) { return false; }
+            if (!ModManager.CoopAvailable 
+                || otherObject is not Player
+                || Custom.rainWorld.options.friendlyFire 
+                || (Plugin.meadowEnabled && MeadowCompat.IsMeadowArena() && !MeadowCompat.IsCreatureFriendlies(self, creature)))
+            {
+                self.stun = Mathf.Max((int)(BTWFunc.FrameRate * 1.5), self.stun);
+                abstractEnergyCore.coreBoostLeft = 0;
+                abstractEnergyCore.RealizedCore.canSlam = false;
+                return true;
+            }
+            return false;
+        }
+        return orig(self, otherObject);
+    }
+    private static IconSymbol.IconSymbolData? ItemSymbol_SetCoreDataToNone(On.ItemSymbol.orig_SymbolDataFromItem orig, AbstractPhysicalObject item)
+    {
+        if (item is AbstractEnergyCore) { return null; }
+        return orig(item);
+    }
     private static float Interest_Exepection_Hook(On.PlayerGraphics.PlayerObjectLooker.orig_HowInterestingIsThisObject orig, PlayerGraphics.PlayerObjectLooker self, PhysicalObject obj)
     {
         if (obj is EnergyCore)
@@ -1222,26 +1353,49 @@ public class CoreObject
         }
         return orig(self, obj);
     }
-
     private static void Player_MoveAbstractCore(On.Player.orig_SpitOutOfShortCut orig, Player self, IntVector2 pos, Room newRoom, bool spitOutAllSticks)
     {
         orig(self, pos, newRoom, spitOutAllSticks);
         if (CoreFunc.cwtCore.TryGetValue(self.abstractCreature, out var abstractEnergyCore))
         {
-            Plugin.Log("Changing room of core of player " + self.ToString() + " !");
-            if (abstractEnergyCore.realizedObject != null)
-			{
-                EnergyCore energyCore = abstractEnergyCore.RealizedCore;
-                if (energyCore.room != self.room)
-                {
-                    abstractEnergyCore.Abstractize(self.abstractCreature.pos);
-                    abstractEnergyCore.RealizeInRoom();
-                }
-			}
+            Plugin.Log("Changing room of core "+ abstractEnergyCore.ToString() +" of player " + self.abstractCreature.ToString() + " !");
+            Plugin.Log("Changing room of abstract core "+ abstractEnergyCore.ToString() +" of player " + self.ToString() + " !");
+            if (abstractEnergyCore.world != null 
+                && self.abstractCreature.pos != null 
+                && abstractEnergyCore.world.GetAbstractRoom(abstractEnergyCore.pos) != null
+                && abstractEnergyCore.world.GetAbstractRoom(self.abstractCreature.pos) != null)
+            {
+                abstractEnergyCore.Abstractize(self.abstractCreature.pos);
+                abstractEnergyCore.RealizeInRoom();
+            }
             else
             {
-                abstractEnergyCore.Move(self.abstractCreature.pos);
-                abstractEnergyCore.RealizeInRoom();
+                Plugin.Log("Something wrong happened to the core "+ abstractEnergyCore.ToString() +" of " + self.ToString() + ".");
+            }
+        }
+    }
+    private static void AbstractPlayer_ChangeRooms(On.AbstractCreature.orig_ChangeRooms orig, AbstractCreature self, WorldCoordinate newCoord)
+    {
+        orig(self, newCoord);
+        if (CoreFunc.cwtCore.TryGetValue(self, out var abstractEnergyCore))
+        {
+            Plugin.Log("Changing room of abstract core "+ abstractEnergyCore.ToString() +" of player " + self.ToString() + " !");
+            if (abstractEnergyCore.world != null 
+                && newCoord != null 
+                && abstractEnergyCore.world.GetAbstractRoom(abstractEnergyCore.pos) != null
+                && abstractEnergyCore.world.GetAbstractRoom(newCoord) != null)
+            {
+                // Plugin.Log(newCoord);
+                // Plugin.Log(abstractEnergyCore);
+                // Plugin.Log(abstractEnergyCore.world);
+                // Plugin.Log(abstractEnergyCore.pos);
+                // Plugin.Log(abstractEnergyCore.world.GetAbstractRoom(abstractEnergyCore.pos));
+                // Plugin.Log(abstractEnergyCore.world.GetAbstractRoom(newCoord));
+                abstractEnergyCore.Abstractize(newCoord);
+            }
+            else
+            {
+                Plugin.Log("Something wrong happened to the core "+ abstractEnergyCore.ToString() +" of " + self.ToString() + ".");
             }
         }
     }

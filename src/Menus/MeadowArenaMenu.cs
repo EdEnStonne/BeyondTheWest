@@ -1,30 +1,19 @@
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using SlugBase.Features;
 using UnityEngine;
-using static SlugBase.Features.FeatureTypes;
-using BepInEx;
-using BepInEx.Logging;
 using System;
-using MonoMod.Cil;
-using RWCustom;
-using Mono.Cecil.Cil;
 using RainMeadow;
 using BeyondTheWest;
 
 using Menu;
 using Menu.Remix;
 using Menu.Remix.MixedUI;
-using Menu.Remix.MixedUI.ValueTypes;
 using RainMeadow.UI.Components;
 using RainMeadow.UI.Components.Patched;
-using RainMeadow.UI.Interfaces;
-using System.Linq;
 using static RainMeadow.UI.Components.OnlineSlugcatAbilitiesInterface;
-using static RainMeadow.UI.Components.TabContainer;
 using ArenaMode = RainMeadow.ArenaOnlineGameMode;
 using MonoMod.RuntimeDetour;
 using System.Reflection;
+using RainMeadow.UI;
 
 public class MeadowBTWArenaMenu
 {
@@ -56,6 +45,15 @@ public class MeadowBTWArenaMenu
         public bool Spark_DoDischargeDamage = BTWRemix.MeadowSparkDoDischargeDamage.Value;
         public bool Spark_RiskyOvercharge = BTWRemix.MeadowSparkRiskyOvercharge.Value;
         public bool Spark_DeadlyOvercharge = BTWRemix.MeadowSparkDeadlyOvercharge.Value;
+        
+        // Arena Lives
+        public int ArenaLives_AdditionalReviveTime = BTWRemix.MeadowArenaLivesAdditionalReviveTime.Value;
+        public int ArenaLives_Amount = BTWRemix.MeadowArenaLivesAmount.Value;
+        public int ArenaLives_ReviveTime = BTWRemix.MeadowArenaLivesReviveTime.Value;
+        public bool ArenaLives_BlockWin = BTWRemix.MeadowArenaLivesBlockWin.Value;
+        public bool ArenaLives_ReviveFromAbyss = false; //BTWRemix.MeadowArenaLivesReviveFromAbyss.Value;
+        public bool ArenaLives_Strict = BTWRemix.MeadowArenaLivesStrict.Value;
+        public int ArenaLives_RespawnShieldDuration = BTWRemix.MeadowArenaLivesRespawnShieldDuration.Value;
     }
     internal class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
     {
@@ -91,11 +89,9 @@ public class MeadowBTWArenaMenu
             public int CO_OxygenEnergyUsage;
             [OnlineField(group = "Core")]
             public bool CO_Shockwave;
-            
+
             // Group: Spark
-            [OnlineField(group = "Spark")]
-            public int SP_MaxCharge;
-            [OnlineField(group = "Spark")]
+            [OnlineField(group = "Spark")]            
             public int SP_AdditionnalOvercharge;
             [OnlineField(group = "Spark")]
             public int SP_ChargeRegenerationMult;
@@ -107,6 +103,25 @@ public class MeadowBTWArenaMenu
             public bool SP_RiskyOvercharge;
             [OnlineField(group = "Spark")]
             public bool SP_DeadlyOvercharge;
+            [OnlineField(group = "Spark")]
+            public int SP_MaxCharge;
+            
+            // Group: ArenaLives
+            [OnlineField(group = "ArenaLives")]
+            public int AL_AdditionalReviveTime;
+            [OnlineField(group = "ArenaLives")]
+            public int AL_Amount;
+            [OnlineField(group = "ArenaLives")]
+            public int AL_ReviveTime;
+            [OnlineField(group = "ArenaLives")]
+            public bool AL_BlockWin;
+            [OnlineField(group = "ArenaLives")]
+            public bool AL_ReviveFromAbyss;
+            [OnlineField(group = "ArenaLives")]
+            public bool AL_Strict;
+            [OnlineField(group = "ArenaLives")]
+            public int AL_RespawnShieldDuration;
+            
             
 
             public State() { }
@@ -131,6 +146,14 @@ public class MeadowBTWArenaMenu
                 this.SP_MaxCharge = BTWMeadowArenaSettings.Spark_MaxCharge;
                 this.SP_RiskyOvercharge = BTWMeadowArenaSettings.Spark_RiskyOvercharge;
                 this.SP_DeadlyOvercharge = BTWMeadowArenaSettings.Spark_DeadlyOvercharge;
+                
+                this.AL_AdditionalReviveTime = BTWMeadowArenaSettings.ArenaLives_AdditionalReviveTime;
+                this.AL_Amount = BTWMeadowArenaSettings.ArenaLives_Amount;
+                this.AL_BlockWin = BTWMeadowArenaSettings.ArenaLives_BlockWin;
+                this.AL_ReviveFromAbyss = BTWMeadowArenaSettings.ArenaLives_ReviveFromAbyss;
+                this.AL_ReviveTime = BTWMeadowArenaSettings.ArenaLives_ReviveTime;
+                this.AL_Strict = BTWMeadowArenaSettings.ArenaLives_Strict;
+                this.AL_RespawnShieldDuration = BTWMeadowArenaSettings.ArenaLives_RespawnShieldDuration;
             }
 
             public override void ReadTo(OnlineResource.ResourceData data, OnlineResource resource)
@@ -157,6 +180,14 @@ public class MeadowBTWArenaMenu
                     btwData.Spark_MaxCharge = this.SP_MaxCharge;
                     btwData.Spark_RiskyOvercharge = this.SP_RiskyOvercharge;
                     btwData.Spark_DeadlyOvercharge = this.SP_DeadlyOvercharge;
+                    
+                    btwData.ArenaLives_AdditionalReviveTime = this.AL_AdditionalReviveTime;
+                    btwData.ArenaLives_Amount = this.AL_Amount;
+                    btwData.ArenaLives_BlockWin = this.AL_BlockWin;
+                    btwData.ArenaLives_ReviveFromAbyss = this.AL_ReviveFromAbyss;
+                    btwData.ArenaLives_ReviveTime = this.AL_ReviveTime;
+                    btwData.ArenaLives_Strict = this.AL_Strict;
+                    btwData.ArenaLives_RespawnShieldDuration = this.AL_RespawnShieldDuration;
                 }
             }
 
@@ -715,10 +746,251 @@ public class MeadowBTWArenaMenu
             if (!(MeadowCompat.IsMeadowArena(out ArenaMode _) && GetBTWArenaSettings() is BTWMeadowArenaSettings settings && settings != null)) return;
             string id = box.IDString;
             if (id == TS_ALTEREDMVTTECH) {settings.Trailseeker_AlteredMovementTech = c;}
-            if (id == CO_SHOCKWAVE) {settings.Core_Shockwave = c;}
+            else if (id == CO_SHOCKWAVE) {settings.Core_Shockwave = c;}
             else if (id == SP_DODISCHARGEDAMAGE) {settings.Spark_DoDischargeDamage = c;}
             else if (id == SP_RISKYOVERCHARGE) {settings.Spark_RiskyOvercharge = c;}
             else if (id == SP_DEADLYOVERCHARGE) {settings.Spark_DeadlyOvercharge = c;}
+        }
+    }
+    public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
+    {
+        public const string AL_BLOCKWIN = "BTW_AL_BLW";
+        public const string AL_REVIVEFROMABYSS = "BTW_AL_RFA";
+        public const string AL_STRICT = "BTW_AL_STR";
+        public MenuTabWrapper tabWrapper;
+
+        public MenuLabel ArenaLives_Title, WIP_Warning;
+        public OpTextBox ArenaLives_AdditionalReviveTime_TextBox,
+            ArenaLives_Amount_TextBox,
+            ArenaLives_ReviveTime_TextBox,
+            ArenaLives_RespawnShieldDuration_TextBox;
+        public MenuLabel ArenaLives_AdditionalReviveTime_Label,
+            ArenaLives_Amount_Label, 
+            ArenaLives_ReviveTime_Label,
+            ArenaLives_RespawnShieldDuration_Label;
+        public RestorableCheckbox ArenaLives_BlockWin_CheckBox, 
+            ArenaLives_ReviveFromAbyss_CheckBox, 
+            ArenaLives_Strict_CheckBox;
+
+        public SimpleButton backButton;
+
+        public override string Name => "BTW Arena Settings"; //this will appear on Select Settings Page
+
+        public BTWArenaSettingsPage(Menu.Menu menu, MenuObject owner, Vector2 spacing, float textSpacing = 300) : base(menu, owner)
+        {
+            tabWrapper = new(menu, this);
+            Vector2 positioner = new(360 + ((textSpacing - 300) / 2), 380);
+            
+            void CreateIntTextBox(ref OpTextBox textBox, ref MenuLabel label, Configurable<int> setting, string settingName, int place)
+            { // got lazy, automatized it
+                textBox = new OpTextBox(
+                    setting,
+                    positioner - spacing * place + new Vector2(-7.5f, 0),
+                    40)
+                {
+                    alignment = FLabelAlignment.Center,
+                    description = setting.info.description
+                };
+                label = new(this.menu, this, settingName, textBox.pos + new Vector2(-textSpacing * 1.5f + 7.5f, 3), new(textSpacing, 20), false);
+                label.label.alignment = FLabelAlignment.Left;
+                new PatchedUIelementWrapper(tabWrapper, textBox);
+            }
+            void CreateCheckBox(ref RestorableCheckbox checkbox, Configurable<bool> setting, string settingName, string settingID, int place)
+            { // automatized this too
+                checkbox = new(
+                    menu, this, this, positioner - spacing * place, textSpacing, settingName,
+                    settingID, false, setting.info.description);
+            }
+            void CreateTitle(ref MenuLabel title, string titleName, int place)
+            { // atp why not
+                title = new(menu, this, titleName, positioner - spacing * place + new Vector2(-textSpacing * 1.0f + 7.5f, 3), new(textSpacing, 25), true);
+                title.label.alignment = FLabelAlignment.Center;
+            }
+            void CreateWarning(ref MenuLabel title, string text, float place, bool big = false)
+            { // atp why not
+                title = new(menu, this, text, positioner - spacing * place + new Vector2(-textSpacing * 1.0f + 7.5f, 3), new(textSpacing, big ? 25 : 20), big);
+                title.label.alignment = FLabelAlignment.Center;
+                title.label.color = Color.red;
+            }
+
+            CreateWarning(ref WIP_Warning, "Those settings are still WIP (here be dragons !)", -1f);
+            //--------------------- TrailSeeker
+            CreateTitle(ref ArenaLives_Title, "Arena Lives", 0);
+
+            // ArenaLives_Amount
+            CreateIntTextBox(ref ArenaLives_Amount_TextBox, ref ArenaLives_Amount_Label,
+                BTWRemix.MeadowArenaLivesAmount, "Lives :", 1);
+
+            ArenaLives_Amount_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
+            {
+                if (!MeadowCompat.IsMeadowArena(out var arena)) return;
+                BTWMeadowArenaSettings btwAData = GetBTWArenaSettings();
+                btwAData.ArenaLives_Amount =
+                    BTWRemix.MeadowArenaLivesAmount.ClampValue(ArenaLives_Amount_TextBox.valueInt);
+            };
+
+            // ArenaLives_Strict
+            CreateCheckBox(ref ArenaLives_Strict_CheckBox, BTWRemix.MeadowArenaLivesStrict,
+                "Block revives after reaching 0 live :", AL_STRICT, 2);
+
+            // ArenaLives_BlockWin
+            CreateCheckBox(ref ArenaLives_BlockWin_CheckBox, BTWRemix.MeadowArenaLivesBlockWin,
+                "Block session end on revival :", AL_BLOCKWIN, 3);
+
+            // ArenaLives_ReviveFromAbyss
+            CreateCheckBox(ref ArenaLives_ReviveFromAbyss_CheckBox, BTWRemix.MeadowArenaLivesReviveFromAbyss,
+                "Revive destroyed bodies :", AL_REVIVEFROMABYSS, 4);
+
+            //  ArenaLives_ReviveTime
+            CreateIntTextBox(ref ArenaLives_ReviveTime_TextBox, ref ArenaLives_ReviveTime_Label,
+                BTWRemix.MeadowArenaLivesReviveTime, "Revive time :", 5);
+
+            ArenaLives_ReviveTime_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
+            {
+                if (!MeadowCompat.IsMeadowArena(out var arena)) return;
+                BTWMeadowArenaSettings btwAData = GetBTWArenaSettings();
+                btwAData.ArenaLives_ReviveTime =
+                    BTWRemix.MeadowArenaLivesReviveTime.ClampValue(ArenaLives_ReviveTime_TextBox.valueInt);
+            };
+
+            //  ArenaLives_ReviveTime
+            CreateIntTextBox(ref ArenaLives_AdditionalReviveTime_TextBox, ref ArenaLives_AdditionalReviveTime_Label,
+                BTWRemix.MeadowArenaLivesAdditionalReviveTime, "Additionnal per life revive time :", 6);
+
+            ArenaLives_AdditionalReviveTime_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
+            {
+                if (!MeadowCompat.IsMeadowArena(out var arena)) return;
+                BTWMeadowArenaSettings btwAData = GetBTWArenaSettings();
+                btwAData.ArenaLives_AdditionalReviveTime =
+                    BTWRemix.MeadowArenaLivesAdditionalReviveTime.ClampValue(ArenaLives_AdditionalReviveTime_TextBox.valueInt);
+            };
+
+            //  ArenaLives_RespawnShieldDuration
+            CreateIntTextBox(ref ArenaLives_RespawnShieldDuration_TextBox, ref ArenaLives_RespawnShieldDuration_Label,
+                BTWRemix.MeadowArenaLivesRespawnShieldDuration, "Respawn shield duration :", 7);
+
+            ArenaLives_RespawnShieldDuration_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
+            {
+                if (!MeadowCompat.IsMeadowArena(out var arena)) return;
+                BTWMeadowArenaSettings btwAData = GetBTWArenaSettings();
+                btwAData.ArenaLives_RespawnShieldDuration =
+                    BTWRemix.MeadowArenaLivesRespawnShieldDuration.ClampValue(ArenaLives_RespawnShieldDuration_TextBox.valueInt);
+            };
+
+
+            this.SafeAddSubobjects(
+                tabWrapper,
+                WIP_Warning, ArenaLives_Title,
+
+                ArenaLives_BlockWin_CheckBox, 
+                ArenaLives_ReviveFromAbyss_CheckBox, 
+                ArenaLives_Strict_CheckBox,
+
+                ArenaLives_AdditionalReviveTime_Label,
+                ArenaLives_Amount_Label, 
+                ArenaLives_ReviveTime_Label,
+                ArenaLives_RespawnShieldDuration_Label);
+        }
+
+        public void SyncMenuObjectStatus(MenuObject obj)
+        {
+            if (obj is CheckBox checkBox) { checkBox.Checked = checkBox.Checked; }
+        }
+        public override void SaveInterfaceOptions()
+        {
+            BTWRemix.MeadowArenaLivesAdditionalReviveTime.Value = this.ArenaLives_AdditionalReviveTime_TextBox.valueInt;
+            BTWRemix.MeadowArenaLivesAmount.Value = this.ArenaLives_Amount_TextBox.valueInt;
+            BTWRemix.MeadowArenaLivesBlockWin.Value = this.ArenaLives_BlockWin_CheckBox.Checked;
+            BTWRemix.MeadowArenaLivesReviveFromAbyss.Value = this.ArenaLives_ReviveFromAbyss_CheckBox.Checked;
+            BTWRemix.MeadowArenaLivesReviveTime.Value = this.ArenaLives_ReviveTime_TextBox.valueInt;
+            BTWRemix.MeadowArenaLivesRespawnShieldDuration.Value = this.ArenaLives_RespawnShieldDuration_TextBox.valueInt;
+            BTWRemix.MeadowArenaLivesStrict.Value = this.ArenaLives_Strict_CheckBox.Checked;
+        }
+        public override void CallForSync()
+        {
+            foreach (MenuObject menuObj in subObjects) { SyncMenuObjectStatus(menuObj); }
+            
+            if (!MeadowCompat.IsMeadowArena(out _)) return;
+            BTWMeadowArenaSettings btwSettings = GetBTWArenaSettings();
+
+            btwSettings.ArenaLives_AdditionalReviveTime = this.ArenaLives_AdditionalReviveTime_TextBox.valueInt;
+            btwSettings.ArenaLives_Amount = this.ArenaLives_Amount_TextBox.valueInt;
+            btwSettings.ArenaLives_ReviveTime = this.ArenaLives_ReviveTime_TextBox.valueInt;
+            btwSettings.ArenaLives_RespawnShieldDuration = this.ArenaLives_RespawnShieldDuration_TextBox.valueInt;
+        }
+        
+        public override void SelectAndCreateBackButtons(SettingsPage previousSettingPage, bool forceSelectedObject)
+        {
+            if (backButton == null)
+                {
+                    backButton = new(menu, this, menu.Translate("BACK"), BACKTOSELECT, new(15, 15), new(80, 30));
+                    AddObjects(backButton);
+                    menu.MutualVerticalButtonBind(backButton, ArenaLives_Amount_Label);
+                    menu.MutualVerticalButtonBind(ArenaLives_RespawnShieldDuration_Label, backButton); //loop
+                }
+                if (forceSelectedObject) menu.selectedObject = ArenaLives_RespawnShieldDuration_Label;
+        }
+        public override void Update()
+        {
+            base.Update();
+            if (IsActuallyHidden) return; 
+            
+            bool greyoutAll = SettingsDisabled;
+            foreach (MenuObject obj in subObjects)
+            {
+                if (obj != backButton && obj is ButtonTemplate btn) { btn.buttonBehav.greyedOut = greyoutAll; }
+            }
+            ArenaLives_ReviveFromAbyss_CheckBox.buttonBehav.greyedOut = true;
+            
+            if (MeadowCompat.IsMeadowArena(out _) && GetBTWArenaSettings() is BTWMeadowArenaSettings settings)
+            {
+                void UpdateIntTextBox(ref OpTextBox textBox, int value )
+                { // oops, it's all functions
+                    textBox.greyedOut = greyoutAll;
+                    textBox.held = textBox._KeyboardOn;
+                    if (!textBox.held) { textBox.valueInt = value; }
+                }
+
+                UpdateIntTextBox(ref ArenaLives_AdditionalReviveTime_TextBox, settings.ArenaLives_AdditionalReviveTime);
+                UpdateIntTextBox(ref ArenaLives_Amount_TextBox, settings.ArenaLives_Amount);
+                UpdateIntTextBox(ref ArenaLives_ReviveTime_TextBox, settings.ArenaLives_ReviveTime);
+                UpdateIntTextBox(ref ArenaLives_RespawnShieldDuration_TextBox, settings.ArenaLives_RespawnShieldDuration);
+            }
+        }
+        public override void GrafUpdate(float timeStacker)
+        {
+            base.GrafUpdate(timeStacker);
+            if (IsActuallyHidden) return;
+
+            static void GrafUpdateIntTextBox(ref OpTextBox textBox, ref MenuLabel label)
+            { // can you guess this menu made me go crazy ? No ? Too bad I just told you.
+                label.label.color = textBox.rect.colorEdge;
+            }
+            GrafUpdateIntTextBox(ref ArenaLives_AdditionalReviveTime_TextBox, ref ArenaLives_AdditionalReviveTime_Label);
+            GrafUpdateIntTextBox(ref ArenaLives_Amount_TextBox, ref ArenaLives_Amount_Label);
+            GrafUpdateIntTextBox(ref ArenaLives_ReviveTime_TextBox, ref ArenaLives_ReviveTime_Label);
+            GrafUpdateIntTextBox(ref ArenaLives_RespawnShieldDuration_TextBox, ref ArenaLives_RespawnShieldDuration_Label);
+        }
+
+        public bool GetChecked(CheckBox box)
+        {
+            string id = box.IDString;
+            if (MeadowCompat.IsMeadowArena(out var _) && GetBTWArenaSettings() is BTWMeadowArenaSettings settings && settings != null)
+            {
+                if (id == AL_BLOCKWIN) return settings.ArenaLives_BlockWin;
+                if (id == AL_REVIVEFROMABYSS) return false; //settings.ArenaLives_ReviveFromAbyss;
+                if (id == AL_STRICT) return settings.ArenaLives_Strict;
+            }
+            return false;
+        }
+
+        public void SetChecked(CheckBox box, bool c)
+        {
+            if (!(MeadowCompat.IsMeadowArena(out ArenaMode _) && GetBTWArenaSettings() is BTWMeadowArenaSettings settings && settings != null)) return;
+            string id = box.IDString;
+            if (id == AL_BLOCKWIN) {settings.ArenaLives_BlockWin = c;}
+            else if (id == AL_REVIVEFROMABYSS) {settings.ArenaLives_ReviveFromAbyss = false;}
+            else if (id == AL_STRICT) {settings.ArenaLives_Strict = c;}
         }
     }
 
@@ -747,9 +1019,11 @@ public class MeadowBTWArenaMenu
         try
         {
             ArenaDataHook();
-            new Hook(typeof(OnlineSlugcatAbilitiesInterface).GetMethod("AddAllSettings"), OnlineSlugcatAbilitiesInterface_AddAllSettings);
+            new Hook(typeof(OnlineSlugcatAbilitiesInterface).GetMethod(nameof(OnlineSlugcatAbilitiesInterface.AddAllSettings)), OnlineSlugcatAbilitiesInterface_AddAllSettings);
             new Hook(typeof(ArenaMode).GetConstructor(new[] { typeof(Lobby) }), ArenaMode_AddData);
             new Hook(typeof(RainMeadow.UI.Pages.ArenaMainLobbyPage).GetMethod("ShouldOpenSlugcatAbilitiesTab"), ArenaMainLobbyPage_ShouldOpenSlugcatAbilitiesTab);
+            On.Player.ctor += Player_AddArenaLivesFromSettings;
+            new Hook(typeof(ArenaOnlineLobbyMenu).GetMethod(nameof(ArenaOnlineLobbyMenu.ShutDownProcess)), ArenaMode_SaveData);
         }
         catch (Exception e)
         {
@@ -779,7 +1053,6 @@ public class MeadowBTWArenaMenu
         }
         Plugin.Log("Meadow BTW Arena Data ends");
     }
-
     private static void OnlineSlugcatAbilitiesInterface_AddAllSettings(Action<OnlineSlugcatAbilitiesInterface, string> orig, OnlineSlugcatAbilitiesInterface self, string painCatName)
     {
         orig(self, painCatName);
@@ -787,19 +1060,43 @@ public class MeadowBTWArenaMenu
         self.AddSettingsTab(essentialSettingsPage, "BTWESSSETTINGS");
         BTWAdditionalSettingsPage additionalSettingsPage = new(self.menu, self, new Vector2(0f, 28.5f), 300f);
         self.AddSettingsTab(additionalSettingsPage, "BTWADDSETTINGS");
+        BTWArenaSettingsPage arenaSettingsPage = new(self.menu, self, new Vector2(0f, 30f), 300f);
+        self.AddSettingsTab(arenaSettingsPage, "BTWARESETTINGS");
     }
-
     private static void ArenaMode_AddData(Action<ArenaMode, Lobby> orig, ArenaMode self, Lobby lobby)
     {
         orig(self, lobby);
+        BTWMeadowArenaSettings arenaSettings;
         if (!cwtMeadowArenaData.TryGetValue(self, out _))
         {
-            cwtMeadowArenaData.Add(self, new BTWMeadowArenaSettings(self));
+            arenaSettings = new BTWMeadowArenaSettings(self);
+            cwtMeadowArenaData.Add(self, arenaSettings);
         }
     }
-    
     private static bool ArenaMainLobbyPage_ShouldOpenSlugcatAbilitiesTab(Func<RainMeadow.UI.Pages.ArenaMainLobbyPage, bool> orig, RainMeadow.UI.Pages.ArenaMainLobbyPage self)
     {
         return true;
+    }
+    private static void Player_AddArenaLivesFromSettings(On.Player.orig_ctor orig, Player self, AbstractCreature abstractCreature, World world)
+    {
+        orig(self, abstractCreature, world);
+        if (TryGetBTWArenaSettings(out var meadowArenaSettings))
+        {
+            if (meadowArenaSettings.ArenaLives_Amount > 0 && self.room != null)
+            {
+                CompetitiveAddition.ArenaLives arenaLives = new(
+                    abstractCreature, 
+                    meadowArenaSettings.ArenaLives_Amount,
+                    meadowArenaSettings.ArenaLives_ReviveTime * BTWFunc.FrameRate,
+                    meadowArenaSettings.ArenaLives_AdditionalReviveTime * BTWFunc.FrameRate,
+                    meadowArenaSettings.ArenaLives_BlockWin, !MeadowCompat.IsMine(abstractCreature));
+                self.room.AddObject( arenaLives );
+            }
+        }
+    }
+    private static void ArenaMode_SaveData(Action<ArenaOnlineLobbyMenu> orig, ArenaOnlineLobbyMenu self)
+    {
+        orig(self);
+        BTWRemix.instance._SaveConfigFile();
     }
 }

@@ -1,10 +1,12 @@
-using System;
-using BepInEx;
 using UnityEngine;
 using Menu.Remix.MixedUI;
 
 public class BTWRemix : OptionInterface
 {
+    private const float basePosY = 550f;
+    private const float spacingY = 25f;
+    private const float textUpY = 4f;
+    private const float columsSizeX = 320f;
     public override void Initialize()
     {
         base.Initialize();
@@ -12,22 +14,31 @@ public class BTWRemix : OptionInterface
         this.Tabs = new OpTab[] { new(this, "Character config"), new(this, "World config"), new(this, "Miscellaneous") };
 
         Tabs[0].AddItems(new UIelement[] {
-            new OpLabel(20f, 550f, "The Trailseeker", true) { description = "Trailseeker section" },
+            new OpLabel(20f, basePosY - spacingY * 0, "The Trailseeker", true) { description = "Trailseeker section" },
+
+            new OpCheckBox(TrailseekerIgnorePoleToggle, new Vector2(20f, basePosY - spacingY * 1)) { description = TrailseekerIgnorePoleToggle.info.description },
+            new OpLabel(50f, basePosY - spacingY * 1 + textUpY, "Ignore Poles button is toggle") { description = TrailseekerIgnorePoleToggle.info.description },
 
 
-            new OpLabel(20f, 400f, "The Spark", true) { description = "Spark section" },
+            new OpLabel(20f, basePosY - spacingY * 3, "The Spark", true) { description = "Spark section" },
 
-            new OpCheckBox(DoSparkShockSlugs, new Vector2(20f, 360f)) { description = DoSparkShockSlugs.info.description },
-            new OpLabel(50f, 364f, "Story mode friendly fire") { description = DoSparkShockSlugs.info.description },
+            new OpCheckBox(DoSparkShockSlugs, new Vector2(20f, basePosY - spacingY * 4)) { description = DoSparkShockSlugs.info.description },
+            new OpLabel(50f, basePosY - spacingY * 4 + textUpY, "Story mode friendly fire") { description = DoSparkShockSlugs.info.description },
 
-            new OpCheckBox(DoDisplaySparkBattery, new Vector2(20f, 320f)) { description = DoDisplaySparkBattery.info.description },
-            new OpLabel(50f, 324f, "Display Spark Charge UI") { description = DoDisplaySparkBattery.info.description },
+            new OpCheckBox(DoDisplaySparkBattery, new Vector2(20f, basePosY - spacingY * 5)) { description = DoDisplaySparkBattery.info.description },
+            new OpLabel(50f, basePosY - spacingY * 5 + textUpY, "Display Spark Charge UI") { description = DoDisplaySparkBattery.info.description },
+
+            new OpCheckBox(SparkRiskyOvercharge, new Vector2(20f, basePosY - spacingY * 6)) { description = SparkRiskyOvercharge.info.description },
+            new OpLabel(50f, basePosY - spacingY * 6 + textUpY, "Risky Overcharge") { description = SparkRiskyOvercharge.info.description },
+
+            new OpCheckBox(SparkDeadlyOvercharge, new Vector2(20f, basePosY - spacingY * 7)) { description = SparkDeadlyOvercharge.info.description },
+            new OpLabel(50f, basePosY - spacingY * 7 + textUpY, "Deadly Overcharge") { description = SparkDeadlyOvercharge.info.description },
 
 
-            new OpLabel(20f, 250f, "The Core", true) { description = "Core section" },
+            new OpLabel(20f, basePosY - spacingY * 9, "The Core", true) { description = "Core section" },
 
-            new OpCheckBox(Core0GSpecialButton, new Vector2(20f, 210f)) { description = Core0GSpecialButton.info.description },
-            new OpLabel(50f, 214f, "Core ability on special button") { description = Core0GSpecialButton.info.description },
+            new OpCheckBox(Core0GSpecialButton, new Vector2(20f, basePosY - spacingY * 10)) { description = Core0GSpecialButton.info.description },
+            new OpLabel(50f, basePosY - spacingY * 10 + textUpY, "Core ability on special button") { description = Core0GSpecialButton.info.description },
 
             // new OpCheckBox(DoCore0GResetOnLanding, new Vector2(20f, 210f)) { description = DoCore0GResetOnLanding.info.description },
             // new OpLabel(50f, 214f, "Zero G reset on landing") { description = DoCore0GResetOnLanding.info.description },
@@ -52,10 +63,10 @@ public class BTWRemix : OptionInterface
         });
 
         Tabs[2].AddItems(new UIelement[] {
-            new OpLabel(20f, 550f, "Competitive Arena", true) { description = "Competitive Arena section" },
+            new OpLabel(20f, basePosY - spacingY * 0, "Competitive Arena", true) { description = "Competitive Arena section" },
 
-            new OpUpdown(ItemSpawnMultiplier, new Vector2(20f, 510f), 100f) { description = ItemSpawnMultiplier.info.description },
-            new OpLabel(130f, 514f, "Competitive Item Spawn") { description = ItemSpawnMultiplier.info.description },
+            new OpUpdown(ItemSpawnMultiplier, new Vector2(20f, basePosY - spacingY * 1), 100f) { description = ItemSpawnMultiplier.info.description },
+            new OpLabel(130f, basePosY - spacingY * 1 + textUpY, "Competitive Item Spawn") { description = ItemSpawnMultiplier.info.description },
 
             // new OpCheckBox(DoItemSpawnScalePerPlayers, new Vector2(20f, 470f)) { description = DoItemSpawnScalePerPlayers.info.description },
             // new OpUpdown(ItemSpawnMultiplierPerPlayers, new Vector2(50f, 470f), 100f) { description = ItemSpawnMultiplierPerPlayers.info.description },
@@ -81,18 +92,34 @@ public class BTWRemix : OptionInterface
     //     new ConfigurableInfo("If the amount of items scales with the amount of players.  Default true.")
     // );
     
+    // Trailseeker
+    public static Configurable<bool> TrailseekerIgnorePoleToggle = instance.config.Bind("TrailseekerIgnorePoleToggle", true, 
+        new ConfigurableInfo("If the \"ignore poles\" feature of Trailseeker (special) is toggle. False makes it hold to active.  Default true.")
+    );
+
+    // Spark
     public static Configurable<bool> DoSparkShockSlugs = instance.config.Bind("DoSparkShockSlugs", false, 
         new ConfigurableInfo("If the Spark can damage other players using his electric abilities in story mode.  Default false.")
     );
     public static Configurable<bool> DoDisplaySparkBattery = instance.config.Bind("DoDisplaySparkBattery", true, 
         new ConfigurableInfo("If the Spark displays a battery UI to indicate his charge. Useful if you can't tell if your slug has enough charge for an action.  Default true.")
     );
+    public static Configurable<bool> SparkRiskyOvercharge = instance.config.Bind("SparkRiskyOvercharge", true, 
+        new ConfigurableInfo("Change if being overcharge has a chance to stun The Spark. Default: true.")
+    );
+    public static Configurable<bool> SparkDeadlyOvercharge = instance.config.Bind("SparkDeadlyOvercharge", true, 
+        new ConfigurableInfo("Change if going above overcharge will kill The Spark. If false, it'll stun the spark instead. Default: true.")
+    );
+
+    // Core
     public static Configurable<bool> DoCore0GResetOnLanding = instance.config.Bind("DoCore0GResetOnLanding", true, 
         new ConfigurableInfo("If the Core 0G ability automatically stops after landing. Default true.")
     );
     public static Configurable<bool> Core0GSpecialButton = instance.config.Bind("Core0GSpecialButton", false, 
         new ConfigurableInfo("If the leaping ability of the Core should be put on the special button instead of the jump button, allowing it to jump freely. Default false.")
     );
+
+    // Night cycle
     public static Configurable<bool> EnableNightBubbles = instance.config.Bind("EnableNightBubbles", true, 
         new ConfigurableInfo("Enables blue bubbles to indicate the night/rain timer. Default true.")
     );
@@ -131,11 +158,11 @@ public class BTWRemix : OptionInterface
         new ConfigurableInfo("The maximum energy capacity of the Core.  Default: 1200e.",
         new ConfigAcceptableRange<int>(1, int.MaxValue))
     );
-    public static Configurable<int> MeadowCoreRegenEnergy = instance.config.Bind("MeadowCoreRegenEnergy", 35, 
+    public static Configurable<int> MeadowCoreRegenEnergy = instance.config.Bind("MeadowCoreRegenEnergy", 40, 
         new ConfigurableInfo("The natural energy regeneration of the Core, in energy unit per second.  Default: 40e/s.",
         new ConfigAcceptableRange<int>(0, int.MaxValue))
     );
-    public static Configurable<int> MeadowCoreOxygenEnergyUsage = instance.config.Bind("MeadowCoreOxygenEnergyUsage", 250, 
+    public static Configurable<int> MeadowCoreOxygenEnergyUsage = instance.config.Bind("MeadowCoreOxygenEnergyUsage", 100, 
         new ConfigurableInfo("The energy convertion per cent of oxygen when going underwater.  Default: 250e.",
         new ConfigAcceptableRange<int>(0, int.MaxValue))
     );
@@ -159,8 +186,8 @@ public class BTWRemix : OptionInterface
         new ConfigurableInfo("The additional overcharge of the Spark. Going above it will kill The Spark. Putting it to 0 disable overcharge. Default: +100c.",
         new ConfigAcceptableRange<int>(0, int.MaxValue))
     );
-    public static Configurable<int> MeadowSparkChargeRegenerationMult = instance.config.Bind("MeadowSparkChargeRegenerationMult", 5, 
-        new ConfigurableInfo("An arbitrary multiplier of The Spark charge regeneration. Default: 5.",
+    public static Configurable<int> MeadowSparkChargeRegenerationMult = instance.config.Bind("MeadowSparkChargeRegenerationMult", 4, 
+        new ConfigurableInfo("An arbitrary multiplier of The Spark charge regeneration. Default: 4.",
         new ConfigAcceptableRange<int>(0, int.MaxValue))
     );
     public static Configurable<int> MeadowSparkMaxElectricBounce = instance.config.Bind("MeadowSparkElectricBounce", 1, 
@@ -175,5 +202,31 @@ public class BTWRemix : OptionInterface
     );
     public static Configurable<bool> MeadowSparkDeadlyOvercharge = instance.config.Bind("MeadowSparkDeadlyOvercharge", true, 
         new ConfigurableInfo("Change if going above overcharge will kill The Spark. If false, it'll stun the spark instead. Default: true.")
+    );
+    
+    public static Configurable<int> MeadowArenaLivesAmount = instance.config.Bind("MeadowArenaLivesAmount", 1, 
+        new ConfigurableInfo("How many lives player have. Putting it to 0 disables it. Default: 1 life.",
+        new ConfigAcceptableRange<int>(0, int.MaxValue))
+    );
+    public static Configurable<int> MeadowArenaLivesReviveTime = instance.config.Bind("MeadowArenaLivesReviveTime", 15, 
+        new ConfigurableInfo("The time in seconds to revive a player after they die. Default : 15s",
+        new ConfigAcceptableRange<int>(1, int.MaxValue))
+    );
+    public static Configurable<int> MeadowArenaLivesAdditionalReviveTime = instance.config.Bind("MeadowArenaLivesAdditionalReviveTime", 0, 
+        new ConfigurableInfo("The additional time in seconds to revive a player after each time they die. Default : 0s",
+        new ConfigAcceptableRange<int>(int.MinValue, int.MaxValue))
+    );
+    public static Configurable<bool> MeadowArenaLivesStrict = instance.config.Bind("MeadowArenaLivesStrict", true, 
+        new ConfigurableInfo("Change if the Arena Lives system will strictly enforce lives. This can be a solution against Revivify Meadow. Default: true.")
+    );
+    public static Configurable<bool> MeadowArenaLivesBlockWin = instance.config.Bind("MeadowArenaLivesBlockWin", true, 
+        new ConfigurableInfo("Change if the Arena Lives system will wait for everyone to revive before closing the arena session. Default: true.")
+    );
+    public static Configurable<bool> MeadowArenaLivesReviveFromAbyss = instance.config.Bind("MeadowArenaLivesReviveFromAbyss", false, 
+        new ConfigurableInfo("Change if the Arena Lives system will try reviving destroyed bodies. Default: true.")
+    );
+    public static Configurable<int> MeadowArenaLivesRespawnShieldDuration = instance.config.Bind("MeadowArenaLivesRespawnShieldDuration", 10, 
+        new ConfigurableInfo("How long in second a player will have respawn protection. Putting it to 0 disables it. Default: 10s.",
+        new ConfigAcceptableRange<int>(0, int.MaxValue))
     );
 }

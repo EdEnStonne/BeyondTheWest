@@ -1,20 +1,12 @@
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using SlugBase.Features;
 using UnityEngine;
-using static SlugBase.Features.FeatureTypes;
-using BepInEx.Logging;
 using System;
-using BepInEx;
 using MonoMod.Cil;
 using RWCustom;
 using BeyondTheWest;
 using Mono.Cecil.Cil;
-using System.Threading;
 
 public class WallClimbObject
 {
-    static bool init = false; // Weird double hooking bug idk
 
     //-------------------- Objects
     public class WallClimbManager
@@ -373,6 +365,16 @@ public class WallClimbObject
             if (player != null && room != null)
             {
                 AnimationUpdate();
+                if (this.indicatorUI == null)
+                {
+                    this.indicatorUI = new WallClimbManagerIndicatorUI(this);
+                    room.AddObject(this.indicatorUI);
+                }
+                if (this.indicatorUI != null && room != this.indicatorUI.room)
+                {
+                    this.indicatorUI.RemoveFromRoom();
+                    room.AddObject(this.indicatorUI);
+                }
 
                 if (this.wallClimbLeft <= 0)
                 {
@@ -382,6 +384,24 @@ public class WallClimbObject
                 IntVector2 intDir = this.IntDirectionalInput;
                 bool jumpHeld = player.input[0].jmp;
                 bool jumpPressed = jumpHeld && !player.input[1].jmp;
+                bool specHeld = player.input[0].spec;
+                bool specPressed = specHeld && !player.input[1].spec;
+                bool ignorePoleToggle = BTWRemix.TrailseekerIgnorePoleToggle.Value;
+
+                if (ignorePoleToggle)
+                {
+                    if (specPressed)
+                    {
+                        this.holdToPoles = !this.holdToPoles;
+                        this.indicatorUI?.ShowPoleIcon();
+                    }
+                }
+                else
+                {
+                    this.holdToPoles = !specHeld;
+                    if (specPressed) { this.indicatorUI?.ShowPoleIcon(); }
+                }
+
                 if (player.bodyMode == Player.BodyModeIndex.WallClimb)
                 {
                     if (intDir.y == 1)
@@ -418,7 +438,7 @@ public class WallClimbObject
                 }
                 else
                 {
-                    if (player.canJump > 0)
+                    if (this.Landed)
                     {
                         this.wallClimbLeft = this.MaxWallClimb;
                         this.canWallClimb = true;
@@ -443,12 +463,19 @@ public class WallClimbObject
                     UpdateWallVerticalPounce();
                 }
             }
+            else if (this.indicatorUI != null)
+            {
+                room.RemoveObject(this.indicatorUI);
+                this.indicatorUI.Destroy();
+                this.indicatorUI = null;
+            }
         }
 
         // ------ Variables
 
         // Objects
         public AbstractCreature abstractPlayer;
+        public WallClimbManagerIndicatorUI indicatorUI;
 
         // Basic
         public float wallGrip = 0f;
@@ -466,6 +493,7 @@ public class WallClimbObject
         public bool flipFromWallKick = false;
         public bool rocketJumpFromWallKick = false;
         public bool rocketJumpFromWallVerticalPounce = false;
+        public bool holdToPoles = true;
 
         public int MaxWallClimb = 3;
         public int MaxWallClimbCount = 20;
@@ -555,24 +583,182 @@ public class WallClimbObject
                 return direction;
             }
         }
+        public bool Landed
+        {
+            get
+            {
+                Player player = this.RealizedPlayer;
+                if (player == null) { return false; }
+                return player.canJump > 0 
+                    || player.bodyMode == Player.BodyModeIndex.CorridorClimb 
+                    || player.bodyMode == Player.BodyModeIndex.Swimming;
+            }
+        }
     }
-    
+    public class WallClimbManagerIndicatorUI : UpdatableAndDeletable, IDrawable
+    {
+        public WallClimbManagerIndicatorUI(WallClimbManager wallClimbManager)
+        {
+            this.WCM = wallClimbManager;
+        }
+        
+        //-------------- Local Functions
+        
+        //-------------- Override Functions
+        public void AddToContainer(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, FContainer newContatiner)
+        {
+            foreach (FSprite sprite in sLeaser.sprites)
+            {
+                rCam.ReturnFContainer("HUD").AddChild(sprite);
+            }
+        }
+        public void ApplyPalette(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, RoomPalette palette) { }
+        public void DrawSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
+        {
+            if (this.WCM == null || this.WCM.RealizedPlayer == null || this.slatedForDeletetion || this.room != rCam.room)
+            {
+                sLeaser.CleanSpritesAndRemove();
+                this.WCM.indicatorUI = null;
+                this.Destroy();
+                return;
+            }
+
+            Player player = WCM.RealizedPlayer;
+            if (!player.inShortcut)
+            {
+                Vector2 pos = this.SpriteHeadPos == Vector2.negativeInfinity ?
+                    player.firstChunk.pos + new Vector2(0f, 60f)
+                    : this.SpriteHeadPos + new Vector2(0f, 40f);
+                bool ignorePoleToggle = BTWRemix.TrailseekerIgnorePoleToggle.Value;
+                
+                sLeaser.sprites[0].alpha = this.WCM.holdToPoles ? 0f : 1f;
+                sLeaser.sprites[1].alpha = this.WCM.holdToPoles && ignorePoleToggle ? 1f : 0f;
+                foreach (FSprite sprite in sLeaser.sprites)
+                {
+                    sprite.x = pos.x;
+                    sprite.y = pos.y;
+                    sprite.scale = this.scale;
+                    if (ignorePoleToggle)
+                    {
+                        sprite.alpha *= Mathf.Clamp01(showPoleIcon * 4f / MaxShowPoleIconFrames);
+                    }
+                    sprite.scale *= 1f
+                        + BTWFunc.EaseIn(Mathf.Clamp01((showPoleIcon * 16f / MaxShowPoleIconFrames) - 15f), 3) * 0.5f;
+                }
+                if (showPoleIcon > 0) { showPoleIcon--; }
+            }
+            else
+            {
+                foreach (FSprite sprite in sLeaser.sprites)
+                {
+                    sprite.alpha = 0f;
+                }
+                showPoleIcon = 0;
+            }
+
+        }
+        public void InitiateSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
+        {
+            sLeaser.sprites = new FSprite[2];
+
+            if (Futile.atlasManager.DoesContainElementWithName("NoPoleIcon"))
+            {
+                sLeaser.sprites[0] = new FSprite("NoPoleIcon");
+            }
+            else
+            {
+                sLeaser.sprites[0] = new FSprite("Futile_White");
+            }
+            if (Futile.atlasManager.DoesContainElementWithName("YesPoleIcon"))
+            {
+                sLeaser.sprites[1] = new FSprite("YesPoleIcon");
+            }
+            else
+            {
+                sLeaser.sprites[1] = new FSprite("Futile_White");
+            }
+
+            this.AddToContainer(sLeaser, rCam, null);
+        }
+        public void ShowPoleIcon()
+        {
+            this.showPoleIcon = this.MaxShowPoleIconFrames;
+        }
+
+        //-------------- Variables
+        public WallClimbManager WCM;
+        public Vector2 SpriteHeadPos
+        {
+            get
+            {
+                if (this.WCM != null && this.WCM.RealizedPlayer != null && BTWSkins.cwtPlayerSpriteInfo.TryGetValue(this.WCM.abstractPlayer, out var psl))
+                {
+                    return psl[3].GetPosition();
+                }
+                return Vector2.negativeInfinity;
+            }
+        }
+        public int MaxShowPoleIconFrames = 200;
+        public int showPoleIcon = 0;
+        public float scale = 0.5f;
+    }
     //-------------------- Functions
     public static void ApplyHooks()
     {
-        if (init) { return; }
-        init = true;
         On.Player.WallJump += Player_WallClimbManager_CancelWallJump;
         // IL.Player.TerrainImpact += Player_WallClimbManager_CancelWallPounce;
         IL.Player.TerrainImpact += Player_WallClimbManager_CancelTechOnWallPounce;
         IL.Player.ThrowObject += Player_WallClimbManager_WallClimbExtend;
         IL.Player.Update += Player_WallClimbManager_StopLoopSoundOnGrip;
+        IL.Player.UpdateBodyMode += Player_WallClimbManager_StopGrippingPoles;
+        IL.Player.UpdateAnimation += Player_WallClimbManager_StopGrippingPoles;
+        IL.Player.GrabVerticalPole += Player_WallClimbManager_StopGrippingPoles;
+        IL.Player.Update += Player_WallClimbManager_StopGrippingPoles;
+        IL.Player.MovementUpdate += Player_WallClimbManager_StopGrippingPoles;
         Plugin.Log("WallClimbObject ApplyHooks Done !");
     }
 
-
-
     //-------------------- Hooks
+    
+    private static void Player_WallClimbManager_StopGrippingPoles(ILContext il)
+    {
+        Plugin.Log("WallClimbManager IL 5 starts");
+        try
+        {
+            Plugin.Log("Trying to hook IL");
+            ILCursor cursor = new(il);
+            Instruction start = cursor.Next;
+
+            static bool CheckPoleGrab(bool orig_bool, Player player)
+            {
+                if (TrailseekerFunc.cwtClimb.TryGetValue(player.abstractCreature, out var WCM) && !WCM.holdToPoles)
+                {
+                    // Plugin.Log("Pole Grab Cancelled !");
+                    return false;
+                }
+                return orig_bool;
+            }
+
+            while (cursor.TryGotoNext(MoveType.After,x => x.MatchLdfld<Room.Tile>(nameof(Room.Tile.verticalBeam))))
+            {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate(CheckPoleGrab);
+            }
+            cursor.TryGotoPrev(MoveType.Before, x => x == start);
+            while (cursor.TryGotoNext(MoveType.After,x => x.MatchLdfld<Room.Tile>(nameof(Room.Tile.horizontalBeam))))
+            {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate(CheckPoleGrab);
+            }
+
+            Plugin.Log("IL hook ended");
+        }
+        catch (Exception ex)
+        {
+            Plugin.logger.LogError(ex);
+        }
+        Plugin.Log("WallClimbManager IL 5 ends");
+    }
     private static void Player_WallClimbManager_CancelWallJump(On.Player.orig_WallJump orig, Player self, int direction)
     {
         if (TrailseekerFunc.cwtClimb.TryGetValue(self.abstractCreature, out var WCM) && (
@@ -587,6 +773,7 @@ public class WallClimbObject
         }
         orig(self, direction);
     }
+    
     private static void Player_WallClimbManager_CancelWallPounce(ILContext il)
     {
         Plugin.Log("WallClimbManager IL 1 starts");
@@ -611,6 +798,11 @@ public class WallClimbObject
                 }
                 cursor.Emit(OpCodes.Ldarg_0);
                 cursor.EmitDelegate(CheckWallClimbingPounce);
+            }
+            else
+            {
+                Plugin.logger.LogError("Couldn't find IL hook :<");
+                Plugin.Log(il);
             }
             Plugin.Log("IL hook ended");
         }
@@ -660,6 +852,7 @@ public class WallClimbObject
         }
         Plugin.Log("WallClimbManager IL 2 ends");
     }
+    
     private static void Player_WallClimbManager_WallClimbExtend(ILContext il)
     {
         Plugin.Log("WallClimbManager IL 3 starts");
@@ -726,6 +919,7 @@ public class WallClimbObject
             else
             {
                 Plugin.logger.LogError("Couldn't find IL hook :<");
+                Plugin.Log(il);
             }
             Plugin.Log("IL hook ended");
         }
@@ -767,6 +961,7 @@ public class WallClimbObject
             else
             {
                 Plugin.logger.LogError("Couldn't find IL hook :<");
+                Plugin.Log(il);
             }
             Plugin.Log("IL hook ended");
         }

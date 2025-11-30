@@ -1,29 +1,10 @@
 ﻿using System;
 using BepInEx;
-using UnityEngine;
-using SlugBase.Features;
-using static SlugBase.Features.FeatureTypes;
-using System.Runtime.CompilerServices;
-using System.Linq;
-using IL;
-using System.Drawing.Text;
-using HUD;
-using MonoMod.Cil;
-using IL.Microsoft.CodeAnalysis;
-using System.Collections.Generic;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.IO;
-using IL.Menu.Remix.MixedUI;
-using IL.HUD;
-using System.CodeDom;
 using BepInEx.Logging;
-using DevInterface;
-using Mono.Cecil.Cil;
-using On;
 
 namespace BeyondTheWest 
 {
-    [BepInPlugin(MOD_ID, "Beyond The West", "1.0.9")]
+    [BepInPlugin(MOD_ID, "Beyond The West", "1.2.4")]
     [BepInDependency("slime-cubed.slugbase")]
     class Plugin : BaseUnityPlugin
     {
@@ -85,6 +66,8 @@ namespace BeyondTheWest
 
                 CompetitiveAddition.ApplyHooks();
                 BTWSkins.ApplyHooks();
+
+                CompatHookHelper.ApplyHooks();
                 // RainTimerAddition.ApplyHooks();
             }
             catch (Exception e)
@@ -101,6 +84,10 @@ namespace BeyondTheWest
             {
                 ApplyMeadowHooks();
             }
+            if (ModManager.MSC)
+            {
+                ApplyMSCHooks();
+            }
             logger.LogInfo("Soft Hooks initialized !");
         }
         public static void ApplyMeadowHooks()
@@ -109,6 +96,12 @@ namespace BeyondTheWest
             MeadowBTWArenaMenu.ApplyHooks();
             MeadowCompat.ApplyHooks();
             Log("Meadow Hooks initialized !");
+        }
+        public static void ApplyMSCHooks()
+        {
+            Log("MSC Hooks start !");
+            MoreSlugcatCompat.ApplyHooks();
+            Log("MSC Hooks initialized !");
         }
 
         public static void CheckMods()
@@ -181,6 +174,7 @@ namespace BeyondTheWest
                 ApplyHooks();
             }
             ApplySoftDependiesHooks();
+            CompetitiveAddition.ApplyPostHooks();
             logger.LogInfo("Post Mods Load initialized");
         }
         

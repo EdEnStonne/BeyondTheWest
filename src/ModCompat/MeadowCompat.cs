@@ -1,18 +1,17 @@
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using SlugBase.Features;
 using UnityEngine;
-using static SlugBase.Features.FeatureTypes;
-using BepInEx;
-using BepInEx.Logging;
 using System;
-using MonoMod.Cil;
-using RWCustom;
-using Mono.Cecil.Cil;
 using RainMeadow;
 using JetBrains.Annotations;
 using BeyondTheWest;
 using MonoMod.RuntimeDetour;
+using System.Runtime.CompilerServices;
+using MonoMod.Cil;
+using Mono.Cecil.Cil;
+using System.Linq;
+using Menu;
+using ArenaBehaviors;
+using RainMeadow.Arena.ArenaOnlineGameModes.TeamBattle;
 
 public class MeadowCompat
 {
@@ -131,7 +130,122 @@ public class MeadowCompat
 
         }
     }
+    public class OnlineArenaLivesData : OnlineEntity.EntityData
+    {
+        [UsedImplicitly]
+        public OnlineArenaLivesData() { }
 
+        public override EntityDataState MakeState(OnlineEntity entity, OnlineResource inResource)
+        {
+            return new State(entity);
+        }
+
+        //-------- State
+
+        public class State : EntityDataState
+        {
+            //--------- Variables
+            [OnlineField]
+            public int lifesleft = 1;
+            [OnlineField]
+            public bool countedAlive = true;
+            [OnlineField]
+            public int reviveCounter = 0;
+            [OnlineField]
+            public int livesDisplayCounter = 0;
+            [OnlineField]
+            public int circlesAmount = 0;
+            [OnlineFieldHalf]
+            public float firstPosX;
+            [OnlineFieldHalf]
+            public float firstPosY;
+
+            //--------- ctor
+
+            [UsedImplicitly]
+            public State() { }
+            public State(OnlineEntity onlineEntity)
+            {
+                if ((onlineEntity as OnlinePhysicalObject)?.apo.realizedObject is not Creature creature)
+                {
+                    return;
+                }
+
+                if (!CompetitiveAddition.arenaLivesList.TryGetValue(creature.abstractCreature, out var lives) || lives.fake)
+                {
+                    return;
+                }
+                
+                this.lifesleft = lives.lifesleft;
+                this.countedAlive = lives.countedAlive;
+                this.reviveCounter = lives.reviveCounter;
+                this.livesDisplayCounter = lives.livesDisplayCounter;
+                this.circlesAmount = lives.circlesAmount;
+                this.firstPosX = lives.firstPos.x;
+                this.firstPosY = lives.firstPos.y;
+            }
+            //--------- Functions
+            public override void ReadTo(OnlineEntity.EntityData data, OnlineEntity onlineEntity)
+            {
+                if ((onlineEntity as OnlinePhysicalObject)?.apo.realizedObject is not Creature creature)
+                {
+                    return;
+                }
+
+                if (!CompetitiveAddition.arenaLivesList.TryGetValue(creature.abstractCreature, out var lives) || !lives.fake)
+                {
+                    return;
+                }
+                if (lives.lifesleft != this.lifesleft || lives.countedAlive != this.countedAlive)
+                {
+                    lives.karmaSymbolNeedToChange = true;
+                }
+                if (lives.countedAlive == false 
+                    && this.countedAlive == true 
+                    && creature is Player player && player != null)
+                {
+                    ResetIconOnRevival(creature.abstractCreature);
+                }
+                lives.lifesleft = this.lifesleft;
+                lives.countedAlive = this.countedAlive;
+                lives.reviveCounter = this.reviveCounter;
+                lives.livesDisplayCounter = this.livesDisplayCounter;
+                lives.circlesAmount = this.circlesAmount;
+                lives.firstPos = new Vector2(this.firstPosX, this.firstPosY);
+            }
+            public override Type GetDataType()
+            {
+                return typeof(OnlineArenaLivesData);
+            }
+
+        }
+    }
+
+    public struct CustomDeathMessage
+    {
+        public CustomDeathMessage() { } 
+        public CustomDeathMessage(int contextNum, string deathMessagePre, string deathMessagePost)
+        {
+            this.contextNum = Mathf.Max(contextNum, 10);
+            this.deathMessagePre = deathMessagePre;
+            this.deathMessagePost = deathMessagePost;
+        }        
+        public int contextNum;
+        public string deathMessagePre = "was slain by";
+        public string deathMessagePost = ".";
+    }
+    public static List<CustomDeathMessage> customDeathMessagesEnum = new();
+    public class ArenaCreatureDeathTracker
+    {
+        public ArenaCreatureDeathTracker(Creature creature)
+        {
+            this.creature = creature;
+        }
+
+        public Creature creature;
+        public int deathMessageCustom = 0;
+    }
+    public static ConditionalWeakTable<AbstractCreature, ArenaCreatureDeathTracker> arenaCreatureDeathTrackers = new();
 
     //---------- Functions
 
@@ -226,7 +340,8 @@ public class MeadowCompat
     }
     public static bool IsCreatureFriendlies(Creature creature, Creature friend)
     {
-        return StoryModeExtensions.FriendlyFireSafetyCandidate(creature, friend);
+        return creature.FriendlyFireSafetyCandidate(friend);
+        // return GameplayExtensions.FriendlyFireSafetyCandidate(creature, friend);
     }
 
     // Arena
@@ -260,18 +375,42 @@ public class MeadowCompat
         Plugin.Log("Fake player [" + SCM.Player.ToString() + "] did a spark explosion !");
     }
     [RPCMethod]
-    public static void Spark_DischargeHit(RPCEvent _, OnlineCreature playerOpo, OnlineCreature targetOc, float damage)
+    public static void Spark_ElectricExplosionSyncRPCEvent(RPCEvent _, RoomSession roomSession, Vector2 pos, byte lifeTime, byte rad, byte backgroundNoiseCent)
     {
-        var SCM = GetFakePlayerStaticChargeManager(playerOpo);
-        AbstractCreature abstractCreature = targetOc.abstractCreature;
-        if (SCM == null || abstractCreature == null) { return; }
-        
-        Creature target = abstractCreature.realizedCreature;
-        if (SCM.active || !SCM.isMeadowFakePlayer || target == null) { return; }
+        if (roomSession == null) { return; }
+        AbstractRoom abstractRoom = roomSession.absroom;
+        if (abstractRoom == null || abstractRoom.realizedRoom == null) { return; }
 
-        SCM.ShockCreatureEffect(target.mainBodyChunk, damage, false);
+        Room room = abstractRoom.realizedRoom;
+
+        SparkObject.ElectricExplosion electricExplosion = new SparkObject.ElectricExplosion(
+            room, null, pos, lifeTime, rad, 0, 0, 0, null, 0f, backgroundNoiseCent / 100f
+        );
+        room.AddObject(electricExplosion);
+
+        Plugin.Log("Created Fake Electric Explosion !");
+    }
+    [RPCMethod] // Violence is not synced now ??? Fine, I'll do it myself.
+    public static void Spark_ElectricExplosionHitRPCEvent(RPCEvent _, 
+        OnlineCreature targetOc, byte chuckIndex, OnlinePhysicalObject sourceOpo,
+        OnlineCreature killTagHolderOc, byte killTagHolderDmgFactorCent, ushort damageCent, ushort stun,
+        Color color, bool doSpams)
+    {
+        Creature target = targetOc?.abstractCreature?.realizedCreature;
+        if (target == null) { return; }
+
+        BodyChunk closestBodyChunk = null;
+        if (target.bodyChunks.Length > chuckIndex) { closestBodyChunk = target.bodyChunks[chuckIndex]; }
+
+        PhysicalObject sourceObject = sourceOpo?.apo?.realizedObject;
+        Creature killTagHolder = killTagHolderOc?.abstractCreature?.realizedCreature;
+
+        SparkObject.ShockCreature(
+            target, closestBodyChunk, sourceObject, killTagHolder, 
+            killTagHolderDmgFactorCent / 100f, damageCent / 100f, stun,
+            color, doSpams, false, true, new());
         
-        Plugin.Log("Fake player [" + SCM.Player.ToString() + "] hit "+ target.ToString() +" !");
+        Plugin.Log($"Creature [{target}] got hit by an electric explosion of damage <{damageCent / 100f}> and stun <{stun}> !");
     }
     [RPCMethod]
     public static void Core_Boost(RPCEvent _, OnlinePhysicalObject playerOpo, byte pow)
@@ -323,8 +462,181 @@ public class MeadowCompat
         core.Disable();
         Plugin.Log("Fake player [" + core.player.ToString() + "] got disabled !");
     }
+    [RPCMethod]
+    public static void Core_GaveOxygenToOthers(RPCEvent _, OnlinePhysicalObject playerOpo, OnlinePhysicalObject otherplayerOpo)
+    {
+        var core = GetFakePlayerEnergyCore(playerOpo);
+        Player otherPlayer = GetPlayerFromOE(otherplayerOpo);
+        if (core == null || otherPlayer == null) { return; }
+        if (core.AEC.active || !core.AEC.isMeadowFakePlayer) { return; }
+
+        otherPlayer.airInLungs = Mathf.Max(0.85f, otherPlayer.airInLungs);
+        Plugin.Log("Fake player [" + core.player.ToString() + "] gave oxygen to " + otherPlayer.ToString() + " !");
+    }
+    [RPCMethod]
+    public static void BTWFunc_CustomKnockBackRPCEvent(RPCEvent _, OnlinePhysicalObject objectOpo, short chunkAffected, Vector2 force)
+    {
+        AbstractPhysicalObject abstractPhysicalObject = objectOpo.apo;
+        if (abstractPhysicalObject == null 
+            || abstractPhysicalObject.realizedObject == null
+            || !IsMine(abstractPhysicalObject)) { return; }
+        
+        PhysicalObject physicalObject = abstractPhysicalObject.realizedObject;
+
+        if (chunkAffected < 0 || chunkAffected > physicalObject.bodyChunks.Length)
+        {
+            BTWFunc.CustomKnockback(physicalObject, force);
+            Plugin.Log("Object "+ physicalObject.ToString() +" was pushed with a force of "+ force.ToString() +" !");
+        }
+        else
+        {
+            BTWFunc.CustomKnockback(physicalObject.bodyChunks[chunkAffected], force);
+            Plugin.Log("Chuck "+ chunkAffected.ToString() +" of object "+ physicalObject.ToString() +" was pushed with a force of "+ force.ToString() +" !");
+        }
+    }
+    [RPCMethod]
+    public static void MSCCompat_LightningRPCEvent(RPCEvent _, OnlineCreature fromOc, OnlineCreature targetOc, byte widthCent, byte intensityCent, byte lifeTime, Color color)
+    {
+        if (!ModManager.MSC) { return; }
+
+        AbstractCreature abstractFrom = fromOc.abstractCreature;
+        AbstractCreature abstractTarget = targetOc.abstractCreature;
+        if (abstractFrom == null || abstractTarget == null) { return; }
+        
+        Creature from = abstractFrom.realizedCreature;
+        Creature target = abstractTarget.realizedCreature;
+        if (from == null || target == null || from.room == null || target.room == null) { return; }
+
+        MoreSlugcatCompat.LightingArc lightingArc = new MoreSlugcatCompat.LightingArc(
+            from.mainBodyChunk, target.mainBodyChunk,
+            widthCent * 100f, intensityCent * 100f, lifeTime, color
+        );
+        from.room.AddObject(lightingArc);
+
+        Plugin.Log("Added lightning arc from "+ from.ToString() +" to "+ target.ToString() +" !");
+    }
+    [RPCMethod]
+    public static void MSCCompat_LightningPosRPCEvent(RPCEvent _, RoomSession roomSession, Vector2 from, Vector2 target, byte widthCent, byte intensityCent, byte lifeTime, Color color)
+    {
+        if (!ModManager.MSC) { return; }
+        if (roomSession == null) { return; }
+        AbstractRoom abstractRoom = roomSession.absroom;
+        if (abstractRoom == null || abstractRoom.realizedRoom == null) { return; }
+
+        Room room = abstractRoom.realizedRoom;
+
+        MoreSlugcatCompat.LightingArc lightingArc = new MoreSlugcatCompat.LightingArc(
+            from, target,
+            widthCent * 100f, intensityCent * 100f, lifeTime, color
+        );
+        room.AddObject(lightingArc);
+
+        Plugin.Log("Added lightning arc from "+ from.ToString() +" to "+ target.ToString() +" !");
+    }
+    [RPCMethod]
+    public static void BTWArenaAddition_AreneForcedDeathEffectRPCEvent(RPCEvent _, OnlineCreature targetOc)
+    {
+        AbstractCreature abstractTarget = targetOc.abstractCreature;
+        if (targetOc.isMine || abstractTarget == null) { return; }
+        
+        Creature target = abstractTarget.realizedCreature;
+        if (target == null || target.room == null) { return; }
+
+        target.room.AddObject( new CompetitiveAddition.ArenaForcedDeath(target.abstractCreature, true) );
+
+        Plugin.Log("Added Arena Forced Death Effect to "+ target +" !");
+    }
+    [RPCMethod]
+    public static void BTWArenaAddition_AddArenaShieldRPCEvent(RPCEvent _, OnlineCreature targetOc, byte shieldTimeSeconds)
+    {
+        AbstractCreature abstractTarget = targetOc.abstractCreature;
+        if (targetOc.isMine || abstractTarget == null) { return; }
+
+        if (abstractTarget.realizedCreature is not Player target || target.room == null) { return; }
+
+        target.room.AddObject( new CompetitiveAddition.ArenaShield(target, shieldTimeSeconds * BTWFunc.FrameRate) );
+
+        Plugin.Log("Added Arena Forcefield to "+ target +" !");
+    }
+    [RPCMethod]
+    public static void BTWArenaAddition_BlockArenaShieldRPCEvent(RPCEvent _, OnlineCreature targetOc)
+    {
+        AbstractCreature abstractTarget = targetOc.abstractCreature;
+        if (targetOc.isMine || abstractTarget == null) { return; }
+
+        if (abstractTarget.realizedCreature is not Player target 
+            || target.room == null 
+            || CompetitiveAddition.arenaShields.TryGetValue(target, out var shield)) { return; }
+
+        shield.Block(false);
+
+        Plugin.Log("Arena Forcefield Block sync from "+ target +" !");
+    }
+    [RPCMethod]
+    public static void BTWArenaAddition_DismissArenaShieldRPCEvent(RPCEvent _, OnlineCreature targetOc)
+    {
+        AbstractCreature abstractTarget = targetOc.abstractCreature;
+        if (targetOc.isMine || abstractTarget == null) { return; }
+
+        if (abstractTarget.realizedCreature is not Player target || target.room == null) { return; }
+        
+        if (!CompetitiveAddition.arenaShields.TryGetValue(target, out var shield)) { return; }
+        
+        shield.Dismiss(false);
+
+        Plugin.Log("Arena Forcefield Dismiss sync from "+ target +" !");
+    }
+    [RPCMethod]
+    public static void BTWArenaAddition_DestroyArenaLifesRPCEvent(RPCEvent _, OnlineCreature targetOc)
+    {
+        AbstractCreature abstractTarget = targetOc.abstractCreature;
+        if (targetOc.isMine || abstractTarget == null) { return; }
+
+        if (CompetitiveAddition.arenaLivesList.TryGetValue(abstractTarget, out var lives) && lives.fake)
+        {
+            lives.Destroy();
+        }
+
+        Plugin.Log("Arena Lifes detroyed for "+ abstractTarget +" !");
+    }
+    [RPCMethod]
+    public static void BTWArenaAddition_AddArenaLifesRPCEvent(RPCEvent _, OnlineCreature targetOc)
+    {
+        if (targetOc == null) { return; }
+        AbstractCreature abstractTarget = targetOc.abstractCreature;
+        if (targetOc.isMine || abstractTarget == null) { return; }
+        
+        Creature target = abstractTarget.realizedCreature;
+        if (target == null || target.room == null) { return; }
+
+        target.room.AddObject( new CompetitiveAddition.ArenaLives(target.abstractCreature, true) );
+
+        Plugin.Log("(fake) Arena Lifes added for "+ abstractTarget +" !");
+    }
+
+    public static bool CheckIfRPCTypesMatch(Delegate del, params object[] args)
+    {
+        Type[] types = del.Method.GetParameters().Select(p => p.ParameterType).ToArray();
+        object[] obj = args.ToArray();
+        bool match = true;
+        for (int i = 1; i < types.Length; i++)
+        {
+            if (obj.Length < i)
+            {
+                Plugin.logger.LogError($"ARGUMENT MISSING ON RPC [{del.Method.Name}] ! Expecting [{types[i]}], got <{obj.Length}/{types.Length - 1}> arguments.");
+                match = false;
+            }
+            else if (obj[i - 1] != null && (types[i].IsEquivalentTo(obj[i - 1].GetType()) || types[i].IsInstanceOfType(obj[i - 1]) || types[i].IsAssignableFrom(obj[i - 1].GetType())))
+            {
+                Plugin.logger.LogError($"TYPE MISMATCH ON RPC [{del.Method.Name}] ! Type [{types[i]}] is not [{obj[i - 1]}] type [{obj[i - 1].GetType()}]");
+                match = false;
+            }
+        }
+        return match;
+    }
     public static void InvokeAllOtherPlayerWithRPC(Delegate del, params object[] args)
     {
+        // if (!CheckIfRPCTypesMatch(del, args)) { return; }
         foreach (var player in OnlineManager.players)
         {
             if (!player.isMe)
@@ -335,6 +647,7 @@ public class MeadowCompat
     }
     public static void InvokeAllOtherPlayerWithRPCOnce(Delegate del, params object[] args)
     {
+        // if (!CheckIfRPCTypesMatch(del, args)) { return; }
         foreach (var player in OnlineManager.players)
         {
             if (!player.isMe)
@@ -465,6 +778,18 @@ public class MeadowCompat
                 typeof(Action<RPCEvent, OnlinePhysicalObject>)), onlineCreature
         );
     }
+    public static void CoreMeadow_OxygenGiveRPC(CoreObject.AbstractEnergyCore abstractEnergyCore, Player target)
+    {
+        OnlineCreature onlineCreature = CoreMeadow_OnlineCreature(abstractEnergyCore);
+        OnlineCreature targetOnlineCreature = target.abstractCreature.GetOnlineCreature();
+        if (onlineCreature == null || targetOnlineCreature == null) { return; }
+
+        InvokeAllOtherPlayerWithRPCOnce(
+            typeof(MeadowCompat).GetMethod(nameof(Core_GaveOxygenToOthers)).CreateDelegate(
+                typeof(Action<RPCEvent, OnlinePhysicalObject, OnlinePhysicalObject>)), onlineCreature,
+                targetOnlineCreature
+        );
+    }
 
     // Spark
     public static OnlineCreature SparkMeadow_OnlineCreature(SparkObject.StaticChargeManager staticChargeManager)
@@ -510,56 +835,378 @@ public class MeadowCompat
             onlineCreature.AddData(new OnlineStaticChargeManagerData());
         }
     }
-    public static void SparkMeadow_DischargeRPC(SparkObject.StaticChargeManager staticChargeManager, short size, Vector2 position, byte sparks, byte volumeCent)
+    public static void SparMeadow_ElectricExplosionRPC(SparkObject.ElectricExplosion electricExplosion)
     {
-        OnlineCreature onlineCreature = SparkMeadow_OnlineCreature(staticChargeManager);
+        if (electricExplosion == null || electricExplosion.room == null) { return; }
+
+        RoomSession roomSession = electricExplosion.room.abstractRoom.GetResource();
+        if (roomSession == null) { return; }
+
+        InvokeAllOtherPlayerWithRPC(
+            typeof(MeadowCompat).GetMethod(nameof(Spark_ElectricExplosionSyncRPCEvent)).CreateDelegate(
+                typeof(Action<RPCEvent, RoomSession, Vector2, byte, byte, byte>)),
+                roomSession, electricExplosion.pos, 
+                (byte)electricExplosion.lifeTime, (byte)electricExplosion.rad, (byte)(electricExplosion.backgroundNoise * 100f)
+        );
+    }
+    public static void SparMeadow_ShockCreatureRPC(
+        Creature target, BodyChunk closestBodyChunk, PhysicalObject sourceObject, 
+        Creature killTagHolder, float killTagHolderDmgFactor, float damage, float stun, 
+        Color color, bool doSpams = false)
+    {
+        if (target == null || target.abstractCreature == null) { return; }
+        OnlineCreature onlineTarget = target.abstractCreature.GetOnlineCreature();
+        if (onlineTarget == null || onlineTarget.owner == null) { return; }
+
+        byte chuckIndex = 0;
+        if (closestBodyChunk != null) { chuckIndex = (byte)closestBodyChunk.index; }
+
+        InvokeAllOtherPlayerWithRPC(
+            typeof(MeadowCompat).GetMethod(nameof(Spark_ElectricExplosionHitRPCEvent)).CreateDelegate(
+                typeof(Action<RPCEvent, OnlineCreature, byte, OnlinePhysicalObject, OnlineCreature, byte, ushort, ushort, Color, bool>)),
+                onlineTarget, chuckIndex, sourceObject?.abstractPhysicalObject?.GetOnlineObject(), 
+                killTagHolder?.abstractCreature?.GetOnlineCreature(), (byte)(killTagHolderDmgFactor * 100f),
+                (ushort)(damage * 100f), (ushort)stun, color, doSpams
+        );
+    }
+
+    // BTWFunction
+    public static void BTWFuncMeadow_RPCCustomKnockBack(PhysicalObject physicalObject, short chunkAffected, Vector2 force)
+    {
+        OnlinePhysicalObject onlinePhysicalObject = physicalObject.abstractPhysicalObject.GetOnlineObject();
+        if (onlinePhysicalObject == null || force == Vector2.zero || IsMine(physicalObject.abstractPhysicalObject)) { return; }
+
+        OnlinePlayer onlinePlayer = onlinePhysicalObject.owner;
+        onlinePlayer.InvokeRPC(
+            typeof(MeadowCompat).GetMethod(nameof(BTWFunc_CustomKnockBackRPCEvent)).CreateDelegate(
+                typeof(Action<RPCEvent, OnlinePhysicalObject, short, Vector2>)), 
+                onlinePhysicalObject, chunkAffected, force
+        );
+    }
+
+    // MSCCompat
+    public static void MSCCompat_RPCSyncLightnightArc(UpdatableAndDeletable lightnightArc)
+    {
+        if (lightnightArc == null || !ModManager.MSC) { return; }
+
+        if (lightnightArc is MoreSlugcatCompat.LightingArc arc)
+        {
+            if (arc.from?.owner == null || arc.target?.owner == null) { 
+                
+            }
+            else
+            {
+                if (arc.from.owner is not Creature from || arc.target.owner  is not Creature target) { return; }
+
+                OnlineCreature onlineFrom = from.abstractCreature.GetOnlineCreature();
+                OnlineCreature onlineTarget = target.abstractCreature.GetOnlineCreature();
+                if (onlineFrom == null || onlineTarget == null) { return; }
+
+                InvokeAllOtherPlayerWithRPCOnce(
+                typeof(MeadowCompat).GetMethod(nameof(MSCCompat_LightningRPCEvent)).CreateDelegate(
+                    typeof(Action<RPCEvent, OnlineCreature, OnlineCreature, byte, byte, byte, Color>)),
+                    onlineFrom, onlineTarget, (byte)(arc.width / 100f), (byte)(arc.intensity / 100f), (byte)arc.lifeTime, arc.color
+                );
+            }
+            
+        }
+    }
+
+    // Arena Additions
+    public static void BTWArena_RPCArenaForcedDeathEffect(CompetitiveAddition.ArenaForcedDeath forcedDeath)
+    {
+        if (forcedDeath == null || forcedDeath.abstractTarget == null) { return; }
+        OnlineCreature onlineCreature = forcedDeath.abstractTarget.GetOnlineCreature();
+
+        if (onlineCreature == null) { return; }
+        InvokeAllOtherPlayerWithRPC(
+        typeof(MeadowCompat).GetMethod(nameof(BTWArenaAddition_AreneForcedDeathEffectRPCEvent)).CreateDelegate(
+            typeof(Action<RPCEvent, OnlineCreature>)),
+            onlineCreature
+        );
+    }
+    public static void BTWArena_RPCArenaForcefieldAdded(CompetitiveAddition.ArenaShield shield)
+    {
+        if (shield == null || shield.target == null || !IsMine(shield.target.abstractCreature)) { return; }
+        OnlineCreature onlineCreature = shield.target.abstractCreature.GetOnlineCreature();
+
+        if (onlineCreature == null) { return; }
+        InvokeAllOtherPlayerWithRPC(
+        typeof(MeadowCompat).GetMethod(nameof(BTWArenaAddition_AddArenaShieldRPCEvent)).CreateDelegate(
+            typeof(Action<RPCEvent, OnlineCreature, byte>)),
+            onlineCreature, (byte)(shield.shieldTime / BTWFunc.FrameRate)
+        );
+    }
+    public static void BTWArena_RPCArenaForcefieldBlock(CompetitiveAddition.ArenaShield shield)
+    {
+        if (shield == null || shield.target == null) { return; }
+        OnlineCreature onlineCreature = shield.target.abstractCreature.GetOnlineCreature();
+
+        if (onlineCreature == null) { return; }
+        InvokeAllOtherPlayerWithRPC(
+        typeof(MeadowCompat).GetMethod(nameof(BTWArenaAddition_BlockArenaShieldRPCEvent)).CreateDelegate(
+            typeof(Action<RPCEvent, OnlineCreature>)),
+            onlineCreature
+        );
+    }
+    public static void BTWArena_RPCArenaForcefieldDismiss(CompetitiveAddition.ArenaShield shield)
+    {
+        if (shield == null || shield.target == null || !IsMine(shield.target.abstractCreature)) { return; }
+        OnlineCreature onlineCreature = shield.target.abstractCreature.GetOnlineCreature();
+
+        if (onlineCreature == null) { return; }
+        InvokeAllOtherPlayerWithRPC(
+        typeof(MeadowCompat).GetMethod(nameof(BTWArenaAddition_DismissArenaShieldRPCEvent)).CreateDelegate(
+            typeof(Action<RPCEvent, OnlineCreature>)),
+            onlineCreature
+        );
+    }
+    public static void SetDeathTrackerOfCreature(Creature target, int EnumValue)
+    {
+        if (arenaCreatureDeathTrackers.TryGetValue(target.abstractCreature, out var deathTracker))
+        {
+            deathTracker.deathMessageCustom = EnumValue < 10 ? 0 : EnumValue;
+        }
+    }
+    public static int GetCustomDeathMessageOfViolence(Creature target, ArenaCreatureDeathTracker deathTracker, PhysicalObject owner, Creature.DamageType type, float damage, float stunBonus)
+    {
+        if (target == null || target.dead || target.room == null || deathTracker == null) { return 0; }
+
+        if (owner != null)
+        {
+            if (owner is Spear spear && spear != null)
+            {
+                if (spear is ExplosiveSpear)
+                {
+                    return 11;
+                }
+                else if (ModManager.MSC && MoreSlugcatCompat.IsElectricSpear(spear))
+                {
+                    return 12;
+                }
+                return 10;
+            }
+            else if (owner is Player player && player != null)
+            {
+                if (type == Creature.DamageType.Bite)
+                {
+                    return 30;
+                }
+                else if (type == Creature.DamageType.Blunt)
+                {
+                    if (damage == 1f && stunBonus == 120f) { return 34; }
+                    return 32;
+                }
+                else if (type == Creature.DamageType.Electric && SparkFunc.IsSpark(player))
+                {
+                    if (damage > 1.5f) { return 23; }
+                    return 22;
+                }
+            }
+            else if (owner is CoreObject.EnergyCore energycore && energycore != null)
+            {
+                if (damage > 2f) { return 21; }
+                return 20;
+            }
+            else if (owner is Rock rock && rock != null)
+            {
+                return 33;
+            }
+        }
+
+        if (type == Creature.DamageType.Bite)
+        {
+            return 52;
+        }
+        else if (type == Creature.DamageType.Blunt)
+        {
+            return 51;
+        }
+        else if (type == Creature.DamageType.Electric)
+        {
+            return 55;
+        }
+        else if (type == Creature.DamageType.Explosion)
+        {
+            return 54;
+        }
+        else if (type == Creature.DamageType.Stab)
+        {
+            return 50;
+        }
+        else if (type == Creature.DamageType.Water)
+        {
+            return 53;
+        }
+
+        return 0;
+    }
+    public static void BTWArena_ArenaLivesInit(CompetitiveAddition.ArenaLives arenaLives)
+    {
+        if (arenaLives.abstractTarget == null) { return; }
+        OnlineCreature onlineCreature = arenaLives.abstractTarget.GetOnlineCreature();
         if (onlineCreature == null) { return; }
 
-        InvokeAllOtherPlayerWithRPC(
-            typeof(MeadowCompat).GetMethod(nameof(Spark_SparkExplosion)).CreateDelegate(
-                typeof(Action<RPCEvent, OnlinePhysicalObject, short, Vector2, byte, byte>)), onlineCreature, 
-                size, position, sparks, volumeCent
-        );
-    }
-    public static void SparkMeadow_DischargeHitRPC(SparkObject.StaticChargeManager staticChargeManager, Creature creatureHit, float damage)
-    {
-        OnlineCreature onlineSpark = SparkMeadow_OnlineCreature(staticChargeManager);
-        OnlineCreature onlineTarget = creatureHit.abstractCreature.GetOnlineCreature();
-        if (onlineSpark == null || onlineTarget == null) { return; }
+        bool IsMine = MeadowCompat.IsMine(arenaLives.abstractTarget);
 
-        InvokeAllOtherPlayerWithRPC(
-            typeof(MeadowCompat).GetMethod(nameof(Spark_DischargeHit)).CreateDelegate(
-                typeof(Action<RPCEvent, OnlineCreature, OnlineCreature, float>)), 
-                onlineSpark, onlineTarget, damage
-        );
+        arenaLives.fake = !IsMine;
+
+        if (IsMeadowLobby())
+        {
+            arenaLives.IsMeadowLobby = true;
+        }
+        
+        if (MeadowBTWArenaMenu.TryGetBTWArenaSettings(out var meadowArenaSettings))
+        {
+            arenaLives.canRespawn = meadowArenaSettings.ArenaLives_ReviveFromAbyss;
+            arenaLives.lifes = meadowArenaSettings.ArenaLives_Amount;
+            arenaLives.lifesleft = meadowArenaSettings.ArenaLives_Amount;
+            arenaLives.reviveAdditionnalTime = meadowArenaSettings.ArenaLives_AdditionalReviveTime * BTWFunc.FrameRate;
+            arenaLives.blockArenaOut = meadowArenaSettings.ArenaLives_BlockWin;
+            arenaLives.reviveTime = meadowArenaSettings.ArenaLives_ReviveTime * BTWFunc.FrameRate;
+            arenaLives.enforceAfterReachingZero = meadowArenaSettings.ArenaLives_Strict;
+            arenaLives.shieldTime = meadowArenaSettings.ArenaLives_RespawnShieldDuration * BTWFunc.FrameRate;
+        }
+        if (IsMine && !arenaLives.fake)
+        {
+            if (!onlineCreature.TryGetData<OnlineArenaLivesData>(out _))
+            {
+                onlineCreature.AddData(new OnlineArenaLivesData());
+            }
+            InvokeAllOtherPlayerWithRPCOnce(
+                typeof(MeadowCompat).GetMethod(nameof(BTWArenaAddition_AddArenaLifesRPCEvent)).CreateDelegate(
+                    typeof(Action<RPCEvent, OnlineCreature>)),
+                    onlineCreature
+            );
+        }
+    }    
+    public static void BTWArena_RPCArenaLivesDestroy(CompetitiveAddition.ArenaLives arenaLives)
+    {
+        if (arenaLives.abstractTarget == null) { return; }
+        OnlineCreature onlineCreature = arenaLives.abstractTarget.GetOnlineCreature();
+        if (onlineCreature == null) { return; }
+
+        if (!arenaLives.fake)
+        {
+            InvokeAllOtherPlayerWithRPCOnce(
+                typeof(MeadowCompat).GetMethod(nameof(BTWArenaAddition_DestroyArenaLifesRPCEvent)).CreateDelegate(
+                    typeof(Action<RPCEvent, OnlineCreature>)),
+                    onlineCreature
+            );
+        }
     }
+    public static bool IsPlayerAlive(AbstractCreature abstractPlayer)
+    {
+        if (abstractPlayer?.realizedCreature?.State != null)
+        {
+            return abstractPlayer.realizedCreature.State.alive;
+        }
+        else if (abstractPlayer?.state != null)
+        {
+            return abstractPlayer.state.alive;
+        }
+        return false;
+    }
+    public static void ResetDeathMessage(AbstractCreature abstractPlayer)
+    {
+        if (abstractPlayer.world?.game != null 
+            && abstractPlayer.GetOnlineObject() is OnlinePhysicalObject onlinePhysicalObject 
+            && onlinePhysicalObject != null)
+        {
+            var onlineHuds = abstractPlayer.world.game.cameras[0].hud.parts.OfType<PlayerSpecificOnlineHud>();
+            foreach (var onlineHud in onlineHuds)
+            {
+                onlineHud.killFeed.RemoveAll(x => x == onlinePhysicalObject.id);
+            }
+        }
+    }
+    public static void ResetIconOnRevival(AbstractCreature abstractPlayer)
+    {
+        if (abstractPlayer.world?.game != null 
+            && abstractPlayer.GetOnlineObject() is OnlinePhysicalObject onlinePhysicalObject 
+            && onlinePhysicalObject != null)
+        {
+            var onlineHuds = abstractPlayer.world.game.cameras[0].hud.parts.OfType<PlayerSpecificOnlineHud>();
+            foreach (var onlineHud in onlineHuds)
+            {
+                if (onlineHud.abstractPlayer == abstractPlayer)
+                {
+                    onlineHud.playerDisplay.slugIcon.SetElementByName(onlineHud.playerDisplay.iconString);
+                }
+            }
+        }
+    }
+    
     //----------- Hooks
     public static void ApplyHooks()
     {
+        InitDeathMessages();
+
+        On.Creature.ctor += Creature_AddDeathTracker;
+        On.Creature.Update += Creature_UpdateDeathTracker;
+        On.Creature.Violence += Creature_ViolenceDeathTracker;
+        On.Lizard.Violence  += Lizard_ViolenceDeathTracker;
+
         foreach (var gamemodeDict in OnlineGameMode.gamemodes)
         {
             Type gameModeType = gamemodeDict.Value;
-            new Hook(gameModeType.GetMethod("ShouldRegisterAPO"), OnlineGameMode_DoNotRegister);
-            new Hook(gameModeType.GetMethod("ShouldSyncAPOInWorld"), OnlineGameMode_DoNotSyncInWorld);
-            new Hook(gameModeType.GetMethod("ShouldSyncAPOInRoom"), OnlineGameMode_DoNotSyncInRoom);
+            new Hook(gameModeType.GetMethod(nameof(OnlineGameMode.ShouldRegisterAPO)), OnlineGameMode_DoNotRegister);
+            new Hook(gameModeType.GetMethod(nameof(OnlineGameMode.ShouldSyncAPOInWorld)), OnlineGameMode_DoNotSyncInWorld);
+            new Hook(gameModeType.GetMethod(nameof(OnlineGameMode.ShouldSyncAPOInRoom)), OnlineGameMode_DoNotSyncInRoom);
         }
         new Hook(typeof(WorldSession).GetMethod(nameof(WorldSession.ApoLeavingWorld)), WorldSession_DoNotRegisterExit);
         new Hook(typeof(RoomSession).GetMethod(nameof(RoomSession.ApoLeavingRoom)), RoomSession_DoNotRegisterExit);
+        new ILHook(typeof(DeathMessage).GetMethod(nameof(DeathMessage.CreatureDeath)), DeathMessage_ChangeContextFromTracker);
+        new ILHook(typeof(DeathMessage).GetMethod(nameof(DeathMessage.PlayerKillPlayer)), DeathMessage_GetNewDeathMessageFromTracker);
+        new ILHook(typeof(DeathMessage).GetMethod(nameof(DeathMessage.PlayerKillCreature)), DeathMessage_GetNewDeathMessageFromTracker);
+        
+        new ILHook(typeof(FFA).GetMethod(nameof(FFA.IsExitsOpen)), FFA_DontOpenExitIfPlayerIsReviving);
+        new ILHook(typeof(TeamBattleMode).GetMethod(nameof(TeamBattleMode.IsExitsOpen)), TeamBattleMode_DontOpenExitIfPlayerIsReviving);
+        
+        new Hook(typeof(ArenaOnlineGameMode).GetConstructor(new[] { typeof(Lobby) }), SetUpArenaDescription);
+        On.Creature.Die += GetOutOfVoidToRevive;
+
+        Plugin.Log("MeadowCompat ApplyHooks Done !");
     }
 
-    // public static bool IsDeniedSyncedObjects(AbstractPhysicalObject abstractPhysicalObject)
-    // {
-    //     if (abstractPhysicalObject is CoreObject.AbstractEnergyCore)
-    //     {
-    //         return true;
-    //     }
-    //     return false;
-    // }
     public static HashSet<AbstractPhysicalObject.AbstractObjectType> deniedSyncedObjects = new()
     {
         CoreObject.EnergyCoreType
     };
-    
+
+    private static void GetOutOfVoidToRevive(On.Creature.orig_Die orig, Creature self)
+    {
+        if (CompetitiveAddition.OutOfBounds(self) 
+            && self.room?.world?.game?.GetArenaGameSession is ArenaGameSession arena && arena != null
+            && IsMeadowArena()
+            && CompetitiveAddition.arenaLivesList.TryGetValue(self.abstractCreature, out var lives)
+            && lives.lifesleft > 0)
+        {
+            Vector2 revivePos = BTWFunc.RandomShelterPosOfArena(arena);
+            foreach (BodyChunk b in self.bodyChunks)
+            {
+                b.HardSetPosition(revivePos);
+            }
+            if (self is Player pl && pl != null
+                && CompetitiveAddition.arenaShields.TryGetValue(pl, out var arenaShield)
+                && arenaShield.Shielding)
+            {
+                arenaShield.Dismiss();
+            }
+        }
+        if (self is Player player && player != null
+                && self.room?.world?.game != null)
+        {
+            var onlineHuds = self.room.world.game.cameras[0].hud.parts.OfType<PlayerSpecificOnlineHud>();
+            foreach (var onlineHud in onlineHuds)
+            {
+                Plugin.Log($"Onlide hud of {onlineHud.abstractPlayer} thinks player.dead is {onlineHud.PlayerConsideredDead}");
+            }
+        }
+        
+        orig(self);
+    }
+
     private static bool OnlineGameMode_DoNotRegister(Func<OnlineGameMode, OnlineResource, AbstractPhysicalObject, bool> orig, OnlineGameMode self, OnlineResource resource, AbstractPhysicalObject apo)
     {
         if (deniedSyncedObjects.Contains(apo.type)) { 
@@ -599,5 +1246,332 @@ public class MeadowCompat
             return; 
         }
         orig(self, apo);
+    }
+
+    public static void LogAllDeathMessages()
+    {
+        Plugin.Log("Here's all custom death messages :");
+        foreach (var m in customDeathMessagesEnum)
+        {
+            Plugin.Log($"   Custom death messsage {m.contextNum} \"target {m.deathMessagePre} killer{m.deathMessagePost}\"");
+        }
+    }
+    public static void InitDeathMessages()
+    {
+        customDeathMessagesEnum.Add( new(10, "was speared by", ".") );
+        customDeathMessagesEnum.Add( new(11, "was speared by", " using an explosive spear.") );
+        customDeathMessagesEnum.Add( new(12, "was speared by", " using an electric spear.") );
+        customDeathMessagesEnum.Add( new(13, "was speared by", " using a poisonous spear.") );
+
+        customDeathMessagesEnum.Add( new(20, "was blown apart by", ".") );
+        customDeathMessagesEnum.Add( new(21, "was obliterated by", ".") );
+        customDeathMessagesEnum.Add( new(22, "was zip-zapped by", ".") );
+        customDeathMessagesEnum.Add( new(23, "was given a sudden cardiac arrest by", ".") );
+
+        customDeathMessagesEnum.Add( new(30, "was mauled to death by", ".") );
+        customDeathMessagesEnum.Add( new(31, "was thrown into the void by", ".") );
+        customDeathMessagesEnum.Add( new(32, "didn't stand a chance against", "'s sheer momentum.") );
+        customDeathMessagesEnum.Add( new(33, "was bonked to death by", ".") );
+        customDeathMessagesEnum.Add( new(34, "was slugrolled by", ".") );
+
+        customDeathMessagesEnum.Add( new(40, "was doomed to die by", ".") );
+
+        customDeathMessagesEnum.Add( new(50, "was stabbed by", ".") );
+        customDeathMessagesEnum.Add( new(51, "was crushed by", ".") );
+        customDeathMessagesEnum.Add( new(52, "was brutally crushed in the jaws of", ".") );
+        customDeathMessagesEnum.Add( new(53, "took water damage from", ".") );
+        customDeathMessagesEnum.Add( new(54, "was exploded by", ".") );
+        customDeathMessagesEnum.Add( new(55, "was zapped by", ".") );
+
+        LogAllDeathMessages();
+
+        Plugin.Log("MeadowCompat custom kill messages init !");
+    }
+    public static void Creature_AddDeathTracker(On.Creature.orig_ctor orig, Creature self, AbstractCreature abstractCreature, World world)
+    {
+        orig(self, abstractCreature, world);
+        if (world.game.IsArenaSession && !arenaCreatureDeathTrackers.TryGetValue(self.abstractCreature, out _))
+        {
+            arenaCreatureDeathTrackers.Add(self.abstractCreature, new(self));
+            Plugin.Log($"DeathTracker added to [{self}] !");
+        }
+    }
+    public static void Creature_UpdateDeathTracker(On.Creature.orig_Update orig, Creature self, bool eu)
+    {
+        // Plugin.Log($"Update detected ! Attemping to set DeathTracker of [{self}]...");
+        orig(self, eu);
+        if (arenaCreatureDeathTrackers.TryGetValue(self.abstractCreature, out var deathTracker))
+        {
+            if (deathTracker.deathMessageCustom != 0 && self.killTagCounter <= 0)
+            {
+                deathTracker.deathMessageCustom = 0;
+                Plugin.Log($"DeathTracker of [{self}] set back to 0.");
+            }
+        }
+    }
+
+    private static void SetUpArenaDescription(Action<ArenaOnlineGameMode, Lobby> orig, ArenaOnlineGameMode self, Lobby lobby)
+    {
+        orig(self, lobby);
+
+        self.slugcatSelectMenuScenes.Remove("Trailseeker");
+        self.slugcatSelectMenuScenes.Add("Trailseeker", MenuScene.SceneID.Landscape_SI);
+        self.slugcatSelectMenuScenes.Remove("Core");
+        self.slugcatSelectMenuScenes.Add("Core", MenuScene.SceneID.Landscape_SS);
+        self.slugcatSelectMenuScenes.Remove("Spark");
+        self.slugcatSelectMenuScenes.Add("Spark", MenuScene.SceneID.Landscape_UW);
+
+        self.slugcatSelectDisplayNames.Remove("Trailseeker");
+        self.slugcatSelectDisplayNames.Add("Trailseeker", "THE TRAILSEEKER");
+        self.slugcatSelectDisplayNames.Remove("Core");
+        self.slugcatSelectDisplayNames.Add("Core", "THE CORE");
+        self.slugcatSelectDisplayNames.Remove("Spark");
+        self.slugcatSelectDisplayNames.Add("Spark", "THE SPARK");
+
+        self.slugcatSelectDescriptions.Remove("Trailseeker");
+        self.slugcatSelectDescriptions.Add("Trailseeker", "Your journey gave you the experience to deal with that threat.<LINE>Attack from angles they can't reach.");
+        self.slugcatSelectDescriptions.Remove("Core");
+        self.slugcatSelectDescriptions.Add("Core", "A last threat between you and your mission.<LINE>Leap yourself to victory.");
+        self.slugcatSelectDescriptions.Remove("Spark");
+        self.slugcatSelectDescriptions.Add("Spark", "Cornered, by not powerless.<LINE>Zap them with agility.");
+    }
+
+    private static void ViolenceCheck(Creature self, BodyChunk source, Creature.DamageType type, float damage, float stunBonus)
+    {
+        if (self != null 
+            && self.abstractCreature != null 
+            && arenaCreatureDeathTrackers.TryGetValue(self.abstractCreature, out var deathTracker))
+        {
+            int newContext = GetCustomDeathMessageOfViolence(self, deathTracker, source?.owner, type, damage, stunBonus);
+            deathTracker.deathMessageCustom = newContext;
+            Plugin.Log($"DeathTracker of [{self}] set to <{newContext}> !");
+        }
+    }
+    private static void Lizard_ViolenceDeathTracker(On.Lizard.orig_Violence orig, Lizard self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos onAppendagePos, Creature.DamageType type, float damage, float stunBonus)
+    {
+        Plugin.Log($"Violence (on lizard) detected ! Attemping to set DeathTracker of [{self}]...");
+        ViolenceCheck(self, source, type, damage, stunBonus);
+        orig(self, source, directionAndMomentum, hitChunk, onAppendagePos, type, damage, stunBonus);
+    }
+    public static void Creature_ViolenceDeathTracker(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
+    {
+        Plugin.Log($"Violence detected ! Attemping to set DeathTracker of [{self}]...");
+        ViolenceCheck(self, source, type, damage, stunBonus);
+        orig(self, source, directionAndMomentum, hitChunk, hitAppendage, type, damage, stunBonus);
+    }
+
+    private static int ChangeContext(int orig, Creature creature)
+    {
+        if (arenaCreatureDeathTrackers.TryGetValue(creature.abstractCreature, out var deathTracker) && deathTracker.deathMessageCustom >= 10)
+        {
+            Plugin.Log($"[{creature}] death context changed to <{deathTracker.deathMessageCustom}> !");
+            return deathTracker.deathMessageCustom;
+        }
+        return orig;
+    }
+    private static void DeathMessage_ChangeContextFromTracker(ILContext il)
+    {
+        Plugin.Log("MeadowCompat IL 1 starts");
+        try
+        {
+            Plugin.Log("Trying to hook IL");
+            ILCursor cursor = new(il);
+            if (cursor.TryGotoNext(MoveType.After,
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Creature>(nameof(Creature.killTag)),
+                x => x.MatchCallOrCallvirt(typeof(AbstractCreature).GetProperty(nameof(AbstractCreature.realizedCreature)).GetGetMethod()),
+                x => x.MatchIsinst(typeof(Player)),
+                x => x.MatchLdarg(0),
+                x => x.MatchLdcI4(0)
+            ))
+            {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate(ChangeContext);
+            }
+            else
+            {
+                Plugin.logger.LogError("Couldn't find IL hook :<");
+                Plugin.Log(il);
+            }
+            Plugin.Log("IL hook ended");
+        }
+        catch (Exception ex)
+        {
+            Plugin.logger.LogError(ex);
+        }
+        Plugin.Log("MeadowCompat IL 1 ends");
+    }
+
+    private static string ChangeContextPre(string orig, int context)
+    {
+        Plugin.Log($"[{orig}] death message detected (pre), with context <{context}>.");
+        if (customDeathMessagesEnum.Exists(x => x.contextNum == context))
+        { 
+            string newText = customDeathMessagesEnum.Find(x => x.contextNum == context).deathMessagePre;
+            Plugin.Log($"[{orig}] death message changed to <{newText}> !");
+            return newText; 
+        }
+        else if (context >= 10)
+        {
+            Plugin.Log("Couldn't find the custom message...?");
+            LogAllDeathMessages();
+        }
+        return orig;
+    }
+    private static string ChangeContextPost(string orig, int context)
+    {
+        Plugin.Log($"[{orig}] death message detected (pos), with context <{context}>.");
+        if (customDeathMessagesEnum.Exists(x => x.contextNum == context))
+        { 
+            string newText = customDeathMessagesEnum.Find(x => x.contextNum == context).deathMessagePost;
+            Plugin.Log($"[{orig}] death message changed to <{newText}> !");
+            return newText; 
+        }
+        return orig;
+    }
+    private static void DeathMessage_GetNewDeathMessageFromTracker(ILContext il)
+    {
+        Plugin.Log("MeadowCompat IL 2 starts");
+        try
+        {
+            Plugin.Log("Trying to hook IL");
+            ILCursor cursor = new(il);
+
+            if (cursor.TryGotoNext(MoveType.After,
+                x => x.MatchLdstr("was slain by")
+            ))
+            {
+                cursor.Emit(OpCodes.Ldarg_2);
+                cursor.EmitDelegate(ChangeContextPre);
+            }
+            else
+            {
+                Plugin.logger.LogError("Couldn't find IL hook 1 :<");
+                Plugin.Log(il);
+            }
+            if (cursor.TryGotoNext(MoveType.After,
+                x => x.MatchLdstr(".")
+            ))
+            {
+                cursor.Emit(OpCodes.Ldarg_2);
+                cursor.EmitDelegate(ChangeContextPost);
+            }
+            else
+            {
+                Plugin.logger.LogError("Couldn't find IL hook 2 :<");
+                Plugin.Log(il);
+            }
+
+            Plugin.Log("IL hook ended");
+        }
+        catch (Exception ex)
+        {
+            Plugin.logger.LogError(ex);
+        }
+        Plugin.Log("MeadowCompat IL 2 ends");
+    }
+    
+    private static int ChangePlayerCount(int orig, ExitManager exitManager)
+    {
+        // Plugin.Log($"The current player count is <{orig}>, with exit manager [{exitManager}] of arena [{exitManager?.gameSession}]."); 
+        if (exitManager?.gameSession != null)
+        {
+            int addcount = CompetitiveAddition.AdditionalPlayerInArenaCount(exitManager.gameSession);
+            // if (addcount > 0) { Plugin.Log($"Hold on ! They say there's {orig} player but I say there's {orig + addcount} actually !"); }
+            // else { Plugin.Log($"The current player count is {orig}, and no one else is reviving (count = {addcount}).");  }
+            return orig + addcount;
+        }
+        return orig;
+    }
+    private static void FFA_DontOpenExitIfPlayerIsReviving(ILContext il)
+    {
+        Plugin.Log("MeadowCompat IL 3 starts");
+        try
+        {
+            Plugin.Log("Trying to hook IL");
+            ILCursor cursor = new(il);
+
+            if (cursor.TryGotoNext(MoveType.Before,
+                x => x.MatchStloc(0),
+                x => x.MatchLdloc(0),
+                x => x.MatchLdcI4(1),
+                x => x.MatchBneUn(out _)
+            ))
+            {
+                cursor.GotoNext(MoveType.After, x => x.MatchLdloc(0));
+                cursor.Emit(OpCodes.Ldarg_3);
+                cursor.EmitDelegate(ChangePlayerCount);
+            }
+            else
+            {
+                Plugin.logger.LogError("Couldn't find IL hook :<");
+                Plugin.Log(il);
+            }
+
+            Plugin.Log("IL hook ended");
+        }
+        catch (Exception ex)
+        {
+            Plugin.logger.LogError(ex);
+        }
+        Plugin.Log("MeadowCompat IL 3 ends");
+    }
+    private static bool CheckPlayerAsAlive(bool orig, AbstractCreature abstractCreature, ExitManager exitManager)
+    {
+        if (!CompetitiveAddition.ReachedMomentWhenLivesAreSetTo0(exitManager?.gameSession))
+        {
+            return orig || CompetitiveAddition.PlayerCountedAsAliveInArena(abstractCreature);
+        }
+        return orig;
+    }
+    private static void TeamBattleMode_DontOpenExitIfPlayerIsReviving(ILContext il)
+    {
+        Plugin.Log("MeadowCompat IL 4 starts");
+        try
+        {
+            Plugin.Log("Trying to hook IL");
+            ILCursor cursor = new(il);
+
+            if (cursor.TryGotoNext(MoveType.Before,
+                x => x.MatchStloc(0),
+                x => x.MatchLdloc(0),
+                x => x.MatchLdcI4(1),
+                x => x.MatchBneUn(out _)
+            ))
+            {
+                cursor.GotoNext(MoveType.After, x => x.MatchLdloc(0));
+                cursor.Emit(OpCodes.Ldarg_3);
+                cursor.EmitDelegate(ChangePlayerCount);
+            }
+            else
+            {
+                Plugin.logger.LogError("Couldn't find IL hook 1 :<");
+                Plugin.Log(il);
+            }
+
+            if (cursor.TryGotoNext(MoveType.After,
+                x => x.MatchLdloc(8),
+                x => x.MatchCallOrCallvirt(typeof(AbstractCreature).GetProperty(nameof(AbstractCreature.realizedCreature)).GetGetMethod()),
+                x => x.MatchCallOrCallvirt(typeof(Creature).GetProperty(nameof(Creature.State)).GetGetMethod()),
+                x => x.MatchCallOrCallvirt(typeof(CreatureState).GetProperty(nameof(CreatureState.alive)).GetGetMethod())
+            ))
+            {
+                cursor.Emit(OpCodes.Ldloc_S, (byte)8);
+                cursor.Emit(OpCodes.Ldarg_2);
+                cursor.EmitDelegate(CheckPlayerAsAlive);
+            }
+            else
+            {
+                Plugin.logger.LogError("Couldn't find IL hook 2 :<");
+                Plugin.Log(il);
+            }
+
+            Plugin.Log("IL hook ended");
+        }
+        catch (Exception ex)
+        {
+            Plugin.logger.LogError(ex);
+        }
+        Plugin.Log("MeadowCompat IL 4 ends");
     }
 }

@@ -1,0 +1,10 @@
+{
+  "WorkshopID": 0,
+  "LatestGameVersion": "v1.11.4",
+  "UpdateTitle": false,
+  "UpdateDescription": false,
+  "MarkAsPublic": true,
+  "Tags": [
+    "Custom Slugcat"
+  ]
+}

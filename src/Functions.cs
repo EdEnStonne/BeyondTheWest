@@ -1,12 +1,6 @@
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using SlugBase.Features;
 using UnityEngine;
-using static SlugBase.Features.FeatureTypes;
-using BepInEx.Logging;
 using System;
-using BepInEx;
-using MonoMod.Cil;
+using System.Collections.Generic;
 using BeyondTheWest;
 
 public class BTWFunc
@@ -26,6 +20,7 @@ public class BTWFunc
     {
         return OffsetRelativeToVRot(body.Rotation, offset);
     }
+    
     public static int EnergyBoostPossibleAction(Player player)
     {
         if (
@@ -65,6 +60,7 @@ public class BTWFunc
         }
         return 0;
     }
+    
     public static int NightCycleTime(World world, int dayDuration)
     {
         RainWorld rainWorld = world.game.rainWorld;
@@ -72,6 +68,7 @@ public class BTWFunc
             + (rainWorld.setup.cycleTimeMax - rainWorld.setup.cycleTimeMin) * 40
             - (dayDuration - rainWorld.setup.cycleTimeMin * 40);
     }
+    
     public static Player.AnimationIndex PredictJump(Player player)
     {
         PredictJump(player, out var animationPredicted);
@@ -166,10 +163,188 @@ public class BTWFunc
             }
         }
     }
+    
     public static bool BodyChunkSumberged(BodyChunk chunk)
     {
         return chunk.submersion > 0.9f;
     }
+    
+    public struct RadiusCheckResultObject
+    {
+        public PhysicalObject physicalObject;        
+        public List<BodyChunk> bodyChunksHit = new List<BodyChunk>();
+        public BodyChunk closestBodyChunk;
+        public Vector2 vectorDistance = Vector2.zero; // from pos to chunk
+        public float distance = 0f;
+
+        public RadiusCheckResultObject(PhysicalObject physicalObject)
+        {
+            this.physicalObject = physicalObject;
+        }
+    }
+    public static bool IsObjectInRadius(PhysicalObject physicalObject, Vector2 position, float radius, out RadiusCheckResultObject radiusCheckResultObject)
+    {
+        radiusCheckResultObject = new(physicalObject);
+
+        float dist = -1;
+        BodyChunk cbody = null;
+        Vector2 vecDist = Vector2.one;
+        foreach (BodyChunk c in physicalObject.bodyChunks)
+        {
+            Vector2 cdist = c.pos - position;
+            float realdist = Mathf.Max(0, cdist.magnitude - c.rad);
+            if (realdist < radius)
+            {
+                if (realdist < dist || cbody == null)
+                {
+                    cbody = c;
+                    dist = realdist;
+                    vecDist = cdist.normalized;
+                }
+                radiusCheckResultObject.bodyChunksHit.Add(c);
+            }
+        }
+        if (cbody != null)
+        {
+            radiusCheckResultObject.closestBodyChunk = cbody;
+            radiusCheckResultObject.distance = dist;
+            radiusCheckResultObject.vectorDistance = vecDist;   
+            return true;
+        }
+        return false;
+    }
+    public static List<RadiusCheckResultObject> GetAllCreatureInRadius(Room room, Vector2 position, float radius)
+    {
+        List<RadiusCheckResultObject> creatureslist = new();
+        foreach (AbstractCreature Abcreature in room.abstractRoom.creatures)
+        {
+            if (Abcreature.realizedCreature != null 
+                && !Abcreature.realizedCreature.slatedForDeletetion 
+                && !Abcreature.realizedCreature.inShortcut
+                && IsObjectInRadius(Abcreature.realizedCreature, position, radius, out var resultCreature))
+            {
+                creatureslist.Add(resultCreature);
+            }
+        }
+        return creatureslist;
+    }
+    public static List<RadiusCheckResultObject> GetAllObjectsInRadius(Room room, Vector2 position, float radius)
+    {
+        List<RadiusCheckResultObject> objectlist = new();
+        for (int j = 0; j < room.physicalObjects.Length; j++)
+		{
+			for (int k = 0; k < room.physicalObjects[j].Count; k++)
+            {
+                PhysicalObject physicalObject = room.physicalObjects[j][k];
+                if (!physicalObject.slatedForDeletetion
+                    && (physicalObject is not Creature c || !c.inShortcut)
+                    && IsObjectInRadius(physicalObject, position, radius, out var resultCreature))
+                {
+                    objectlist.Add(resultCreature);
+                }
+            }
+        }
+        return objectlist;
+    }
+
+    public static float Random(float minValue, float maxValue)
+    {
+        return UnityEngine.Random.Range(minValue, maxValue);
+    }
+    public static float Random(float MaxValue)
+    {
+        return Random(0, MaxValue);
+    }
+    public static float Random()
+    {
+        return Random(0, 1);
+    }
+    public static float random
+    {
+        get
+        {
+            return Random();
+        }
+    }
+
+    public static Vector2 RandomVector(float minXValue, float maxXValue, float minYValue, float maxYValue)
+    {
+        return new Vector2(Random(minXValue, maxXValue), Random(minYValue, maxYValue));
+    }
+    public static Vector2 RandomCircleVector()
+    {
+        return RandomVector(-1, 1, -1, 1).normalized;
+    }
+    public static Vector2 RandomCircleVector(float rad)
+    {
+        return RandomCircleVector() * rad;
+    }
+    
+    public static void CustomKnockback(BodyChunk bodyChunk, Vector2 force, bool notifyMeadow = false)
+    {
+        bodyChunk.vel += force;
+        if (notifyMeadow && Plugin.meadowEnabled && !MeadowCompat.IsMine(bodyChunk.owner.abstractPhysicalObject))
+        {
+            MeadowCompat.BTWFuncMeadow_RPCCustomKnockBack(bodyChunk.owner, (short)bodyChunk.index, force);
+        }
+    }
+    public static void CustomKnockback(BodyChunk bodyChunk, Vector2 direction, float force, bool notifyMeadow = false)
+    {
+        CustomKnockback(bodyChunk, direction.normalized * force, notifyMeadow);
+    }
+    public static void CustomKnockback(BodyChunk bodyChunk, float forceX, float forceY, bool notifyMeadow = false)
+    {
+        CustomKnockback(bodyChunk, new Vector2(forceX, forceY), notifyMeadow);
+    }
+    public static void CustomKnockback(PhysicalObject physicalObject, Vector2 force, bool notifyMeadow = false)
+    {
+        foreach (BodyChunk bodyChunk in physicalObject.bodyChunks)
+        { 
+            CustomKnockback(bodyChunk, force); 
+        }
+        if (notifyMeadow && Plugin.meadowEnabled && !MeadowCompat.IsMine(physicalObject.abstractPhysicalObject))
+        {
+            MeadowCompat.BTWFuncMeadow_RPCCustomKnockBack(physicalObject, -1, force);
+        }
+    } 
+    public static void CustomKnockback(PhysicalObject physicalObject, Vector2 direction, float force, bool notifyMeadow = false)
+    {
+        CustomKnockback(physicalObject, direction.normalized * force, notifyMeadow);
+    } 
+    public static void CustomKnockback(PhysicalObject physicalObject, Vector2 direction, float force, float randomForce, bool notifyMeadow = false)
+    {
+        foreach (BodyChunk bodyChunk in physicalObject.bodyChunks)
+        { 
+            CustomKnockback(bodyChunk, direction.normalized * (force + Random(-randomForce, randomForce)), notifyMeadow); 
+        }
+    } 
+    public static void CustomKnockback(PhysicalObject physicalObject, float forceX, float forceY, bool notifyMeadow = false)
+    {
+        CustomKnockback(physicalObject, new Vector2(forceX, forceY), notifyMeadow);
+    } 
+
+    public static bool CanTwoObjectsInteract(PhysicalObject physicalObject1, PhysicalObject physicalObject2)
+    {
+        return physicalObject1 != null && physicalObject2 != null
+            && physicalObject1 != physicalObject2 
+            && (
+                physicalObject1.abstractPhysicalObject.rippleLayer == physicalObject2.abstractPhysicalObject.rippleLayer 
+                || physicalObject1.abstractPhysicalObject.rippleBothSides 
+                || physicalObject2.abstractPhysicalObject.rippleBothSides) 
+            && !physicalObject1.slatedForDeletetion
+            && !physicalObject2.slatedForDeletetion;
+    }
+
+    public static Vector2 RandomShelterPosOfArena(ArenaGameSession arena)
+    {
+        if (arena?.room != null)
+        {
+            int exit = Mathf.Max(0, (int)Random(arena.room.abstractRoom.exits));
+            return arena.room.ShortcutLeadingToNode(exit).StartTile.ToVector2() * 20f + Vector2.one * 10;
+        }
+        return Vector2.zero;
+    }
+
     public static float EaseInOutSine(float x) { return -(Mathf.Cos(Mathf.PI * x) - 1) / 2; }
     public static float EaseOut(float x, float pow = 2) { return 1f - Mathf.Pow(1f - x, pow); }
     public static float EaseIn(float x, float pow = 2) { return Mathf.Pow(x, pow); }

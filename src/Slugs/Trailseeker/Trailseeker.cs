@@ -1,12 +1,4 @@
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using SlugBase.Features;
-using UnityEngine;
-using static SlugBase.Features.FeatureTypes;
-using BepInEx.Logging;
-using System;
-using BepInEx;
-using MonoMod.Cil;
 using BeyondTheWest;
 
 public class TrailseekerFunc
