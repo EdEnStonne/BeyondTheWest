@@ -213,7 +213,7 @@ public class CoreObject
         //----------------- Local functions
         byte GetCurrentState()
         {
-            if (this.player != null && !this.player.dead)
+            if (this.player != null)
             {
                 if (this.AEC.energy <= 0f) { return 10; }
                 if (ShouldZeroG)
@@ -338,11 +338,7 @@ public class CoreObject
                             float meltRatio = -energy / melt_energy;
                             int frequency = (int)((1 - meltRatio) * melt_energy / 10f);
                             float red = frequency < 4 ? 1f : Math.Abs((-(int)energy) % frequency - frequency / 2f) / (frequency / 2f);
-
                             this.color = new Color(0.15f + red * 0.85f, 0.1f, 0.1f);
-
-                            this.room.AddObject(new Spark(this.firstChunk.pos, new Vector2(UnityEngine.Random.Range(-10f, 10f), UnityEngine.Random.Range(-10f, 10f)) * (1 + meltRatio), Color.red, null, 3, 10));
-                            this.room.PlaySound(SoundID.Centipede_Shock, this.firstChunk.pos, 0.1f, UnityEngine.Random.Range(0.75f, 0.9f));
 
                             float meltRatioSQRT = (float)(Math.Sqrt(-energy) / Math.Sqrt(melt_energy));
                             float imeltRatioSQRT = 0.25f + 0.75f * (1 - meltRatioSQRT);
@@ -354,21 +350,35 @@ public class CoreObject
                             CoreMesh.MoveVertice(3, new Vector2(-2f - 2f * imeltRatioSQRT, -4f * imeltRatioSQRT));
                             CoreMesh.MoveVertice(4, new Vector2(2f + 2f * imeltRatioSQRT, 4f * imeltRatioSQRT));
                             CoreMesh.MoveVertice(5, new Vector2(2f + 2f * imeltRatioSQRT, -4f * imeltRatioSQRT));
+
+                            if (this.grayScale > 0 && red > 0.95f) { this.grayScale = Mathf.Lerp(this.grayScale, 0f, 0.02f); }
                             break;
                         }
                     default: // Dead or OFF
                         {
-                            this.color = new Color(0.15f, 0.15f, 0.15f);
-
-                            CoreMesh.MoveVertice(0, new Vector2(-2f, 0f));
-                            CoreMesh.MoveVertice(1, new Vector2(0f, 2f));
-                            CoreMesh.MoveVertice(2, new Vector2(0f, -2f));
-
-                            CoreMesh.MoveVertice(3, new Vector2(0f, 2f));
-                            CoreMesh.MoveVertice(4, new Vector2(0f, -2f));
-                            CoreMesh.MoveVertice(5, new Vector2(2f, 0f));
                             break;
                         }
+                }
+                this.color = Color.Lerp(this.color, this.gray, this.grayScale);
+                if (this.player.dead)
+                {
+                    CoreMesh.MoveVertice(0, new Vector2(-3f, 0f));
+                    CoreMesh.MoveVertice(1, new Vector2(0f, 3f));
+                    CoreMesh.MoveVertice(2, new Vector2(0f, -3f));
+
+                    CoreMesh.MoveVertice(3, new Vector2(0f, 3f));
+                    CoreMesh.MoveVertice(4, new Vector2(0f, -3f));
+                    CoreMesh.MoveVertice(5, new Vector2(3f, 0f));
+
+                    if (this.grayScale < 0.99f)
+                    {
+                        this.grayScale = Mathf.Lerp(this.grayScale, 1f, 0.005f);
+                        // Plugin.Log($"Core of player [{this.player}] grayscale at [{this.grayScale}]. Color at <{this.color}>");
+                    }
+                    else
+                    {
+                        this.grayScale = 1f;
+                    }  
                 }
                 sLeaser.sprites[1] = CoreMesh;
             }
@@ -440,7 +450,12 @@ public class CoreObject
 
                     if (this.player.bodyMode == Player.BodyModeIndex.ClimbingOnBeam)
                     {
-                        if (this.player.animation == Player.AnimationIndex.ClimbOnBeam && intInput.y == 1 && this.player.slideUpPole < 1)
+                        if (intInput.y == -1)
+                        {
+                            boostJump = false;
+                            this.player.animation = Player.AnimationIndex.None;
+                        }
+                        else if (this.player.animation == Player.AnimationIndex.ClimbOnBeam && intInput.y == 1 && this.player.slideUpPole < 1)
                         {
                             this.player.slideUpPole = (int)Mathf.Min(pow / 4 + 10, 60);
                             this.player.Blink(this.player.slideUpPole / 3);
@@ -598,7 +613,7 @@ public class CoreObject
         }
         public void Explode(bool isReal = true)
         {
-            if (this.player != null && (!this.player.dead || !isReal))
+            if (this.player != null)
             {
                 var er = 500f;
                 Vector2 vector = Vector2.Lerp(base.firstChunk.pos, base.firstChunk.lastPos, 0.35f);
@@ -739,17 +754,19 @@ public class CoreObject
         {
             if (this.player != null)
             {
-                if (this.player.room != null && this.player.airInLungs <= 0.85f && this.AEC.energy > 100f && this.oxygenCooldown)
+                if (this.player.room != null && (this.player.airInLungs <= 0.85f || this.player.dead) && this.AEC.energy > 100f && this.oxygenCooldown)
                 {
                     List<BTWFunc.RadiusCheckResultObject> creatureList = 
                         BTWFunc.GetAllCreatureInRadius(this.player.room, this.player.mainBodyChunk.pos, this.OxygenRange * 10f);
-                    
+                    bool creatureFound = false;
                     foreach (BTWFunc.RadiusCheckResultObject resultCreature in creatureList)
                     {
                         if (resultCreature.physicalObject is Player otherplayer
                             && (otherplayer.abstractPhysicalObject.rippleBothSides || this.player.abstractPhysicalObject.rippleBothSides || this.player.abstractPhysicalObject.rippleLayer == otherplayer.abstractPhysicalObject.rippleLayer)
-                            && otherplayer.airInLungs <= 0.85f)
+                            && otherplayer.airInLungs <= 0.85f
+                            && !otherplayer.dead)
                         {
+                            creatureFound = true;
                             this.AEC.energy -= this.AEC.CoreOxygenEnergyUsage * Mathf.Max(0f, 0.85f - otherplayer.airInLungs);
                             otherplayer.airInLungs = 0.85f;
 
@@ -759,14 +776,17 @@ public class CoreObject
                             }
                         }
                     }
-                    this.AEC.oxygenCount++;
-                    if (this.AEC.energy <= 100f)
+                    if (creatureFound)
                     {
-                        this.oxygenCooldown = false;
-                        this.room?.PlaySound(SoundID.Death_Lightning_Spark_Object, this.firstChunk.pos, 0.75f, 0.75f);
+                        this.AEC.oxygenCount++;
+                        if (this.AEC.energy <= 100f)
+                        {
+                            this.oxygenCooldown = false;
+                            this.room?.PlaySound(SoundID.Death_Lightning_Spark_Object, this.firstChunk.pos, 0.75f, 0.75f);
+                        }
                     }
                 }
-                else if (this.AEC.oxygenCount > 0 && this.player.airInLungs > 0.95f)
+                else if (this.AEC.oxygenCount > 0 && (this.player.airInLungs > 0.95f || this.player.dead) && this.AEC.energy > 100f)
                 {
                     this.oxygenCooldown = true;
                     this.AEC.oxygenCount = 0;
@@ -798,6 +818,8 @@ public class CoreObject
                 {
                     this.AEC.energy--;
                     this.player.slowMovementStun = 40;
+                    this.room.AddObject(new Spark(this.firstChunk.pos, BTWFunc.RandomCircleVector(10f), Color.red, null, 3, 10));
+                    this.room.PlaySound(SoundID.Centipede_Shock, this.firstChunk.pos, 0.15f, UnityEngine.Random.Range(0.75f, 0.9f));
                 }
 
                 if (this.AEC.boostingCount < 0)
@@ -834,7 +856,7 @@ public class CoreObject
         }
         public void RepairUpdate()
         {
-            if (this.player != null && this.AEC.energy <= 0f && this.room != null)
+            if (this.player != null && !this.player.dead && this.AEC.energy <= 0f && this.room != null)
             {
                 var cinput = this.player.input[0];
                 var intDir = this.IntDirectionalInput;
@@ -1051,48 +1073,58 @@ public class CoreObject
                 {
                     StateSyncFakePlayer();
                 }
+                if (this.consideredDead && !this.player.dead)
+                {
+                    this.consideredDead = false;
+                    this.grayScale = 0f;
+                    BTWFunc.ResetCore(this.player);
+                }
                 else if (this.AEC.active) {
+
                     SetCurrentState();
                     RepairUpdate();
                     RegenUpdate();
-                    
-                    if (this.AEC.IsBetaBoost ? cinput.jmp : cinput.spec)
+
+                    if (!this.player.dead)
                     {
-                        if (this.ShouldZeroG && this.AEC.boostingCount < 5)
+                        if (this.AEC.IsBetaBoost ? cinput.jmp : cinput.spec)
                         {
-                            if (this.AEC.antiGravityCount > 0 || this.AEC.coreBoostLeft > 0)
+                            if (this.ShouldZeroG && this.AEC.boostingCount < 5)
                             {
-                                this.AEC.antiGravityCount++;
+                                if (this.AEC.antiGravityCount > 0 || this.AEC.coreBoostLeft > 0)
+                                {
+                                    this.AEC.antiGravityCount++;
+                                }
+                            }
+                            else if ((this.Landed || this.AEC.coreBoostLeft > 0) && this.AEC.waterCorrectionCount <= 0)
+                            {
+                                if (this.BoostAllowed)
+                                {
+                                    this.AEC.boostingCount += this.AEC.IsBetaBoost && this.player.input[0].spec ? 3 : 1;
+                                    this.player.slowMovementStun = 10;
+                                    if (this.AEC.boostingCount > 400)
+                                    {
+                                        if (this.AEC.isShockwaveEnabled) { ShockWave(true); }
+                                        else { MeltdownStart(); this.AEC.boostingCount = 0; }
+                                    }
+                                }
+                                else
+                                {
+                                    this.AEC.boostingCount = -1;
+                                }
                             }
                         }
-                        else if ((this.Landed || this.AEC.coreBoostLeft > 0) && this.AEC.waterCorrectionCount <= 0)
+                        else if (!this.ShouldZeroG && this.AEC.boostingCount > 0)
                         {
-                            if (this.BoostAllowed)
+                            if (this.AEC.boostingCount < 5 && this.AEC.IsBetaBoost && this.player.canJump > 0)
                             {
-                                this.AEC.boostingCount += this.AEC.IsBetaBoost && this.player.input[0].spec ? 3 : 1;
-                                this.player.slowMovementStun = 10;
-                                if (this.AEC.boostingCount > 400)
-                                {
-                                    if (this.AEC.isShockwaveEnabled) { ShockWave(true); }
-                                    else { MeltdownStart(); this.AEC.boostingCount = 0; }
-                                }
+                                this.AEC.boostingCount = -20;
+                                this.player.Jump();
                             }
                             else
                             {
-                                this.AEC.boostingCount = -1;
+                                Boost(Mathf.Min(200, this.AEC.boostingCount), true);
                             }
-                        }
-                    }
-                    else if (!this.ShouldZeroG && this.AEC.boostingCount > 0)
-                    {
-                        if (this.AEC.boostingCount < 5 && this.AEC.IsBetaBoost && this.player.canJump > 0)
-                        {
-                            this.AEC.boostingCount = -20;
-                            this.player.Jump();
-                        }
-                        else
-                        {
-                            Boost(Mathf.Min(200, this.AEC.boostingCount), true);
                         }
                     }
                     AntiGravityUpdate();
@@ -1127,7 +1159,6 @@ public class CoreObject
             // logger.LogDebug(weapon.thrownBy);
             if (
                 this.player != null &&
-                !this.player.dead &&
                 weapon.thrownBy != this.player
             )
             {
@@ -1146,13 +1177,16 @@ public class CoreObject
 
         // Objects
         public Color color = new(0.25f, 1f, 0.25f);
+        public Color gray = new(0.25f, 0.25f, 0.25f);
         public Player player;
 
         // Basic
         public float scale = 1f;
+        public float grayScale = 0f;
         public bool flipFromBoost = false;
         public bool canSlam = false;
         public bool oxygenCooldown = true;
+        public bool consideredDead = false;
         public int disableCooldown = 0;
 
         // Get - Set
@@ -1268,6 +1302,7 @@ public class CoreObject
             }
         }
     }
+    
     // Functions
     private static bool OnlineTimerOn()
     {
@@ -1306,11 +1341,22 @@ public class CoreObject
         On.AbstractCreature.ChangeRooms += AbstractPlayer_ChangeRooms;
         On.ItemSymbol.SymbolDataFromItem += ItemSymbol_SetCoreDataToNone;
         On.Player.SlugSlamConditions += Player_CoreSLAM;
+        On.Creature.Die += Player_ConsideredDead;
         Plugin.Log("CoreObject ApplyHooks Done !");
     }
-    
+
 
     // Ma hooks
+
+    private static void Player_ConsideredDead(On.Creature.orig_Die orig, Creature self)
+    {
+        orig(self);
+        if (CoreFunc.cwtCore.TryGetValue(self.abstractCreature, out var abstractEnergyCore) 
+            && abstractEnergyCore.realizedObject != null)
+        {
+            abstractEnergyCore.RealizedCore.consideredDead = true;
+        }
+    }
     private static bool Player_CoreSLAM(On.Player.orig_SlugSlamConditions orig, Player self, PhysicalObject otherObject)
     {
         if (CoreFunc.cwtCore.TryGetValue(self.abstractCreature, out var abstractEnergyCore) 

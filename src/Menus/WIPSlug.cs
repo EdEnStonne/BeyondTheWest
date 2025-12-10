@@ -4,7 +4,7 @@ using BeyondTheWest;
 
 public class WIPSlugLock
 {
-    public static readonly string[] WIPLock = { "Core", "Spark", "Trailseeker" }; // Trailseeker
+    public static readonly string[] WIPLock = { "Core", "Spark", "Trailseeker"}; // Trailseeker
     public static bool removeWIPSlugPages = false; // Plugin.meadowEnabled;
     public static void ApplyHooks()
     {

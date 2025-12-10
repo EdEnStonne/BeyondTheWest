@@ -120,7 +120,7 @@ public class CoreFunc
                 }
             }
             
-            AEC.boostingCount = -80;
+            AEC.boostingCount = -20;
             AEC.antiGravityCount = -10;
         }
         orig(self);

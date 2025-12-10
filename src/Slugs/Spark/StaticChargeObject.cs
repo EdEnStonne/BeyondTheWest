@@ -246,17 +246,13 @@ public class SparkObject
                         ) 
                         && UnityEngine.Random.Range(0f, 1f) < Mathf.Pow(FractOvercharge, 4) * (isSwimming ? 0.01f : 0.025f)))
                 {
-                    Discharge(200f, 0.5f, 0, pos, 0.75f);
-                    this.Charge -= this.MaxECharge - this.FullECharge;
-                    player.Stun((int)((this.MaxECharge - this.FullECharge) * (FractOvercharge * 3f + 1f) / (isSwimming ? 2 : 1) ));
-                    room.AddObject(new CreatureSpasmer(player, false, player.stun));
-                    player.LoseAllGrasps();
+                    DischargeStun();
                 }
             }
         }
         private void RechargeUpdate()
         {
-            if (this.Player != null && !this.Player.dead && (this.dischargeCooldown <= 0 || (this.IsCrawlingOnFloor && this.crawlCharge > 0) || this.isMeadowArenaTimerCountdown))
+            if (this.Player != null && !this.Player.dead && (this.dischargeCooldown <= 0 || this.CrawlChargeConditionMet || this.isMeadowArenaTimerCountdown))
             {
                 if (this.isMeadowArenaTimerCountdown && this.IsOvercharged)
                 {
@@ -466,6 +462,11 @@ public class SparkObject
                 CrawlChargeUpdate();
                 if (this.active && !this.Player.dead)
                 {
+                    if (!this.consideredAlive)
+                    {
+                        this.consideredAlive = true;
+                        this.overchargeImmunity = Mathf.Max(this.overchargeImmunity, 10);
+                    }
                     if (this.Room.game.devToolsActive) { DebugUpdate(); }
                     if (Plugin.meadowEnabled && this.isMeadowArenaTimerCountdown && OnlineTimerOn())
                     {
@@ -487,7 +488,13 @@ public class SparkObject
                         && this.endlessCharge <= 0) { OverchargeUpdate(); }
                     if (!this.isMeadowFakePlayer)
                     {
-                        if (this.overchargeImmunity > 0) { this.overchargeImmunity--; }
+                        if (this.overchargeImmunity > 0) { 
+                            this.overchargeImmunity--; 
+                            if (this.overchargeImmunity <= 0 && this.Charge >= this.MaximumCharge)
+                            {
+                                DischargeStun();
+                            }
+                        }
                         if (this.endlessCharge > 0) { 
                             this.endlessCharge--; 
                             this.charge = this.FullECharge > 0 ? this.FullECharge : this.MaxECharge / 2f;
@@ -693,7 +700,6 @@ public class SparkObject
             }
         }
         
-
         public void RechargeFromExternalSource(Vector2 sourcePos, float chargeAdded)
         {
             this.Charge += chargeAdded;
@@ -719,6 +725,37 @@ public class SparkObject
             }
         }
         
+        public void DischargeStun()
+        {
+            
+            Player player = this.Player;
+            Room room = this.Room;
+
+            if (player != null && room != null)
+            {
+                Vector2 pos = player.mainBodyChunk.pos;
+                bool isSwimming = player.bodyMode == Player.BodyModeIndex.Swimming;
+
+                float FractCharge = this.Charge / this.CapacityCharge;
+                float OverchargeMargin = this.MaximumCharge - this.CapacityCharge;
+                float OverchargeCharge = this.Charge - this.CapacityCharge;
+                float FractOvercharge = OverchargeMargin > 0 && OverchargeCharge > 0 ? OverchargeCharge / OverchargeMargin : FractCharge;
+
+                Discharge(200f, 0.5f, 0, pos, 0.75f);
+                if (OverchargeMargin > 0)
+                {
+                    this.Charge -= OverchargeMargin;
+                }
+                else
+                {
+                    this.Charge = 0;
+                }
+                player.Stun((int)((this.MaxECharge - this.FullECharge) * (FractOvercharge * 3f + 1f) / (isSwimming ? 2 : 1) ));
+                room.AddObject(new CreatureSpasmer(player, false, player.stun));
+                player.LoseAllGrasps();
+            }
+        }
+        
         //-------------- Variables
 
         // Object Variables
@@ -726,7 +763,7 @@ public class SparkObject
         public StaticChargeBatteryUI staticChargeBatteryUI;
 
         // Basic Variables
-        public float charge = 0f;
+        private float charge = 0f;
 
         public int slideSpeedframes = 0;
         public int slideSpearBounceFrames = 0;
@@ -764,6 +801,7 @@ public class SparkObject
         public bool isMeadow = false;
         public bool isMeadowArena = false;
         public bool isMeadowArenaTimerCountdown = false;
+        public bool consideredAlive = false;
         public Vector2 oldpos = Vector2.zero;
         public Vector2 newpos = Vector2.zero;
 
@@ -794,7 +832,7 @@ public class SparkObject
         {
             get
             {
-                if ((this.dischargeCooldown > 0 && (!this.IsCrawlingOnFloor || this.crawlCharge <= 0) && !this.isMeadowArenaTimerCountdown) || !active || this.endlessCharge > 0) { return 0f; }
+                if ((this.dischargeCooldown > 0 && !this.CrawlChargeConditionMet && !this.isMeadowArenaTimerCountdown) || !active || this.endlessCharge > 0) { return 0f; }
                 Player player = this.Player;
                 if (player != null)
                 {
@@ -1488,20 +1526,10 @@ public class SparkObject
         On.Player.Jump += Player_StaticManager_SlideMomentum;
         On.Creature.SuckedIntoShortCut += Player_SparkRechargeNull;
         On.Creature.Violence += Player_Electric_Absorb;
+        On.Creature.Die += Player_StaticManager_ConsideredDead;
         IL.Centipede.Shock += Player_CentipedeShock_Absorb;
         IL.ZapCoil.Update += ZapCoil_StaticChargeManager_Absorb;
         Plugin.Log("SparkObject ApplyHooks Done !");
-    }
-
-
-    private static void Player_SparkRechargeNull(On.Creature.orig_SuckedIntoShortCut orig, Creature self, IntVector2 entrancePos, bool carriedByOther)
-    {
-        orig(self, entrancePos,carriedByOther);
-        if (SparkFunc.cwtSpark.TryGetValue(self.abstractCreature, out var staticChargeManager))
-        {
-            staticChargeManager.newpos = Vector2.negativeInfinity;
-            staticChargeManager.oldpos = Vector2.negativeInfinity;
-        }
     }
 
     public static void MakeSparkExplosion(Room room, float size, Vector2 position, byte sparks, bool underwater, Color color)
@@ -1584,6 +1612,24 @@ public class SparkObject
     }
 
     // Hook
+    private static void Player_StaticManager_ConsideredDead(On.Creature.orig_Die orig, Creature self)
+    {
+        orig(self);
+        if (SparkFunc.cwtSpark.TryGetValue(self.abstractCreature, out var staticChargeManager))
+        {
+            staticChargeManager.consideredAlive = false;
+        }
+    }
+
+    private static void Player_SparkRechargeNull(On.Creature.orig_SuckedIntoShortCut orig, Creature self, IntVector2 entrancePos, bool carriedByOther)
+    {
+        orig(self, entrancePos,carriedByOther);
+        if (SparkFunc.cwtSpark.TryGetValue(self.abstractCreature, out var staticChargeManager))
+        {
+            staticChargeManager.newpos = Vector2.negativeInfinity;
+            staticChargeManager.oldpos = Vector2.negativeInfinity;
+        }
+    }
     private static void Player_StaticManager_SlideSpearBounce(ILContext il)
     {
         Plugin.Log("StaticChargeManager IL 1 starts");

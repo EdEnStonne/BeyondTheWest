@@ -950,7 +950,6 @@ public class MeadowBTWArenaMenu
                     textBox.held = textBox._KeyboardOn;
                     if (!textBox.held) { textBox.valueInt = value; }
                 }
-
                 UpdateIntTextBox(ref ArenaLives_AdditionalReviveTime_TextBox, settings.ArenaLives_AdditionalReviveTime);
                 UpdateIntTextBox(ref ArenaLives_Amount_TextBox, settings.ArenaLives_Amount);
                 UpdateIntTextBox(ref ArenaLives_ReviveTime_TextBox, settings.ArenaLives_ReviveTime);
@@ -978,7 +977,7 @@ public class MeadowBTWArenaMenu
             if (MeadowCompat.IsMeadowArena(out var _) && GetBTWArenaSettings() is BTWMeadowArenaSettings settings && settings != null)
             {
                 if (id == AL_BLOCKWIN) return settings.ArenaLives_BlockWin;
-                if (id == AL_REVIVEFROMABYSS) return false; //settings.ArenaLives_ReviveFromAbyss;
+                if (id == AL_REVIVEFROMABYSS) return false; // settings.ArenaLives_ReviveFromAbyss;
                 if (id == AL_STRICT) return settings.ArenaLives_Strict;
             }
             return false;
@@ -989,7 +988,7 @@ public class MeadowBTWArenaMenu
             if (!(MeadowCompat.IsMeadowArena(out ArenaMode _) && GetBTWArenaSettings() is BTWMeadowArenaSettings settings && settings != null)) return;
             string id = box.IDString;
             if (id == AL_BLOCKWIN) {settings.ArenaLives_BlockWin = c;}
-            else if (id == AL_REVIVEFROMABYSS) {settings.ArenaLives_ReviveFromAbyss = false;}
+            else if (id == AL_REVIVEFROMABYSS) {settings.ArenaLives_ReviveFromAbyss = false;}//c;}
             else if (id == AL_STRICT) {settings.ArenaLives_Strict = c;}
         }
     }

@@ -222,7 +222,7 @@ public class BTWRemix : OptionInterface
     public static Configurable<bool> MeadowArenaLivesBlockWin = instance.config.Bind("MeadowArenaLivesBlockWin", true, 
         new ConfigurableInfo("Change if the Arena Lives system will wait for everyone to revive before closing the arena session. Default: true.")
     );
-    public static Configurable<bool> MeadowArenaLivesReviveFromAbyss = instance.config.Bind("MeadowArenaLivesReviveFromAbyss", false, 
+    public static Configurable<bool> MeadowArenaLivesReviveFromAbyss = instance.config.Bind("MeadowArenaLivesReviveFromAbyss", true, 
         new ConfigurableInfo("Change if the Arena Lives system will try reviving destroyed bodies. Default: true.")
     );
     public static Configurable<int> MeadowArenaLivesRespawnShieldDuration = instance.config.Bind("MeadowArenaLivesRespawnShieldDuration", 10, 

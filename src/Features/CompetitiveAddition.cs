@@ -316,14 +316,34 @@ public class CompetitiveAddition
         public ArenaLives(AbstractCreature abstractCreature, bool fake = false)
             : this(abstractCreature, 3, fake) { }
         
-        public void ReviveCreature(AbstractCreature ac) // taken from Mouse drag method of revival, credit to them !
+        private void ResetVariablesOnRevival()
         {
+            wasAbstractCreatureDestroyed = false;
+            if (this.target is Player player) {
+
+                BTWFunc.ResetCore(player);
+                BTWFunc.ResetSpark(player);
+
+                if (this.shieldTime > 0)
+                {
+                    player.room?.AddObject( new ArenaShield(player, this.shieldTime) );
+                }
+
+                if (Plugin.meadowEnabled)
+                {
+                    MeadowCompat.ResetDeathMessage(this.abstractTarget);
+                    MeadowCompat.ResetIconOnRevival(this.abstractTarget);
+                }
+            }
+        }
+        public void ReviveCreature() // taken from Mouse drag method of revival, credit to them !
+        {
+            AbstractCreature ac = this.abstractTarget;
             if (ac == null) { return; }
             if (ac?.state == null) { return; }
 
             Creature creature = this.target;
             if (creature == null) { return; }
-
 
             if (ac.state is HealthState && (ac.state as HealthState).health < 1f)
                 (ac.state as HealthState).health = 1f;
@@ -343,6 +363,9 @@ public class CompetitiveAddition
             }
 
             if (creature is Player player) {
+                BTWFunc.ResetCore(player);
+                BTWFunc.ResetSpark(player);
+
                 for (int i = 0; i < player.room?.game?.cameras?.Length; i++)
                     if (player.room.game.cameras[i]?.hud?.textPrompt != null)
                         player.room.game.cameras[i].hud.textPrompt.gameOverMode = false;
@@ -367,21 +390,13 @@ public class CompetitiveAddition
                     player.playerState.permanentDamageTracking = 0.0;
                 }
                 player.animation = Player.AnimationIndex.None;
-                if (this.shieldTime > 0)
-                {
-                    player.room?.AddObject( new ArenaShield(player, this.shieldTime) );
-                }
-                if (Plugin.meadowEnabled)
-                {
-                    MeadowCompat.ResetDeathMessage(ac);
-                }
             }
             else
             {
                 this.room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, CreatureMainChunk, false, 0.65f, 2f + BTWFunc.random * 0.5f);
             }
+            ResetVariablesOnRevival();
         }
-        
         public void Respawn() // taken from Dev Console, credit to them !
         {
             if (!this.fake 
@@ -400,13 +415,16 @@ public class CompetitiveAddition
                     state.permanentDamageTracking = 0f;
                 }
                 this.abstractTarget.RealizeInRoom();
+                if (this.target != null)
+                {
+                    foreach (var chunk in this.target.bodyChunks)
+                    {
+                        chunk.pos = this.firstPos;
+                    }
+                }
                 if (this.abstractTarget.realizedObject is Player realPlayer)
                 {
                     realPlayer.leechedOut = false;
-                    if (this.shieldTime > 0)
-                    {
-                        realPlayer.room?.AddObject( new ArenaShield(realPlayer, this.shieldTime) );
-                    }
                 }
 
                 // Reset HUD
@@ -424,6 +442,7 @@ public class CompetitiveAddition
                 
                 this.countedAlive = this.target != null ? this.target.State.alive : false; 
                 DisplayLives(false);
+                ResetVariablesOnRevival();
             }
         }
         public void TriggerRevive() 
@@ -434,7 +453,7 @@ public class CompetitiveAddition
                     && this.abstractTarget != null 
                     && (this.target == null || this.target.room == null )
                     && this.room != null)+">, here : <"+ this.target 
-                    +">, canRespawn : <"+ this.canRespawn +">, Room : <"+ this.room +">");
+                    +">, canRespawn : <"+ this.canRespawn +">, Room : <"+ this.room +">, Meadow : <"+ this.IsMeadowLobby +">");
             if (!this.fake)
             {
                 if (!this.CreatureStillValid 
@@ -453,7 +472,7 @@ public class CompetitiveAddition
                 Creature creature = this.target;
                 if (creature == null || creature.room == null) { this.lifesleft = 0; return; }
 
-                ReviveCreature(this.abstractTarget);
+                ReviveCreature();
                 Plugin.Log("Attempted to revive ["+ creature +"].");
                 
                 this.countedAlive = creature.State.alive; 
@@ -469,9 +488,8 @@ public class CompetitiveAddition
                 this.reviveCounter = this.TotalReviveTime;
                 if (this.room != null)
                 {
-                    int exit = Mathf.Max(0, (int)BTWFunc.Random(this.room.abstractRoom.exits) - 1);
-                    this.firstPos = this.room.ShortcutLeadingToNode(exit).StartTile.ToVector2() * 20f + Vector2.one * 10;
-                    Plugin.Log($"Decided to revive in {exit}, coords {this.firstPos}.");
+                    this.firstPos = BTWFunc.RandomExitPos(this.room);
+                    this.abstractTarget?.Move(this.room.GetWorldCoordinate(this.firstPos));
                 }
                 DisplayLives();
             }
@@ -487,10 +505,13 @@ public class CompetitiveAddition
         }
         public void Dismiss()
         {
+            if (this.lifesleft > 1)
+            {
+                DisplayLives(!this.fake);
+            }
             this.lifesleft = 0;
             this.reviveCounter = 0;
             this.karmaSymbolNeedToChange = true;
-            DisplayLives(!this.fake);
         }
 
         public override void Destroy()
@@ -556,11 +577,9 @@ public class CompetitiveAddition
                         this.reviveCounter--;
                         // Plugin.Log("Seems like ["+ this.abstractTarget +"] is reviving ! Counter at : <"+ this.reviveCounter +">");
                         if (this.reviveCounter <= 0)
-                        {
-                            TriggerRevive();
-                        }
-                        if (!this.canRespawn 
-                            && (this.target == null || this.target.room == null)) 
+                        { TriggerRevive(); }
+
+                        if (!this.canRespawn && (this.target == null || this.target.room == null)) 
                         { this.Destroy(); return; }
                     }
                     else
@@ -726,6 +745,7 @@ public class CompetitiveAddition
         public bool karmaSymbolNeedToChange = false;
         public bool canRespawn = false;
         public bool IsMeadowLobby = false;
+        public bool wasAbstractCreatureDestroyed = false;
         // public int respawnPlayerID = -1;
         public Vector2 pos;
         public Vector2 firstPos;
@@ -1038,9 +1058,13 @@ public class CompetitiveAddition
         On.Player.ThrowObject += Player_RemoveShieldOnThrowObject;
         On.Creature.Violence += Player_RemoveShieldOnViolence;
         On.RainCycle.ArenaEndSessionRain += RainCycle_SuddenDeath;
+        On.UpdatableAndDeletable.Destroy += Creature_DontDestroyIfReviving;
+        On.AbstractWorldEntity.Destroy += AbstractCreature_DontDestroyIfReviving;
         Plugin.Log("CompetitiveAddition ApplyHooks Done !");
     }
 
+
+    
 
     public static void ApplyPostHooks()
     {
@@ -1186,6 +1210,54 @@ public class CompetitiveAddition
     }
 
     // Hooks  
+    private static void Creature_DontDestroyIfReviving(On.UpdatableAndDeletable.orig_Destroy orig, UpdatableAndDeletable self)
+    {
+        if (self.room != null
+            && self is Creature creature
+            && creature != null
+            && creature.abstractCreature != null
+            && arenaLivesList.TryGetValue(creature.abstractCreature, out var lives)
+            && lives.canRespawn
+            && lives.lifesleft > 0)
+        {
+            if (creature == creature.abstractCreature.realizedCreature)
+            {
+                creature.Die();
+                creature.abstractCreature.Abstractize(self.room.GetWorldCoordinate(lives.firstPos));
+                Plugin.Log($"Creature [{creature}] was destroyed while having some lives left !");
+                // return;
+            }
+            else
+            {
+                Plugin.Log($"Seems like [{creature}] is not the same as [{creature.abstractCreature}]'s [{creature.abstractCreature.realizedCreature}]. Destroying it.");
+            }
+        }
+        orig(self);
+    }
+    private static void AbstractCreature_DontDestroyIfReviving(On.AbstractWorldEntity.orig_Destroy orig, AbstractWorldEntity self)
+    {
+        if (self.Room != null
+            && self.Room.realizedRoom != null
+            && self is AbstractCreature abstractCreature
+            && abstractCreature != null
+            && arenaLivesList.TryGetValue(abstractCreature, out var lives))
+        {
+            if (lives.canRespawn && lives.lifesleft > 0)
+            {
+                abstractCreature.Die();
+                lives.wasAbstractCreatureDestroyed = true;
+                abstractCreature.Abstractize(self.Room.realizedRoom.GetWorldCoordinate(lives.firstPos));
+                Plugin.Log($"Stopped Abstract Creature [{abstractCreature}] from being destroyed, so they can revive in peace.");
+                return;
+            }
+            else
+            {
+                lives.Dismiss();
+                Plugin.Log($"Abstract Creature [{abstractCreature}] is being destroyed and cannot revive, dismissing the resting lives.");
+            }
+        }
+        orig(self);
+    }
     private static void RainCycle_SuddenDeath(On.RainCycle.orig_ArenaEndSessionRain orig, RainCycle self)
     {
         orig(self);
@@ -1384,7 +1456,6 @@ public class CompetitiveAddition
         }
         orig(self, source, directionAndMomentum, hitChunk, hitAppendage, type , damage, stunBonus);
     }
-
     private static void Player_RemoveShieldOnViolence(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
     {
         if (source?.owner != null

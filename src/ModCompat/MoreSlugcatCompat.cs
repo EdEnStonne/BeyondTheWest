@@ -123,11 +123,19 @@ public class MoreSlugcatCompat
     {
         return spear != null && spear is ElectricSpear electricSpear && electricSpear != null;
     }
+    public static bool IsArtificer(Player player)
+    {
+        return player != null && player.SlugCatClass == MoreSlugcatsEnums.SlugcatStatsName.Artificer;
+    }
+    public static bool IsSpearmaster(Player player)
+    {
+        return player != null && player.SlugCatClass == MoreSlugcatsEnums.SlugcatStatsName.Spear;
+    }
 
     // Spark
     public static void StaticManager_CheckIfArtififerShouldExplode(Creature creature)
     {
-        if (creature is Player player && player.SlugCatClass == MoreSlugcatsEnums.SlugcatStatsName.Artificer)
+        if (creature is Player player && IsArtificer(player))
         {
             player.PyroDeath();
         }

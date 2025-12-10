@@ -4,7 +4,7 @@ using BepInEx.Logging;
 
 namespace BeyondTheWest 
 {
-    [BepInPlugin(MOD_ID, "Beyond The West", "1.2.4")]
+    [BepInPlugin(MOD_ID, "Beyond The West", "1.2.6")]
     [BepInDependency("slime-cubed.slugbase")]
     class Plugin : BaseUnityPlugin
     {

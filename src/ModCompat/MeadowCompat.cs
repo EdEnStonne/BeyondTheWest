@@ -56,9 +56,9 @@ public class MeadowCompat
             public override void ReadTo(OnlineEntity.EntityData data, OnlineEntity onlineEntity)
             {
                 var SCM = GetFakePlayerStaticChargeManager(onlineEntity);
-                if (SCM == null) { return; }
+                if (SCM == null|| !SCM.isMeadowFakePlayer || SCM.active) { return; }
 
-                SCM.charge = this.charge;
+                SCM.Charge = this.charge;
             }
             public override Type GetDataType()
             {
@@ -84,6 +84,8 @@ public class MeadowCompat
             //--------- Variables
             [OnlineFieldHalf]
             public float energy;
+            [OnlineFieldHalf]
+            public float grayScale;
             [OnlineField]
             public int boostingCount;
             [OnlineField]
@@ -111,17 +113,26 @@ public class MeadowCompat
                 this.boostingCount = AEC.boostingCount;
                 this.antiGravityCount = AEC.antiGravityCount;
                 this.state = AEC.state;
+                this.grayScale = 0f;
+                if (AEC.RealizedCore != null)
+                {
+                    this.grayScale = AEC.RealizedCore.grayScale;
+                }
             }
             //--------- Functions
             public override void ReadTo(OnlineEntity.EntityData data, OnlineEntity onlineEntity)
             {
                 var AEC = GetFakePlayerAbstractEnergyCore(onlineEntity);
-                if (AEC == null) { return; }
+                if (AEC == null || !AEC.isMeadowFakePlayer || AEC.active) { return; }
 
                 AEC.energy = this.energy;
                 AEC.boostingCount = this.boostingCount;
                 AEC.antiGravityCount = this.antiGravityCount;
                 AEC.state = this.state;
+                if (AEC.RealizedCore != null)
+                {
+                    AEC.RealizedCore.grayScale = this.grayScale;
+                }
             }
             public override Type GetDataType()
             {
@@ -204,14 +215,24 @@ public class MeadowCompat
                     && this.countedAlive == true 
                     && creature is Player player && player != null)
                 {
+                    ResetDeathMessage(creature.abstractCreature);
                     ResetIconOnRevival(creature.abstractCreature);
                 }
-                lives.lifesleft = this.lifesleft;
+                if (lives.wasAbstractCreatureDestroyed && this.lifesleft <= 0 && lives.lifesleft > 0)
+                {
+                    lives.abstractTarget?.Destroy();
+                    lives.Dismiss();
+                }
+                else
+                {
+                    lives.lifesleft = this.lifesleft;
+                    lives.reviveCounter = this.reviveCounter;
+                }
                 lives.countedAlive = this.countedAlive;
-                lives.reviveCounter = this.reviveCounter;
                 lives.livesDisplayCounter = this.livesDisplayCounter;
                 lives.circlesAmount = this.circlesAmount;
                 lives.firstPos = new Vector2(this.firstPosX, this.firstPosY);
+
             }
             public override Type GetDataType()
             {
@@ -976,6 +997,41 @@ public class MeadowCompat
         {
             if (owner is Spear spear && spear != null)
             {
+                if (spear.thrownBy != null)
+                {
+                    if ((target.mainBodyChunk.pos - spear.thrownBy.mainBodyChunk.pos).magnitude > 750
+                        && BTWFunc.random < 0.25f)
+                    {
+                        return 17;
+                    }
+                    else if (BTWFunc.BodyChunkSumberged(spear.thrownBy.mainBodyChunk)
+                        && BTWFunc.BodyChunkSumberged(target.mainBodyChunk)
+                        && BTWFunc.random < 0.25f)
+                    {
+                        return 18;
+                    }
+                }
+                if (spear.thrownBy is Player playerkiller
+                    && playerkiller != null)
+                {
+                    if (playerkiller.animation == Player.AnimationIndex.Flip
+                        && BTWFunc.random < 0.25f)
+                    {
+                        return 16;
+                    }
+                    else if (ModManager.MSC && MoreSlugcatCompat.IsArtificer(playerkiller)
+                        && BTWFunc.BodyChunkSumberged(playerkiller.mainBodyChunk)
+                        && BTWFunc.BodyChunkSumberged(target.mainBodyChunk))
+                    {
+                        return 37;
+                    }
+                    else if (playerkiller.isSlugpup
+                        && BTWFunc.random < 0.2f)
+                    {
+                        return 38;
+                    }
+                }
+
                 if (spear is ExplosiveSpear)
                 {
                     return 11;
@@ -984,23 +1040,50 @@ public class MeadowCompat
                 {
                     return 12;
                 }
+
+                if (spear.spearmasterNeedle && spear.spearmasterNeedle_hasConnection)
+                {
+                    if (BTWFunc.random < 0.05f) { return 15; }
+                    return 14;
+                }
                 return 10;
             }
             else if (owner is Player player && player != null)
             {
                 if (type == Creature.DamageType.Bite)
                 {
+                    if (ModManager.MSC && MoreSlugcatCompat.IsArtificer(player))
+                    {
+                        return 36;
+                    }
                     return 30;
                 }
                 else if (type == Creature.DamageType.Blunt)
                 {
-                    if (damage == 1f && stunBonus == 120f) { return 34; }
+                    if (CoreFunc.IsCore(player))
+                    {
+                        return 35;
+                    }
+                    else
+                    {
+                        if (damage == 1f && stunBonus == 120f) { return 34; }
+                    }
                     return 32;
                 }
                 else if (type == Creature.DamageType.Electric && SparkFunc.IsSpark(player))
                 {
+                    if (BTWFunc.BodyChunkSumberged(player.mainBodyChunk)
+                        && BTWFunc.BodyChunkSumberged(target.mainBodyChunk))
+                    {
+                        return 24;
+                    }
                     if (damage > 1.5f) { return 23; }
                     return 22;
+                }
+                else if (type == Creature.DamageType.Explosion && CoreFunc.IsCore(player))
+                {
+                    if (damage > 2f) { return 21; }
+                    return 20;
                 }
             }
             else if (owner is CoreObject.EnergyCore energycore && energycore != null)
@@ -1054,30 +1137,31 @@ public class MeadowCompat
         if (IsMeadowLobby())
         {
             arenaLives.IsMeadowLobby = true;
-        }
-        
-        if (MeadowBTWArenaMenu.TryGetBTWArenaSettings(out var meadowArenaSettings))
-        {
-            arenaLives.canRespawn = meadowArenaSettings.ArenaLives_ReviveFromAbyss;
-            arenaLives.lifes = meadowArenaSettings.ArenaLives_Amount;
-            arenaLives.lifesleft = meadowArenaSettings.ArenaLives_Amount;
-            arenaLives.reviveAdditionnalTime = meadowArenaSettings.ArenaLives_AdditionalReviveTime * BTWFunc.FrameRate;
-            arenaLives.blockArenaOut = meadowArenaSettings.ArenaLives_BlockWin;
-            arenaLives.reviveTime = meadowArenaSettings.ArenaLives_ReviveTime * BTWFunc.FrameRate;
-            arenaLives.enforceAfterReachingZero = meadowArenaSettings.ArenaLives_Strict;
-            arenaLives.shieldTime = meadowArenaSettings.ArenaLives_RespawnShieldDuration * BTWFunc.FrameRate;
-        }
-        if (IsMine && !arenaLives.fake)
-        {
-            if (!onlineCreature.TryGetData<OnlineArenaLivesData>(out _))
+            arenaLives.canRespawn = false;
+
+            if (arenaLives.target is Player player && MeadowBTWArenaMenu.TryGetBTWArenaSettings(out var meadowArenaSettings))
             {
-                onlineCreature.AddData(new OnlineArenaLivesData());
+                // arenaLives.canRespawn = meadowArenaSettings.ArenaLives_ReviveFromAbyss;
+                arenaLives.lifes = meadowArenaSettings.ArenaLives_Amount;
+                arenaLives.lifesleft = meadowArenaSettings.ArenaLives_Amount;
+                arenaLives.reviveAdditionnalTime = meadowArenaSettings.ArenaLives_AdditionalReviveTime * BTWFunc.FrameRate;
+                arenaLives.blockArenaOut = meadowArenaSettings.ArenaLives_BlockWin;
+                arenaLives.reviveTime = meadowArenaSettings.ArenaLives_ReviveTime * BTWFunc.FrameRate;
+                arenaLives.enforceAfterReachingZero = meadowArenaSettings.ArenaLives_Strict;
+                arenaLives.shieldTime = meadowArenaSettings.ArenaLives_RespawnShieldDuration * BTWFunc.FrameRate;
             }
-            InvokeAllOtherPlayerWithRPCOnce(
-                typeof(MeadowCompat).GetMethod(nameof(BTWArenaAddition_AddArenaLifesRPCEvent)).CreateDelegate(
-                    typeof(Action<RPCEvent, OnlineCreature>)),
-                    onlineCreature
-            );
+            if (IsMine && !arenaLives.fake)
+            {
+                if (!onlineCreature.TryGetData<OnlineArenaLivesData>(out _))
+                {
+                    onlineCreature.AddData(new OnlineArenaLivesData());
+                }
+                InvokeAllOtherPlayerWithRPCOnce(
+                    typeof(MeadowCompat).GetMethod(nameof(BTWArenaAddition_AddArenaLifesRPCEvent)).CreateDelegate(
+                        typeof(Action<RPCEvent, OnlineCreature>)),
+                        onlineCreature
+                );
+            }
         }
     }    
     public static void BTWArena_RPCArenaLivesDestroy(CompetitiveAddition.ArenaLives arenaLives)
@@ -1164,48 +1248,15 @@ public class MeadowCompat
         new ILHook(typeof(TeamBattleMode).GetMethod(nameof(TeamBattleMode.IsExitsOpen)), TeamBattleMode_DontOpenExitIfPlayerIsReviving);
         
         new Hook(typeof(ArenaOnlineGameMode).GetConstructor(new[] { typeof(Lobby) }), SetUpArenaDescription);
-        On.Creature.Die += GetOutOfVoidToRevive;
 
         Plugin.Log("MeadowCompat ApplyHooks Done !");
     }
+
 
     public static HashSet<AbstractPhysicalObject.AbstractObjectType> deniedSyncedObjects = new()
     {
         CoreObject.EnergyCoreType
     };
-
-    private static void GetOutOfVoidToRevive(On.Creature.orig_Die orig, Creature self)
-    {
-        if (CompetitiveAddition.OutOfBounds(self) 
-            && self.room?.world?.game?.GetArenaGameSession is ArenaGameSession arena && arena != null
-            && IsMeadowArena()
-            && CompetitiveAddition.arenaLivesList.TryGetValue(self.abstractCreature, out var lives)
-            && lives.lifesleft > 0)
-        {
-            Vector2 revivePos = BTWFunc.RandomShelterPosOfArena(arena);
-            foreach (BodyChunk b in self.bodyChunks)
-            {
-                b.HardSetPosition(revivePos);
-            }
-            if (self is Player pl && pl != null
-                && CompetitiveAddition.arenaShields.TryGetValue(pl, out var arenaShield)
-                && arenaShield.Shielding)
-            {
-                arenaShield.Dismiss();
-            }
-        }
-        if (self is Player player && player != null
-                && self.room?.world?.game != null)
-        {
-            var onlineHuds = self.room.world.game.cameras[0].hud.parts.OfType<PlayerSpecificOnlineHud>();
-            foreach (var onlineHud in onlineHuds)
-            {
-                Plugin.Log($"Onlide hud of {onlineHud.abstractPlayer} thinks player.dead is {onlineHud.PlayerConsideredDead}");
-            }
-        }
-        
-        orig(self);
-    }
 
     private static bool OnlineGameMode_DoNotRegister(Func<OnlineGameMode, OnlineResource, AbstractPhysicalObject, bool> orig, OnlineGameMode self, OnlineResource resource, AbstractPhysicalObject apo)
     {
@@ -1262,17 +1313,27 @@ public class MeadowCompat
         customDeathMessagesEnum.Add( new(11, "was speared by", " using an explosive spear.") );
         customDeathMessagesEnum.Add( new(12, "was speared by", " using an electric spear.") );
         customDeathMessagesEnum.Add( new(13, "was speared by", " using a poisonous spear.") );
-
+        customDeathMessagesEnum.Add( new(14, "was reduced into a single food pip to", ".'") );
+        customDeathMessagesEnum.Add( new(15, "was given an involuntary umbilical by", ".'") );
+        customDeathMessagesEnum.Add( new(16, "was 360 no scoped by", ".") );
+        customDeathMessagesEnum.Add( new(17, "was sniped by", ".") );
+        customDeathMessagesEnum.Add( new(18, "was spear-fished by", ".") );
+ 
         customDeathMessagesEnum.Add( new(20, "was blown apart by", ".") );
         customDeathMessagesEnum.Add( new(21, "was obliterated by", ".") );
         customDeathMessagesEnum.Add( new(22, "was zip-zapped by", ".") );
         customDeathMessagesEnum.Add( new(23, "was given a sudden cardiac arrest by", ".") );
+        customDeathMessagesEnum.Add( new(24, "took a bath with a toaster named", ".") );
 
         customDeathMessagesEnum.Add( new(30, "was mauled to death by", ".") );
         customDeathMessagesEnum.Add( new(31, "was thrown into the void by", ".") );
         customDeathMessagesEnum.Add( new(32, "didn't stand a chance against", "'s sheer momentum.") );
         customDeathMessagesEnum.Add( new(33, "was bonked to death by", ".") );
         customDeathMessagesEnum.Add( new(34, "was slugrolled by", ".") );
+        customDeathMessagesEnum.Add( new(35, "was flatened by", "'s sheer momentum.") );
+        customDeathMessagesEnum.Add( new(36, "was brutally mauled into pieces by", ".") );
+        customDeathMessagesEnum.Add( new(37, "was still not safe from", "'s bloodlust underwater.") );
+        customDeathMessagesEnum.Add( new(38, "clearly under-estimated", "'s ability to kill.") );
 
         customDeathMessagesEnum.Add( new(40, "was doomed to die by", ".") );
 

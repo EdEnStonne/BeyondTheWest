@@ -335,14 +335,52 @@ public class BTWFunc
             && !physicalObject2.slatedForDeletetion;
     }
 
-    public static Vector2 RandomShelterPosOfArena(ArenaGameSession arena)
+    public static Vector2 RandomExitPos(ArenaGameSession arena)
     {
         if (arena?.room != null)
         {
-            int exit = Mathf.Max(0, (int)Random(arena.room.abstractRoom.exits));
-            return arena.room.ShortcutLeadingToNode(exit).StartTile.ToVector2() * 20f + Vector2.one * 10;
+            return RandomExitPos(arena.room);
         }
         return Vector2.zero;
+    }
+    public static Vector2 RandomExitPos(Room room)
+    {
+        if (room != null)
+        {
+            int exit = Mathf.Max(0, (int)Random(room.abstractRoom.exits));
+            ShortcutData shortcutData = room.ShortcutLeadingToNode(exit); 
+            return shortcutData.StartTile.ToVector2() * 20f + Vector2.one * 10;
+        }
+        return Vector2.zero;
+    }
+
+    public static void ResetCore(Player player)
+    {
+        if (CoreFunc.cwtCore.TryGetValue(player.abstractCreature, out var AEC))
+        {
+            AEC.energy = AEC.CoreMaxEnergy;
+            AEC.antiGravityCount = 0;
+            AEC.oxygenCount = 0;
+            AEC.repairCount = 0;
+            AEC.slowModeCount = 0;
+            AEC.boostingCount = -FrameRate * 5;
+            AEC.antiGravityCount = 0;
+            AEC.waterCorrectionCount = 0;
+            AEC.coreBoostLeft = AEC.CoreMaxBoost;
+            if (AEC.RealizedCore != null)
+            {
+                AEC.RealizedCore.grayScale = 0f;
+            }
+        }
+    }
+    public static void ResetSpark(Player player)
+    {
+        if (SparkFunc.cwtSpark.TryGetValue(player.abstractCreature, out var SCM))
+        {
+            // SCM.Charge = 0;
+            SCM.dischargeCooldown = FrameRate * 3;
+            SCM.overchargeImmunity = FrameRate * 1;
+        }
     }
 
     public static float EaseInOutSine(float x) { return -(Mathf.Cos(Mathf.PI * x) - 1) / 2; }

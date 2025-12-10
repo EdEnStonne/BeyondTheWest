@@ -1,7 +1,7 @@
 ﻿{
   "id": "edenstonne.beyondthewest",
   "name": "Beyond The West",
-  "version": "1.2.4",
+  "version": "1.2.6",
   "target_game_version": "v1.11.4",
   "authors": "EdEnStonne",
   "description": "This mods adds 3 brand new slugcats following the style of MSC, with each their abilities and movement tech to discover and play around !<LINE><LINE> A BIG thanks to the alpha testers Martyn and M'eien.",
@@ -12,7 +12,9 @@
     "SlugBase"
   ],
   "priorities": [
-    "henpemaz_rainmeadow"
+    "henpemaz_rainmeadow", 
+    "devtools", 
+    "moreslugcats"
   ],
   "tags": [
     "Custom Slugcat"
