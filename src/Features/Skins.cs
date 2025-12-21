@@ -14,6 +14,7 @@ public class BTWSkins
     {
         On.PlayerGraphics.DrawSprites += Player_Sprite;
         IL.PlayerGraphics.InitiateSprites += Modify_Player_Sprite;
+        IL.Player.ctor += Player_ModifyPlayerHeight;
         Plugin.Log("BTWSkins ApplyHooks Done !");
     }
 
@@ -25,7 +26,9 @@ public class BTWSkins
 
         Futile.atlasManager.ActuallyLoadAtlasOrImage("HipsAWanderer", "skin/Wanderer/hips", "skin/Wanderer/hips");
         
-        Futile.atlasManager.ActuallyLoadAtlasOrImage("TrailseekerScar", "skin/Wanderer/scar", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("TrailseekerScar", "skin/Wanderer/scar", "");
+        Futile.atlasManager.ActuallyLoadAtlasOrImage("TrailseekerFaceD", "skin/Wanderer/faceD", "skin/Wanderer/faceD");
+        Futile.atlasManager.ActuallyLoadAtlasOrImage("TrailseekerFaceG", "skin/Wanderer/faceG", "skin/Wanderer/faceG");
         
         Futile.atlasManager.ActuallyLoadAtlasOrImage("NoPoleIcon", "icons/nopole", "");
         Futile.atlasManager.ActuallyLoadAtlasOrImage("YesPoleIcon", "icons/pole", "");
@@ -49,6 +52,35 @@ public class BTWSkins
         foreach (var s in sLeaser.sprites) { psl.Add(s); }
 
         // Set Sprites
+        if (PoleKickManager.TryGetManager(self.player.abstractCreature, out var PKM))
+        {
+            if (PKM.bodyPartInMG.Count == 0)
+            {
+                for (int i = 0; i < sLeaser.sprites.Length; i++)
+                {
+                    if (sLeaser.sprites[i].container == rCam.ReturnFContainer("Midground"))
+                    {
+                        PKM.bodyPartInMG.Add(i);
+                    }
+                }
+            }
+
+            if (PKM.bodyInFrontOfPole && !PKM.lastBodyInFrontOfPole)
+            {
+                foreach (int i in PKM.bodyPartInMG)
+                {
+                    rCam.ReturnFContainer("Foreground").AddChild(sLeaser.sprites[i]);
+                }
+            }
+            else if (!PKM.bodyInFrontOfPole && PKM.lastBodyInFrontOfPole)
+            {
+                foreach (int i in PKM.bodyPartInMG)
+                {
+                    rCam.ReturnFContainer("Midground").AddChild(sLeaser.sprites[i]);
+                }
+            }
+            PKM.lastBodyInFrontOfPole = PKM.bodyInFrontOfPole;
+        }
         if (CoreFunc.IsCore(self.player))
         {
             sLeaser.sprites[0].scaleX += 0.1f;
@@ -75,7 +107,7 @@ public class BTWSkins
 
             float bonusfluff = 1f;
             const float radxAnim = 1f;
-            if (self.player != null && SparkFunc.cwtSpark.TryGetValue(self.player.abstractCreature, out var SCM))
+            if (self.player != null && StaticChargeManager.TryGetManager(self.player.abstractCreature, out var SCM))
             {
                 bonusfluff = Mathf.Clamp01(SCM.FullECharge > 0 ? SCM.Charge / SCM.FullECharge : 1) 
                     + Mathf.Clamp01(SCM.MaxECharge > 0 && SCM.MaxECharge > SCM.FullECharge ? (SCM.Charge - SCM.FullECharge) / (SCM.MaxECharge - SCM.FullECharge) : 1);
@@ -95,24 +127,69 @@ public class BTWSkins
         }
         else if (TrailseekerFunc.IsTrailseeker(self.player))
         {
-            // if (sLeaser.sprites[sLeaser.sprites.Length - 1].element.name.Contains("TrailseekerScar"))
-            // {
-            //     FSprite scar = sLeaser.sprites[sLeaser.sprites.Length - 1];
-            //     scar.SetPosition(sLeaser.sprites[9].GetPosition());
-            //     scar.scaleX = sLeaser.sprites[9].scaleX;
-            //     scar.scaleY = sLeaser.sprites[9].scaleY;
-            //     scar.rotation = sLeaser.sprites[9].rotation;
-            //     scar.color = sLeaser.sprites[9].color;
-            //     scar.alpha = sLeaser.sprites[9].alpha / 2f;
-            //     scar.scale = 16f;
-            //     sLeaser.sprites[sLeaser.sprites.Length - 1] = scar;
-            // }
+            if (sLeaser.sprites[9].scaleX > 0f)
+            {
+                sLeaser.sprites[9].element = Futile.atlasManager.GetElementWithName("TrailseekerD" + sLeaser.sprites[9].element.name);
+            }
+            else
+            {
+                sLeaser.sprites[9].element = Futile.atlasManager.GetElementWithName("TrailseekerG" + sLeaser.sprites[9].element.name);
+            }
         }
+    }
+
+    private static float ChangeSlugHeight(float orig, Player player)
+    {
+        if (SparkFunc.IsSpark(player))
+        {
+            return 15f;
+        }
+        return orig;
+    }
+    private static void Player_ModifyPlayerHeight(ILContext il)
+    {
+        Plugin.Log("BTWSkins IL 2 starts");
+        try
+        {
+            Plugin.Log("Trying to hook IL");
+            ILCursor cursor = new(il);
+            if (cursor.TryGotoNext(MoveType.After,
+                x => x.MatchLdarg(0),
+                x => x.MatchLdcI4(1),
+                x => x.MatchNewarr<PhysicalObject.BodyChunkConnection>(),
+                x => x.MatchStfld<PhysicalObject>(nameof(PhysicalObject.bodyChunkConnections)),
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<PhysicalObject>(nameof(PhysicalObject.bodyChunkConnections)),
+                x => x.MatchLdcI4(0),
+                x => x.MatchLdarg(0),
+                x => x.MatchCall(typeof(PhysicalObject).GetProperty(nameof(PhysicalObject.bodyChunks)).GetGetMethod()),
+                x => x.MatchLdcI4(0),
+                x => x.MatchLdelemRef(),
+                x => x.MatchLdarg(0),
+                x => x.MatchCall(typeof(PhysicalObject).GetProperty(nameof(PhysicalObject.bodyChunks)).GetGetMethod()),
+                x => x.MatchLdcI4(1),
+                x => x.MatchLdelemRef(),
+                x => x.MatchLdcI4(17)
+            ))
+            {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate(ChangeSlugHeight);
+            }
+            Plugin.Log("IL hook ended");
+        }
+        catch (Exception ex)
+        {
+            Plugin.logger.LogError(ex);
+            Plugin.Log(il);
+        }
+        Plugin.Log("BTWSkins IL 2 ends");
     }
     private static void Modify_Player_Sprite(ILContext il) // blatandly copied from MagicaJaphet : Extended Slugbase Features. Sorry I really don't get IL atm...
     {
+        Plugin.Log("BTWSkins IL 1 starts");
         try
         {
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             // gown.InitiateSprite(this.gownIndex, sLeaser, rCam);
             if (cursor.TryGotoNext(MoveType.Before, 
@@ -149,24 +226,17 @@ public class BTWSkins
                     }
                     else if (TrailseekerFunc.IsTrailseeker(self.player))
                     {
-                        // FSprite[] fSprites = new FSprite[sLeaser.sprites.Length + 1];
-                        // for (int i = 0; i < sLeaser.sprites.Length; i++)
-                        // {
-                        //     fSprites[i] = sLeaser.sprites[i];
-                        // }
-                        // sLeaser.sprites = fSprites;
-                        // fSprites[fSprites.Length - 1] = new FSprite("TrailseekerScar", true);
-                        // fSprites[fSprites.Length - 1].color = fSprites[9].color;
-                        // fSprites[fSprites.Length - 1].alpha = fSprites[9].alpha / 2f;
+                        
                     }
                 }
                 cursor.EmitDelegate(InitiateSprites);
             }
-
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
             Plugin.logger.LogError(ex);
         }
+        Plugin.Log("BTWSkins IL 1 ends");
     }
 } 

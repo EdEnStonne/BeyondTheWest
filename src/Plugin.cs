@@ -4,7 +4,7 @@ using BepInEx.Logging;
 
 namespace BeyondTheWest 
 {
-    [BepInPlugin(MOD_ID, "Beyond The West", "1.2.6")]
+    [BepInPlugin(MOD_ID, "Beyond The West", "1.3.0")]
     [BepInDependency("slime-cubed.slugbase")]
     class Plugin : BaseUnityPlugin
     {
@@ -35,7 +35,7 @@ namespace BeyondTheWest
             logger = Logger;
             On.RainWorld.OnModsInit += Extras.WrapInit(LoadResources);
             On.RainWorld.OnModsInit += Extras.WrapInit(ApplyHooks);
-            ApplyHooks();
+            // ApplyHooks();
 
             On.RainWorld.OnModsInit += RemixMenuInit;
             On.RainWorld.PostModsInit += PostModsLoad;
@@ -54,20 +54,14 @@ namespace BeyondTheWest
             {
                 hooksInit = true;
                 CoreFunc.ApplyHooks();
-                CoreObject.ApplyHooks();
-
                 SparkFunc.ApplyHooks();
-                SparkObject.ApplyHooks();
-
                 TrailseekerFunc.ApplyHooks();
-                WallClimbObject.ApplyHooks();
 
                 WIPSlugLock.ApplyHooks();
 
-                CompetitiveAddition.ApplyHooks();
+                ArenaAddition.ArenaHookHelper.ApplyHooks();
                 BTWSkins.ApplyHooks();
 
-                CompatHookHelper.ApplyHooks();
                 // RainTimerAddition.ApplyHooks();
             }
             catch (Exception e)
@@ -88,20 +82,30 @@ namespace BeyondTheWest
             {
                 ApplyMSCHooks();
             }
+            if (ModManager.Watcher)
+            {
+                ApplyWatcherHooks();
+            }
             logger.LogInfo("Soft Hooks initialized !");
         }
         public static void ApplyMeadowHooks()
         {
             Log("Meadow Hooks start !");
-            MeadowBTWArenaMenu.ApplyHooks();
-            MeadowCompat.ApplyHooks();
+            MeadowCompat.MeadowHookHelper.ApplyHooks();
             Log("Meadow Hooks initialized !");
         }
         public static void ApplyMSCHooks()
         {
             Log("MSC Hooks start !");
-            MoreSlugcatCompat.ApplyHooks();
+            MSCCompat.CraftHooks.ApplyHooks();
+            MSCCompat.SpawnMSCPool.ApplyHooks();
             Log("MSC Hooks initialized !");
+        }
+        public static void ApplyWatcherHooks()
+        {
+            Log("Watcher Hooks start !");
+            WatcherCompat.SpawnWatcherPool.ApplyHooks();
+            Log("Watcher Hooks initialized !");
         }
 
         public static void CheckMods()
@@ -174,7 +178,7 @@ namespace BeyondTheWest
                 ApplyHooks();
             }
             ApplySoftDependiesHooks();
-            CompetitiveAddition.ApplyPostHooks();
+            ArenaAddition.ArenaHookHelper.ApplyPostHooks();
             logger.LogInfo("Post Mods Load initialized");
         }
         

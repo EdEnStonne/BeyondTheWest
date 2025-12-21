@@ -1,10 +1,12 @@
 {
-  "WorkshopID": 0,
-  "LatestGameVersion": "v1.11.4",
+  "WorkshopID": 3605718234,
+  "LatestGameVersion": "v1.11.5",
   "UpdateTitle": false,
   "UpdateDescription": false,
   "MarkAsPublic": true,
   "Tags": [
-    "Custom Slugcat"
+    "Custom Slugcat",
+    "Game Mechanics",
+    "Arenas"
   ]
 }

@@ -1,12 +1,80 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
-using BeyondTheWest;
+using BeyondTheWest.MeadowCompat;
+using RWCustom;
 
-public class BTWFunc
+namespace BeyondTheWest;
+public struct RadiusCheckResultObject
+{
+    public PhysicalObject physicalObject;        
+    public List<BodyChunk> bodyChunksHit = new List<BodyChunk>();
+    public BodyChunk closestBodyChunk;
+    public Vector2 vectorDistance = Vector2.zero; // from pos to chunk
+    public float distance = 0f;
+
+    public RadiusCheckResultObject(PhysicalObject physicalObject)
+    {
+        this.physicalObject = physicalObject;
+    }
+}
+public static class BTWFunc
 {
     public const int FrameRate = 40;
-    // ma functions
+
+    public static bool OutOfBounds(Creature creature)
+    {
+        float num6 = -creature.bodyChunks[0].restrictInRoomRange + 1f;
+        if (creature is Player player 
+            && creature.bodyChunks[0].restrictInRoomRange == creature.bodyChunks[0].defaultRestrictInRoomRange)
+        {
+            if (player.bodyMode == Player.BodyModeIndex.WallClimb)
+            {
+                num6 = Mathf.Max(num6, -250f);
+            }
+            else
+            {
+                num6 = Mathf.Max(num6, -500f);
+            }
+        }
+        return creature.bodyChunks[0].pos.y < num6 
+            && (!creature.room.water 
+                || creature.room.waterInverted 
+                || creature.room.defaultWaterLevel < -10) 
+            && (!creature.Template.canFly 
+                || creature.Stunned 
+                || creature.dead) 
+            && (creature is Player 
+                || !creature.room.game.IsArenaSession 
+                || creature.room.game.GetArenaGameSession.chMeta == null 
+                || !creature.room.game.GetArenaGameSession.chMeta.oobProtect);
+    }
+    
+    public static bool IsLocal(AbstractPhysicalObject abstractPhysicalObject)
+    {
+        if (Plugin.meadowEnabled && abstractPhysicalObject != null)
+        {
+            return MeadowFunc.IsObjectMine(abstractPhysicalObject);
+        }
+        return true;
+    }
+    public static bool IsLocal(PhysicalObject physicalObject)
+    {
+        if (Plugin.meadowEnabled && physicalObject?.abstractPhysicalObject != null)
+        {
+            return IsLocal(physicalObject.abstractPhysicalObject);
+        }
+        return true;
+    }
+    public static bool OnlineArenaTimerOn()
+    {
+        if (Plugin.meadowEnabled)
+        {
+            return MeadowFunc.ShouldHoldFireFromOnlineArenaTimer();
+        }
+        return false;
+    }
+
     public static Vector2 OffsetRelativeToRot(float rot, Vector2 offset)
     {
         return new Vector2((float)(offset.x * Math.Cos(rot) - offset.y * Math.Sin(rot)), (float)(offset.x * Math.Sin(rot) + offset.y * Math.Cos(rot)));
@@ -169,19 +237,33 @@ public class BTWFunc
         return chunk.submersion > 0.9f;
     }
     
-    public struct RadiusCheckResultObject
+    public static Vector2 GetDirInput(Player player, uint index = 0)
     {
-        public PhysicalObject physicalObject;        
-        public List<BodyChunk> bodyChunksHit = new List<BodyChunk>();
-        public BodyChunk closestBodyChunk;
-        public Vector2 vectorDistance = Vector2.zero; // from pos to chunk
-        public float distance = 0f;
-
-        public RadiusCheckResultObject(PhysicalObject physicalObject)
+        if (player != null && player.input.Length > index)
         {
-            this.physicalObject = physicalObject;
+            Player.InputPackage cinput = player.input[index];
+            bool isPC = cinput.controllerType == Options.ControlSetup.Preset.KeyboardSinglePlayer;
+            return isPC ? new Vector2(cinput.x, cinput.y) : cinput.analogueDir;
         }
+        if (player.input.Length <= index)
+        {
+            Plugin.logger.LogError($"Tried to get input index <{index}> on InputPackage of lenght <{player.input.Length}> !");
+        }
+        return Vector2.zero;
     }
+    public static IntVector2 GetIntDirInput(Player player, uint index = 0)
+    {
+        int x = 0; int y = 0;
+        Vector2 dirInput = GetDirInput(player, index);
+
+        if (dirInput.x > 0.25f) { x = 1; }
+        else if (dirInput.x < -0.25f) { x = -1; }
+        if (dirInput.y > 0.25f) { y = 1; }
+        else if (dirInput.y < -0.25f) { y = -1; }
+
+        return new IntVector2(x, y);
+    }
+    
     public static bool IsObjectInRadius(PhysicalObject physicalObject, Vector2 position, float radius, out RadiusCheckResultObject radiusCheckResultObject)
     {
         radiusCheckResultObject = new(physicalObject);
@@ -283,9 +365,9 @@ public class BTWFunc
     public static void CustomKnockback(BodyChunk bodyChunk, Vector2 force, bool notifyMeadow = false)
     {
         bodyChunk.vel += force;
-        if (notifyMeadow && Plugin.meadowEnabled && !MeadowCompat.IsMine(bodyChunk.owner.abstractPhysicalObject))
+        if (notifyMeadow && Plugin.meadowEnabled && !MeadowFunc.IsMine(bodyChunk.owner.abstractPhysicalObject))
         {
-            MeadowCompat.BTWFuncMeadow_RPCCustomKnockBack(bodyChunk.owner, (short)bodyChunk.index, force);
+            MeadowCalls.BTWFuncMeadow_RPCCustomKnockBack(bodyChunk.owner, (short)bodyChunk.index, force);
         }
     }
     public static void CustomKnockback(BodyChunk bodyChunk, Vector2 direction, float force, bool notifyMeadow = false)
@@ -302,9 +384,9 @@ public class BTWFunc
         { 
             CustomKnockback(bodyChunk, force); 
         }
-        if (notifyMeadow && Plugin.meadowEnabled && !MeadowCompat.IsMine(physicalObject.abstractPhysicalObject))
+        if (notifyMeadow && Plugin.meadowEnabled && !MeadowFunc.IsMine(physicalObject.abstractPhysicalObject))
         {
-            MeadowCompat.BTWFuncMeadow_RPCCustomKnockBack(physicalObject, -1, force);
+            MeadowCalls.BTWFuncMeadow_RPCCustomKnockBack(physicalObject, -1, force);
         }
     } 
     public static void CustomKnockback(PhysicalObject physicalObject, Vector2 direction, float force, bool notifyMeadow = false)
@@ -356,7 +438,7 @@ public class BTWFunc
 
     public static void ResetCore(Player player)
     {
-        if (CoreFunc.cwtCore.TryGetValue(player.abstractCreature, out var AEC))
+        if (AbstractEnergyCore.TryGetCore(player.abstractCreature, out var AEC))
         {
             AEC.energy = AEC.CoreMaxEnergy;
             AEC.antiGravityCount = 0;
@@ -375,7 +457,7 @@ public class BTWFunc
     }
     public static void ResetSpark(Player player)
     {
-        if (SparkFunc.cwtSpark.TryGetValue(player.abstractCreature, out var SCM))
+        if (StaticChargeManager.TryGetManager(player.abstractCreature, out var SCM))
         {
             // SCM.Charge = 0;
             SCM.dischargeCooldown = FrameRate * 3;

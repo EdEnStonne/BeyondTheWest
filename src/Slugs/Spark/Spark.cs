@@ -2,52 +2,46 @@ using System.Runtime.CompilerServices;
 using UnityEngine;
 using System;
 using MonoMod.Cil;
-using BeyondTheWest;
 using Mono.Cecil.Cil;
 
+namespace BeyondTheWest;
 public class SparkFunc
 {
-    public static ConditionalWeakTable<AbstractCreature, SparkObject.StaticChargeManager> cwtSpark = new();
+    public const string SparkID = "Spark";
 
     // Functions
     public static void ApplyHooks()
     {
+        StaticChargeHooks.ApplyHooks();
+        StaticChargeBatteryUIHooks.ApplyHooks();
+
         On.Player.ctor += Player_Electric_Charge_Init;
-        On.Player.Update += Player_Electric_Charge_Update;
         On.Player.ThrownSpear += Player_Spear_Elec_Modifier;
         Plugin.Log("SparkFunc ApplyHooks Done !");
     }
 
     public static bool IsSpark(Player player)
     {
-        return player.SlugCatClass.ToString() == "Spark";
+        return player.SlugCatClass.ToString() == SparkID;
     }
 
     // Hooks
     private static void Player_Electric_Charge_Init(On.Player.orig_ctor orig, Player self, AbstractCreature abstractCreature, World world)
     {
         orig(self, abstractCreature, world);
-        if (IsSpark(self) && !cwtSpark.TryGetValue(self.abstractCreature, out _))
+        if (IsSpark(self) && !StaticChargeManager.TryGetManager(self.abstractCreature, out _))
         {
             Plugin.Log("Spark StaticChargeManager initiated");
-            cwtSpark.Add(abstractCreature, new SparkObject.StaticChargeManager(abstractCreature));
+            StaticChargeManager.AddManager(abstractCreature);
             Plugin.Log("Spark StaticChargeManager created !");
-        }
-    }
-    private static void Player_Electric_Charge_Update(On.Player.orig_Update orig, Player self, bool eu)
-    {
-        orig(self, eu);
-        if (cwtSpark.TryGetValue(self.abstractCreature, out var SCM))
-        {
-            SCM.Update();
-            // Plugin.Log("Spark StaticChargeManager updating !");
         }
     }
     private static void Player_Spear_Elec_Modifier(On.Player.orig_ThrownSpear orig, Player self, Spear spear)
     {
         orig(self, spear);
         if (self == null || self.room == null) { return; }
-        if (IsSpark(self) && cwtSpark.TryGetValue(self.abstractCreature, out var SCM))
+        if (spear == null || spear.bugSpear) { return; }
+        if (IsSpark(self) && StaticChargeManager.TryGetManager(self.abstractCreature, out var SCM))
         {
             float FractCharge = SCM.Charge / SCM.FullECharge;
             BodyChunk firstChunk = spear.firstChunk;

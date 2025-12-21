@@ -8,6 +8,7 @@ using BeyondTheWest;
 using Mono.Cecil.Cil;
 using System.Linq;
 using HUD;
+using BeyondTheWest.MeadowCompat;
 
 public class RainTimerAddition
 {
@@ -826,7 +827,7 @@ public class RainTimerAddition
     {
         if (Plugin.meadowEnabled)
         {
-            return MeadowCompat.IsMeadowLobby();
+            return !MeadowFunc.IsMeadowLobby();
         }
         return true;
     }

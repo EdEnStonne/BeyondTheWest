@@ -1,0 +1,31 @@
+using UnityEngine;
+using BeyondTheWest;
+using Watcher;
+using System;
+using MonoMod.Cil;
+using Mono.Cecil.Cil;
+using BeyondTheWest.ArenaAddition;
+using ObjectType = AbstractPhysicalObject.AbstractObjectType;
+using WatcherObjectType = Watcher.WatcherEnums.AbstractObjectType;
+
+namespace BeyondTheWest.WatcherCompat;
+public static class SpawnWatcherPool
+{
+    // Hooks
+    public static void ApplyHooks()
+    {
+        InitWatcherPools();
+        Plugin.Log("SpawnWatchePool ApplyHooks Done !");
+    }
+
+    private static void InitWatcherPools()
+    {
+        ArenaItemSpawn.rockPool.AddToPool(WatcherObjectType.Boomerang, 10);
+        ArenaItemSpawn.allPool.AddToPool(WatcherObjectType.Boomerang, 10);
+
+        ArenaItemSpawn.spearPool.AddToPool(ObjectType.Spear, 4, 4);
+        ArenaItemSpawn.allPool.AddToPool(ObjectType.Spear, 4, 4);
+    }
+
+    //----------- Hooks
+}
