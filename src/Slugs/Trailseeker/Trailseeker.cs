@@ -11,7 +11,7 @@ public class TrailseekerFunc
         PoleKickManagerHooks.ApplyHooks();
         On.Player.ctor += Player_Trailseeker_WallClimbManagerInit;
 
-        Plugin.Log("TrailseekerFunc ApplyHooks Done !");
+        BTWPlugin.Log("TrailseekerFunc ApplyHooks Done !");
     }
 
     public static bool IsTrailseeker(Player player)
@@ -23,30 +23,19 @@ public class TrailseekerFunc
     private static void Player_Trailseeker_WallClimbManagerInit(On.Player.orig_ctor orig, Player self, AbstractCreature abstractCreature, World world)
     {
         orig(self, abstractCreature, world);
-        bool local = BTWFunc.IsLocal(self);
-        if (IsTrailseeker(self) && local)
+        if (IsTrailseeker(self) && BTWFunc.IsLocal(self))
         {
             if (!WallClimbManager.TryGetManager(self.abstractCreature, out _))
             {
-                Plugin.Log("Trailseeker WallClimbManager initiated");
+                BTWPlugin.Log("Trailseeker WallClimbManager initiated");
                 WallClimbManager.AddManager(abstractCreature);
-                Plugin.Log("Trailseeker WallClimbManager created !");
+                BTWPlugin.Log("Trailseeker WallClimbManager created !");
             }
             if (!ModifiedTechManager.TryGetManager(self.abstractCreature, out _))
             {
-                Plugin.Log("Trailseeker ModifiedTech initiated");
+                BTWPlugin.Log("Trailseeker ModifiedTech initiated");
                 ModifiedTechManager.AddManager(abstractCreature);
-                Plugin.Log("Trailseeker ModifiedTech created !");
-            }
-        }
-        if (local)
-        {
-            if (!PoleKickManager.TryGetManager(self.abstractCreature, out _))
-            {
-                Plugin.Log("PoleKickManager initiated");
-                PoleKickManager.AddManager(abstractCreature, out var PKM);
-                PKM.kickEnabled = IsTrailseeker(self);
-                Plugin.Log("PoleKickManager created !");
+                BTWPlugin.Log("Trailseeker ModifiedTech created !");
             }
         }
     }

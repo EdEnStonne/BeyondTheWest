@@ -76,6 +76,10 @@ public class ArenaDeathTracker
         if (TryGetTracker(target, out var deathTracker))
         {
             deathTracker.SetDeathTrackerOfCreature(enumValue);
+            if (target.realizedCreature != null)
+            {
+                target.realizedCreature.killTagCounter = Mathf.Max(target.realizedCreature.killTagCounter, BTWFunc.FrameRate * 5);
+            }
         }
     }
     public static int GetCustomDeathMessageOfViolence(Creature target, ArenaDeathTracker deathTracker, PhysicalObject owner, Creature.DamageType type, float damage, float stunBonus)
@@ -153,7 +157,11 @@ public class ArenaDeathTracker
                     {
                         return 35;
                     }
-                    else
+                    else if (TrailseekerFunc.IsTrailseeker(player))
+                    {
+                        return BTWFunc.random > 0.25 ? 25 : 26;
+                    }
+                    else 
                     {
                         if (damage == 1f && stunBonus == 120f) { return 34; }
                     }
@@ -221,6 +229,7 @@ public class ArenaDeathTracker
     public void SetDeathTrackerOfCreature(int enumValue)
     {
         this.deathMessageCustom = enumValue < 10 ? 0 : enumValue;
+        BTWPlugin.Log($"DeathTracker of [{creature}] set to <{this.deathMessageCustom}> !");
     }
 
     public AbstractCreature creature;
@@ -242,15 +251,15 @@ public static class ArenaDeathTrackerHooks
         new ILHook(typeof(DeathMessage).GetMethod(nameof(DeathMessage.PlayerKillPlayer)), DeathMessage_GetNewDeathMessageFromTracker);
         new ILHook(typeof(DeathMessage).GetMethod(nameof(DeathMessage.PlayerKillCreature)), DeathMessage_GetNewDeathMessageFromTracker);
         
-        Plugin.Log("ArenaDeathTrackerHooks ApplyHooks Done !");
+        BTWPlugin.Log("ArenaDeathTrackerHooks ApplyHooks Done !");
     }
     
     public static void LogAllDeathMessages()
     {
-        Plugin.Log("Here's all custom death messages :");
+        BTWPlugin.Log("Here's all custom death messages :");
         foreach (var m in ArenaDeathTracker.customDeathMessagesEnum)
         {
-            Plugin.Log($"   > [{m.contextNum}] : \"target {m.deathMessagePre} killer{m.deathMessagePost}\"");
+            BTWPlugin.Log($"   > [{m.contextNum}] : \"target {m.deathMessagePre} killer{m.deathMessagePost}\"");
         }
     }
     public static void InitDeathMessages()
@@ -294,7 +303,7 @@ public static class ArenaDeathTrackerHooks
 
         LogAllDeathMessages();
 
-        Plugin.Log("MeadowCompat custom kill messages init !");
+        BTWPlugin.Log("MeadowCompat custom kill messages init !");
     }
     public static void Creature_AddDeathTracker(On.Creature.orig_ctor orig, Creature self, AbstractCreature abstractCreature, World world)
     {
@@ -302,7 +311,7 @@ public static class ArenaDeathTrackerHooks
         if (world.game.IsArenaSession && !ArenaDeathTracker.TryGetTracker(abstractCreature, out _))
         {
             ArenaDeathTracker.AddTracker(abstractCreature);
-            Plugin.Log($"DeathTracker added to [{self}] !");
+            BTWPlugin.Log($"DeathTracker added to [{self}] !");
         }
     }
     public static void Creature_UpdateDeathTracker(On.Creature.orig_Update orig, Creature self, bool eu)
@@ -314,7 +323,7 @@ public static class ArenaDeathTrackerHooks
             if (deathTracker.deathMessageCustom != 0 && self.killTagCounter <= 0)
             {
                 deathTracker.deathMessageCustom = 0;
-                Plugin.Log($"DeathTracker of [{self}] set back to 0.");
+                BTWPlugin.Log($"DeathTracker of [{self}] set back to 0.");
             }
         }
     }
@@ -326,19 +335,18 @@ public static class ArenaDeathTrackerHooks
             && ArenaDeathTracker.TryGetTracker(self.abstractCreature, out var deathTracker))
         {
             int newContext = ArenaDeathTracker.GetCustomDeathMessageOfViolence(self, deathTracker, source?.owner, type, damage, stunBonus);
-            deathTracker.deathMessageCustom = newContext;
-            Plugin.Log($"DeathTracker of [{self}] set to <{newContext}> !");
+            deathTracker.SetDeathTrackerOfCreature(newContext);
         }
     }
     private static void Lizard_ViolenceDeathTracker(On.Lizard.orig_Violence orig, Lizard self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos onAppendagePos, Creature.DamageType type, float damage, float stunBonus)
     {
-        Plugin.Log($"Violence (on lizard) detected ! Attemping to set DeathTracker of [{self}]...");
+        BTWPlugin.Log($"Violence (on lizard) detected ! Attemping to set DeathTracker of [{self}]...");
         ViolenceCheck(self, source, type, damage, stunBonus);
         orig(self, source, directionAndMomentum, hitChunk, onAppendagePos, type, damage, stunBonus);
     }
     public static void Creature_ViolenceDeathTracker(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
     {
-        Plugin.Log($"Violence detected ! Attemping to set DeathTracker of [{self}]...");
+        BTWPlugin.Log($"Violence detected ! Attemping to set DeathTracker of [{self}]...");
         ViolenceCheck(self, source, type, damage, stunBonus);
         orig(self, source, directionAndMomentum, hitChunk, hitAppendage, type, damage, stunBonus);
     }
@@ -348,17 +356,17 @@ public static class ArenaDeathTrackerHooks
         if (ArenaDeathTracker.TryGetTracker(creature.abstractCreature, out var deathTracker) 
             && deathTracker.deathMessageCustom >= 10)
         {
-            Plugin.Log($"[{creature}] death context changed to <{deathTracker.deathMessageCustom}> !");
+            BTWPlugin.Log($"[{creature}] death context changed to <{deathTracker.deathMessageCustom}> !");
             return deathTracker.deathMessageCustom;
         }
         return orig;
     }
     private static void DeathMessage_ChangeContextFromTracker(ILContext il)
     {
-        Plugin.Log("MeadowCompat IL 1 starts");
+        BTWPlugin.Log("MeadowCompat IL 1 starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchLdarg(0),
@@ -374,51 +382,51 @@ public static class ArenaDeathTrackerHooks
             }
             else
             {
-                Plugin.logger.LogError("Couldn't find IL hook :<");
-                Plugin.Log(il);
+                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                BTWPlugin.Log(il);
             }
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
-        Plugin.Log("MeadowCompat IL 1 ends");
+        BTWPlugin.Log("MeadowCompat IL 1 ends");
     }
 
     private static string ChangeContextPre(string orig, int context)
     {
-        Plugin.Log($"[{orig}] death message detected (pre), with context <{context}>.");
+        BTWPlugin.Log($"[{orig}] death message detected (pre), with context <{context}>.");
         if (ArenaDeathTracker.TryGetDeathMessage(context, out var deathMessage))
         { 
             string newText = deathMessage.deathMessagePre;
-            Plugin.Log($"[{orig}] death message changed to <{newText}> !");
+            BTWPlugin.Log($"[{orig}] death message changed to <{newText}> !");
             return newText; 
         }
         else if (context >= 10)
         {
-            Plugin.Log("Couldn't find the custom message...?");
+            BTWPlugin.Log("Couldn't find the custom message...?");
             LogAllDeathMessages();
         }
         return orig;
     }
     private static string ChangeContextPost(string orig, int context)
     {
-        Plugin.Log($"[{orig}] death message detected (pos), with context <{context}>.");
+        BTWPlugin.Log($"[{orig}] death message detected (pos), with context <{context}>.");
         if (ArenaDeathTracker.TryGetDeathMessage(context, out var deathMessage))
         { 
             string newText = deathMessage.deathMessagePost;
-            Plugin.Log($"[{orig}] death message changed to <{newText}> !");
+            BTWPlugin.Log($"[{orig}] death message changed to <{newText}> !");
             return newText; 
         }
         return orig;
     }
     private static void DeathMessage_GetNewDeathMessageFromTracker(ILContext il)
     {
-        Plugin.Log("MeadowCompat IL 2 starts");
+        BTWPlugin.Log("MeadowCompat IL 2 starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
 
             if (cursor.TryGotoNext(MoveType.After,
@@ -430,8 +438,8 @@ public static class ArenaDeathTrackerHooks
             }
             else
             {
-                Plugin.logger.LogError("Couldn't find IL hook 1 :<");
-                Plugin.Log(il);
+                BTWPlugin.logger.LogError("Couldn't find IL hook 1 :<");
+                BTWPlugin.Log(il);
             }
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchLdstr(".")
@@ -442,16 +450,16 @@ public static class ArenaDeathTrackerHooks
             }
             else
             {
-                Plugin.logger.LogError("Couldn't find IL hook 2 :<");
-                Plugin.Log(il);
+                BTWPlugin.logger.LogError("Couldn't find IL hook 2 :<");
+                BTWPlugin.Log(il);
             }
 
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
-        Plugin.Log("MeadowCompat IL 2 ends");
+        BTWPlugin.Log("MeadowCompat IL 2 ends");
     }
 }

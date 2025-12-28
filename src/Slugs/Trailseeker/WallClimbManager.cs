@@ -23,7 +23,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
     public WallClimbManager(AbstractCreature abstractCreature) : base(abstractCreature)
     {
         this.abstractPlayer = abstractCreature;
-        if (Plugin.meadowEnabled)
+        if (BTWPlugin.meadowEnabled)
         {
             MeadowCalls.WallClimbMeadow_Init(this);
         }
@@ -50,6 +50,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
             this.canWallClimb = false;
 
             player.Blink(3);
+            ResetPlayerCustomStates();
             room.PlaySound(SoundID.Slugcat_Belly_Slide_Init, player.mainBodyChunk, false, 1f, 1.15f);
             for (int i = (int)UnityEngine.Random.Range(8f, 10f); i > 0; i--)
             {
@@ -140,6 +141,8 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
 
             player.rollDirection = this.wallKickDirection;
             player.slideDirection = this.wallKickDirection;
+            player.wantToJump = 0;
+            player.canJump = 0;
 
             if (!flip)
             {
@@ -152,6 +155,8 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
                 bodyChunk.vel.x = this.wallKickDirection * (this.flipFromWallKick ? this.WallKickFlipForce : this.WallKickForce);
                 bodyChunk.vel.y = Mathf.Max(bodyChunk.vel.y, this.flipFromWallKick ? this.WallKickFlipForce : this.WallKickForce);
             }
+            
+            ResetPlayerCustomStates();
 
             room.PlaySound(SoundID.Slugcat_Rocket_Jump, player.mainBodyChunk, false, 1f, 0.85f);
             if (flip)
@@ -224,6 +229,8 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
                 bodyChunk.vel.y = this.WallVerticalPounceForce + player.g;
             }
 
+            ResetPlayerCustomStates();
+
             room.PlaySound(SoundID.Slugcat_Rocket_Jump, player.mainBodyChunk, false, 1f, 1.25f);
             room.AddObject(
                 new ExplosionSpikes(
@@ -294,7 +301,10 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
             {
                 this.flipFromWallKick = false;
             }
-            if (this.rocketJumpFromWallKick && player.animation != Player.AnimationIndex.RocketJump)
+            if (this.rocketJumpFromWallKick 
+                && (player.animation != Player.AnimationIndex.RocketJump 
+                    || player.rollDirection != this.wallKickDirection
+                    || player.slideDirection != this.wallKickDirection))
             {
                 this.rocketJumpFromWallKick = false;
             }
@@ -565,8 +575,10 @@ public static class WallClimbManagerHooks
         IL.Player.Update += Player_WallClimbManager_StopGrippingPoles;
         IL.Player.MovementUpdate += Player_WallClimbManager_StopGrippingPoles;
         
-        Plugin.Log("WallClimbManagerHooks ApplyHooks Done !");
+        BTWPlugin.Log("WallClimbManagerHooks ApplyHooks Done !");
     }
+
+
     private static void Player_Trailseeker_WallClimbManager_Update(On.Player.orig_Update orig, Player self, bool eu)
     {
         if (WallClimbManager.TryGetManager(self.abstractCreature, out var WCM))
@@ -578,10 +590,10 @@ public static class WallClimbManagerHooks
     
     private static void Player_WallClimbManager_StopGrippingPoles(ILContext il)
     {
-        Plugin.Log("WallClimbManager IL 5 starts");
+        BTWPlugin.Log("WallClimbManager IL 5 starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             Instruction start = cursor.Next;
 
@@ -607,13 +619,13 @@ public static class WallClimbManagerHooks
                 cursor.EmitDelegate(CheckPoleGrab);
             }
 
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
-        Plugin.Log("WallClimbManager IL 5 ends");
+        BTWPlugin.Log("WallClimbManager IL 5 ends");
     }
     private static void Player_WallClimbManager_CancelWallJump(On.Player.orig_WallJump orig, Player self, int direction)
     {
@@ -632,10 +644,10 @@ public static class WallClimbManagerHooks
     
     private static void Player_WallClimbManager_CancelTechOnWallPounce(ILContext il)
     {
-        Plugin.Log("WallClimbManager IL 2 starts");
+        BTWPlugin.Log("WallClimbManager IL 2 starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchLdsfld<MoreSlugcats.MMF>(nameof(MoreSlugcats.MMF.cfgWallpounce)),
@@ -659,24 +671,24 @@ public static class WallClimbManagerHooks
             }
             else
             {
-                Plugin.logger.LogError("Couldn't find IL hook :<");
-                Plugin.Log(il);
+                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                BTWPlugin.Log(il);
             }
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
-        Plugin.Log("WallClimbManager IL 2 ends");
+        BTWPlugin.Log("WallClimbManager IL 2 ends");
     }
     
     private static void Player_WallClimbManager_WallClimbExtend(ILContext il)
     {
-        Plugin.Log("WallClimbManager IL 3 starts");
+        BTWPlugin.Log("WallClimbManager IL 3 starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.Before,
                 x => x.MatchLdarg(0),
@@ -712,7 +724,7 @@ public static class WallClimbManagerHooks
                                     player.room, player.bodyChunks[1].pos + new Vector2(0f, -40f),
                                     6, 5.5f, 4f, 4.5f, 21f, new Color(1f, 1f, 1f, 0.25f)));
 				            player.room.PlaySound(SoundID.Slugcat_Rocket_Jump, player.mainBodyChunk, false, 1f, 1f);
-                            Plugin.Log("Wall Climb Extend !!");
+                            BTWPlugin.Log("Wall Climb Extend !!");
                         }
                     }
                 }
@@ -736,23 +748,23 @@ public static class WallClimbManagerHooks
             }
             else
             {
-                Plugin.logger.LogError("Couldn't find IL hook :<");
-                Plugin.Log(il);
+                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                BTWPlugin.Log(il);
             }
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
-        Plugin.Log("WallClimbManager IL 3 ends");
+        BTWPlugin.Log("WallClimbManager IL 3 ends");
     }
     private static void Player_WallClimbManager_StopLoopSoundOnGrip(ILContext il)
     {
-        Plugin.Log("WallClimbManager IL 4 starts");
+        BTWPlugin.Log("WallClimbManager IL 4 starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchLdsfld<SoundID>(nameof(SoundID.None)),
@@ -778,16 +790,16 @@ public static class WallClimbManagerHooks
             }
             else
             {
-                Plugin.logger.LogError("Couldn't find IL hook :<");
-                Plugin.Log(il);
+                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                BTWPlugin.Log(il);
             }
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
-        Plugin.Log("WallClimbManager IL 4 ends");
+        BTWPlugin.Log("WallClimbManager IL 4 ends");
     }
 
 }

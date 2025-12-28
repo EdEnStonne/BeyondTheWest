@@ -11,7 +11,7 @@ public static class ArenaRegistery
     {
         InitArenaNames();
         On.MultiplayerUnlocks.LevelDisplayName += SetNewArenaNames;
-        Plugin.Log("ArenaRegistery ApplyHooks Done !");
+        BTWPlugin.Log("ArenaRegistery ApplyHooks Done !");
     }
 
     public static Dictionary<string, string> ArenaNames = new();
@@ -21,7 +21,7 @@ public static class ArenaRegistery
         ArenaNames.Add("btw_arena_erodedpipes", "Eroded Pipes");
         ArenaNames.Add("btw_arena_strandedsandway1", "Standed Platforms");
 
-        Plugin.Log("Added names of arenas!");
+        BTWPlugin.Log("Added names of arenas!");
     }
 
     private static string SetNewArenaNames(On.MultiplayerUnlocks.orig_LevelDisplayName orig, string s)

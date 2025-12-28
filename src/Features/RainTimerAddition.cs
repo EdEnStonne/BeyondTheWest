@@ -35,7 +35,7 @@ public class RainTimerAddition
     {
         public NightTimeRainMeter(RainMeter rainMeter, HUD.HUD hud, FContainer fContainer) : base(hud)
         {
-            Plugin.Log("NightTimeRainMeter ctor start");
+            BTWPlugin.Log("NightTimeRainMeter ctor start");
             this.rainMeter = rainMeter;
             this.fContainer = fContainer;
             SetNightCircles();
@@ -53,7 +53,7 @@ public class RainTimerAddition
                     NightRainCycle.starvingLevel = 2;
                 }
             }
-            Plugin.Log("NightTimeRainMeter ctor done !");
+            BTWPlugin.Log("NightTimeRainMeter ctor done !");
         }
 
         public void ResetEmptyCircle()
@@ -187,7 +187,7 @@ public class RainTimerAddition
             {
                 if (blackFade == null) { InitFades(); }
                 float prop = Mathf.Clamp01(1f - (Math.Abs((float)(NightRainCycle.faintingCounter - NightRainCycle.faintingTime / 2f) / NightRainCycle.faintingTime) * 2f));
-                Plugin.Log(NightRainCycle.faintingCounter + "/" + prop);
+                BTWPlugin.Log(NightRainCycle.faintingCounter + "/" + prop);
                 blackFade.alpha = Math.Min(prop * 1.5f, 1f);
                 blackFade.scaleX = ThisWorld.game.rainWorld.screenSize.x * Mathf.Lerp(0.25f, 1.5f, prop);
                 blackFade.scaleY = ThisWorld.game.rainWorld.screenSize.y * Mathf.Lerp(0.25f, 1.5f, prop);
@@ -298,7 +298,7 @@ public class RainTimerAddition
                     };
                     // bcircles[i].circleShader = bcircles[i].basicShader;
                 }
-                Plugin.Log("Night Cycle time : " + NightRainCycle.nightCycleTotalTick + " / " + ntickPerCircle + " / " + bcircles.Length);
+                BTWPlugin.Log("Night Cycle time : " + NightRainCycle.nightCycleTotalTick + " / " + ntickPerCircle + " / " + bcircles.Length);
             }
         }
         public void SetDayCircles()
@@ -322,7 +322,7 @@ public class RainTimerAddition
             {
                 rainMeter.circles[i] = new HUDCircle(hud, HUDCircle.SnapToGraphic.smallEmptyCircle, fContainer, 0);
             }
-            Plugin.Log("Day Cycle time : " + ThisWorld.rainCycle.cycleLength + " / " + rainMeter.timePerCircle + " / " + rainMeter.circles.Length);
+            BTWPlugin.Log("Day Cycle time : " + ThisWorld.rainCycle.cycleLength + " / " + rainMeter.timePerCircle + " / " + rainMeter.circles.Length);
         }
         public void ShowRegionAndCycle()
         {
@@ -398,7 +398,7 @@ public class RainTimerAddition
                 {
                     return NTRC;
                 }
-                Plugin.Log("Can't find NightTimeRainCycle ! "+ (ThisWorld != null) +"/"+ (ThisWorld != null && ThisWorld.rainCycle != null) +"/false");
+                BTWPlugin.Log("Can't find NightTimeRainCycle ! "+ (ThisWorld != null) +"/"+ (ThisWorld != null && ThisWorld.rainCycle != null) +"/false");
                 return null;
             }
         }
@@ -407,8 +407,8 @@ public class RainTimerAddition
     {
         public NightTimeRainCycle(RainCycle rainCycle, World world)
         {
-            Plugin.Log("NightTimeRainCycle ctor start with : " + rainCycle +"/"+ world);
-            Plugin.Log("Cycle settings : " + world.game.rainWorld.setup.cycleTimeMin + " / " + world.game.rainWorld.setup.cycleTimeMax);
+            BTWPlugin.Log("NightTimeRainCycle ctor start with : " + rainCycle +"/"+ world);
+            BTWPlugin.Log("Cycle settings : " + world.game.rainWorld.setup.cycleTimeMin + " / " + world.game.rainWorld.setup.cycleTimeMax);
             this.rainCycle = rainCycle;
             this.world = world;
             SetNightTimer();
@@ -418,7 +418,7 @@ public class RainTimerAddition
                 NightIntermission(rainCycle.maxPreTimer);
                 cyclePassed = -1;
             }
-            Plugin.Log("NightTimeRainCycle ctor done !");
+            BTWPlugin.Log("NightTimeRainCycle ctor done !");
         }
 
         public void Update()
@@ -444,7 +444,7 @@ public class RainTimerAddition
             }
             if (TimeUntilNextDay <= nightIntermissiontime && !outOfNight && NightLeft != -1f)
             {
-                Plugin.logger.LogDebug("Resetting rain");
+                BTWPlugin.logger.LogDebug("Resetting rain");
                 if (world.game.globalRain != null)
                 {
                     world.game.globalRain.ResetRain();
@@ -483,14 +483,14 @@ public class RainTimerAddition
                             foodTaken++;
                             mainPlayer.SubtractFood(1);
                             // mainPlayer.room.PlaySound(SoundID.HUD_Food_Meter_Deplete_Plop_A, mainPlayer.mainBodyChunk.pos, 1f, UnityEngine.Random.Range(0.75f, 1.5f));
-                            Plugin.Log("Getting a night snack at "+ RainRetreating +"/"+ (slugcatStats.foodToHibernate * (1f - RainRetreating)) +"/"+ foodTaken +"/"+ slugcatStats.foodToHibernate);
+                            BTWPlugin.Log("Getting a night snack at "+ RainRetreating +"/"+ (slugcatStats.foodToHibernate * (1f - RainRetreating)) +"/"+ foodTaken +"/"+ slugcatStats.foodToHibernate);
                         }
                     }
                 }
             }
             if ((NightLeft == -1f && outOfNight && RainRetreating == 0) || TimeUntilNextDay == 0)
             {
-                Plugin.logger.LogDebug("A new day has dawned");
+                BTWPlugin.logger.LogDebug("A new day has dawned");
                 outOfNight = false;
                 rainCycle.dayNightCounter = 0;
                 cyclePassed++;
@@ -539,9 +539,9 @@ public class RainTimerAddition
                                 pl.Stun(40);
                             }
                         }
-                        Plugin.Log("Ouch ! " + slugcatStats.foodToHibernate);
+                        BTWPlugin.Log("Ouch ! " + slugcatStats.foodToHibernate);
                     }
-                    Plugin.Log("Food to hibernate now : "+ slugcatStats.foodToHibernate);
+                    BTWPlugin.Log("Food to hibernate now : "+ slugcatStats.foodToHibernate);
                 }
                 foodTaken = 0;
 
@@ -560,7 +560,7 @@ public class RainTimerAddition
             }
             if (faintingCounter > 0 && faintingCounter == Mathf.Clamp(faintingCounter, faintingTime * 1 / 4, faintingTime * 3 / 4) && !timeSkip && !outOfNight && RainApproaching == 0f && RainRetreating == 0f)
             {
-                Plugin.Log("Fainting cycle skip !");
+                BTWPlugin.Log("Fainting cycle skip !");
                 timeSkip = true;
                 if (NightLeft == -1f)
                 {
@@ -630,7 +630,7 @@ public class RainTimerAddition
                 int stun = FaintLevel < 2f ? 0 : (int)(UnityEngine.Random.Range(20f, 120f) * FaintLevel);
                 bool fainting = !outOfNight && RainApproaching == 0f && RainRetreating == 0f && FaintLevel >= 3f
                     && UnityEngine.Random.value < 0.01f * Math.Pow(FaintLevel -2f, 2);
-                Plugin.Log("Doc, i don't feel so good... (Faint level at :" + FaintLevel + ", mvtStun : "+ mvtStun + ", stun : "+ stun + ", fainting : "+ fainting +")");
+                BTWPlugin.Log("Doc, i don't feel so good... (Faint level at :" + FaintLevel + ", mvtStun : "+ mvtStun + ", stun : "+ stun + ", fainting : "+ fainting +")");
                 for (int i = 0; i < world.game.Players.Count; i++)
                 {
                     if (world.game.Players[i].realizedCreature != null && world.game.Players[i].realizedCreature is Player pl)
@@ -825,7 +825,7 @@ public class RainTimerAddition
 
     static bool MeadowAllowNightCycle()
     {
-        if (Plugin.meadowEnabled)
+        if (BTWPlugin.meadowEnabled)
         {
             return !MeadowFunc.IsMeadowLobby();
         }
@@ -834,9 +834,9 @@ public class RainTimerAddition
     static bool CanNightCycle(RainWorldGame game)
     {
         if (game == null) { return false; }
-        if (Plugin.meadowEnabled && MeadowAllowNightCycle()) { return false; }
-        Plugin.Log("Is there night today..? " );
-        Plugin.Log(
+        if (BTWPlugin.meadowEnabled && MeadowAllowNightCycle()) { return false; }
+        BTWPlugin.Log("Is there night today..? " );
+        BTWPlugin.Log(
             "Let's check : " + 
             (BTWRemix.EnableNightCycle.Value) + "/" + 
             (game.session != null && (game.session is StoryGameSession)) + "/" + 
@@ -866,10 +866,10 @@ public class RainTimerAddition
             // ))
         )
         {
-        Plugin.Log("Night allowed !");
+        BTWPlugin.Log("Night allowed !");
             return true;
         }
-        Plugin.Log("No night today !");
+        BTWPlugin.Log("No night today !");
         return false;
     }
 
@@ -878,7 +878,7 @@ public class RainTimerAddition
     {
         try
         {
-            Plugin.Log("IL hook of Rain Night Timer Starting...");
+            BTWPlugin.Log("IL hook of Rain Night Timer Starting...");
             ILCursor cursor = new(il);
             Instruction Mark = cursor.Next;
 
@@ -907,7 +907,7 @@ public class RainTimerAddition
                         }
                         else
                         {
-                            Plugin.logger.LogError("Couldn't find IL hook " + i + " :<");
+                            BTWPlugin.logger.LogError("Couldn't find IL hook " + i + " :<");
                         }
                     }
                     else
@@ -919,7 +919,7 @@ public class RainTimerAddition
                         }
                         else
                         {
-                            Plugin.logger.LogError("Couldn't find IL hook " + i + " :<");
+                            BTWPlugin.logger.LogError("Couldn't find IL hook " + i + " :<");
                         }
                     }
                 }
@@ -964,7 +964,7 @@ public class RainTimerAddition
             {
                 Mark = cursor.Next;
             }
-            else { Plugin.logger.LogError("(RTA:RTN) Couldn't find IL hook 0bis :<"); }
+            else { BTWPlugin.logger.LogError("(RTA:RTN) Couldn't find IL hook 0bis :<"); }
             cursor.Goto(0, MoveType.After);
             if (cursor.TryGotoNext(MoveType.Before, x => x.MatchLdsfld<ModManager>("Expedition")))
             {
@@ -973,7 +973,7 @@ public class RainTimerAddition
 
                 cursor.Emit(OpCodes.Brtrue, Mark);
             }
-            else { Plugin.logger.LogError("(RTA:RTN) Couldn't find IL hook 0 :<"); }
+            else { BTWPlugin.logger.LogError("(RTA:RTN) Couldn't find IL hook 0 :<"); }
 
             // Print
             // Mark = getIfs()[7];
@@ -991,7 +991,7 @@ public class RainTimerAddition
                 cursor.Emit(OpCodes.Ldarg_0);
                 cursor.EmitDelegate(CheckForOrigPaletteFade);
             }
-            else { Plugin.logger.LogError("(RTA:RTN) Couldn't find IL hook 1 :<"); }
+            else { BTWPlugin.logger.LogError("(RTA:RTN) Couldn't find IL hook 1 :<"); }
 
             // Palette check
 
@@ -1007,7 +1007,7 @@ public class RainTimerAddition
                 cursor.Emit(OpCodes.Ldarg_0);
                 cursor.EmitDelegate(ChangeToOrigBPalleteIfN);
             }
-            else { Plugin.logger.LogError("(RTA:RTN) Couldn't find IL hook 2 :<"); }
+            else { BTWPlugin.logger.LogError("(RTA:RTN) Couldn't find IL hook 2 :<"); }
             if (
                 cursor.TryGotoNext(MoveType.After,
                     x => x.MatchLdarg(0),
@@ -1020,7 +1020,7 @@ public class RainTimerAddition
                 cursor.Emit(OpCodes.Ldarg_0);
                 cursor.EmitDelegate(ChangeToDuskPalleteIfN);
             }
-            else { Plugin.logger.LogError("(RTA:RTN) Couldn't find IL hook 3 :<"); }
+            else { BTWPlugin.logger.LogError("(RTA:RTN) Couldn't find IL hook 3 :<"); }
 
             Mark = getIfs()[2];
             if (
@@ -1034,7 +1034,7 @@ public class RainTimerAddition
                 cursor.Emit(OpCodes.Ldarg_0);
                 cursor.EmitDelegate(ChangeToOrigBPalleteIfN);
             }
-            else { Plugin.logger.LogError("(RTA:RTN) Couldn't find IL hook 4 :<"); }
+            else { BTWPlugin.logger.LogError("(RTA:RTN) Couldn't find IL hook 4 :<"); }
             if (
                 cursor.TryGotoNext(MoveType.After,
                     x => x.MatchLdarg(0),
@@ -1047,32 +1047,32 @@ public class RainTimerAddition
                 cursor.Emit(OpCodes.Ldarg_0);
                 cursor.EmitDelegate(ChangeToDuskPalleteIfN);
             }
-            else { Plugin.logger.LogError("(RTA:RTN) Couldn't find IL hook 5 :<"); }
+            else { BTWPlugin.logger.LogError("(RTA:RTN) Couldn't find IL hook 5 :<"); }
 
-            Plugin.Log("IL hook of Rain Night Timer Done !");
+            BTWPlugin.Log("IL hook of Rain Night Timer Done !");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
     }
     private static void AddBlueCircles(On.HUD.RainMeter.orig_ctor orig, RainMeter self, HUD.HUD hud, FContainer fContainer)
     {
-        Plugin.Log("AddBlueCircles start !");
+        BTWPlugin.Log("AddBlueCircles start !");
         orig(self, hud, fContainer);
         try
         {
             if (!cwtNightTimeRM.TryGetValue(self, out var _) && hud.owner is Player player && CanNightCycle(player.abstractCreature.world.game))
             {
                 cwtNightTimeRM.Add(self, new NightTimeRainMeter(self, hud, fContainer));
-                Plugin.Log("Added NightTimeRainMeter");
+                BTWPlugin.Log("Added NightTimeRainMeter");
             }
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
-        Plugin.Log("AddBlueCircles success !");
+        BTWPlugin.Log("AddBlueCircles success !");
     }
     private static void UpdateBlueCircles(On.HUD.RainMeter.orig_Update orig, RainMeter self)
     {
@@ -1093,14 +1093,14 @@ public class RainTimerAddition
     
     private static void AddNightCycle(On.RainCycle.orig_ctor orig, RainCycle self, World world, float minutes)
     {
-        Plugin.Log("AddNightCycle start !");
+        BTWPlugin.Log("AddNightCycle start !");
         orig(self, world, minutes);
-        Plugin.Log("RainCycle added");
+        BTWPlugin.Log("RainCycle added");
         try
         {
             if (!cwtNightTimeRC.TryGetValue(self, out _) && CanNightCycle(world?.game))
             {
-                Plugin.Log("Adding NightTimeRainCycle");
+                BTWPlugin.Log("Adding NightTimeRainCycle");
                 NightTimeRainCycle NTRC = new(self, world);
                 cwtNightTimeRC.Add(self, NTRC);
                 if (Tiredness.TryGet(world.game, out int t))
@@ -1108,13 +1108,13 @@ public class RainTimerAddition
                     NTRC.tiredness = t;
                     NTRC.lastTiredness = t;
                 }
-                Plugin.Log("Added NightTimeRainCycle");
+                BTWPlugin.Log("Added NightTimeRainCycle");
             }
-            Plugin.Log("AddNightCycle success !");
+            BTWPlugin.Log("AddNightCycle success !");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
     }
     private static void UpdateNightCycle(On.RainCycle.orig_Update orig, RainCycle self)
@@ -1128,31 +1128,31 @@ public class RainTimerAddition
 
     private static void ResetExtraCycles(On.RainWorldGame.orig_GoToDeathScreen orig, RainWorldGame self)
     {
-        Plugin.Log("ResetExtraCycles start !");
+        BTWPlugin.Log("ResetExtraCycles start !");
         if (self.world != null && self.world.rainCycle != null)
         {
             if (cwtNightTimeRC.TryGetValue(self.world.rainCycle, out var NTRC))
             {
                 (self.session as StoryGameSession).saveState.cycleNumber -= NTRC.ExtraCycles;
                 Tiredness.Get(self.world.game).Value = NTRC.lastTiredness;
-                Plugin.Log("NTRC reset managed");
+                BTWPlugin.Log("NTRC reset managed");
             }
         }
         orig(self);
-        Plugin.Log("ResetExtraCycles success !");
+        BTWPlugin.Log("ResetExtraCycles success !");
     }
     private static void OnResting(On.ShelterDoor.orig_DoorClosed orig, ShelterDoor self)
     {
-        Plugin.Log("OnResting start !");
+        BTWPlugin.Log("OnResting start !");
         if (self.rainCycle != null)
         {
             if (cwtNightTimeRC.TryGetValue(self.rainCycle, out var NTRC))
             {
                 Tiredness.Get(self.rainCycle.world.game).Value = Math.Max(NTRC.tiredness - 1, 0);
-                Plugin.Log("NTRC tiredness managed");
+                BTWPlugin.Log("NTRC tiredness managed");
             }
         }
         orig(self);
-        Plugin.Log("OnResting success !");
+        BTWPlugin.Log("OnResting success !");
     }
 }

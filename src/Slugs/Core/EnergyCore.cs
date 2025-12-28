@@ -35,7 +35,7 @@ public class EnergyCore : PhysicalObject, IDrawable
         base.gravity = 1f;
 
         this.bodyChunkConnections = new PhysicalObject.BodyChunkConnection[0];
-        Plugin.Log("Core ctor " + this.ToString() + "/"+ this.abstractPhysicalObject.ID + " of " + this.player.ToString() + " done !");
+        BTWPlugin.Log($"Core ctor [{this}] done !");
         //this.evenUpdate = !player.evenUpdate;
         //logger.LogDebug(player.mainBodyChunk.owner);
         //logger.LogDebug(this.firstChunk.owner);
@@ -744,7 +744,7 @@ public class EnergyCore : PhysicalObject, IDrawable
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
     }
     //----------------- IDrawable
@@ -897,7 +897,7 @@ public class EnergyCore : PhysicalObject, IDrawable
         {
             if (this.room.game.devToolsActive) { DebugUpdate(); }
             var cinput = this.player.input[0];
-            if (Plugin.meadowEnabled && this.AEC.isMeadowArenaTimerCountdown && !BTWFunc.OnlineArenaTimerOn())
+            if (BTWPlugin.meadowEnabled && this.AEC.isMeadowArenaTimerCountdown && !BTWFunc.OnlineArenaTimerOn())
             {
                 this.AEC.isMeadowArenaTimerCountdown = false;
             }
@@ -974,10 +974,8 @@ public class EnergyCore : PhysicalObject, IDrawable
         }
         else
         {
-            Plugin.Log("Core " + this.ToString() + "/"+ this.abstractPhysicalObject.ID + " of " + this.player.ToString() + " is not in the same room as player ! Deleting...");
+            BTWPlugin.Log($"[{this}] is not in the same room as player ! AEC : [{this.AEC}], Room : [{this.room}], Player Room : [{this.player?.room}]. Deleting...");
             this.AbstractEnergyCore.Abstractize(this.player != null ? this.player.abstractCreature.pos : this.AbstractEnergyCore.pos);
-            this.AbstractEnergyCore.realizedObject = null;
-            this.Destroy();
         }
     }
     public override void Grabbed(Creature.Grasp grasp)
@@ -1001,10 +999,15 @@ public class EnergyCore : PhysicalObject, IDrawable
         }
         else
         {
-            Plugin.Log("The core has been hit by "+ weapon +" from "+ weapon.thrownBy +" but nothing happened !");
+            BTWPlugin.Log("The core has been hit by "+ weapon +" from "+ weapon.thrownBy +" but nothing happened !");
         }
     }
 
+    public override string ToString()
+    {
+        return $"EnergyCore <{this.abstractPhysicalObject?.ID}> of [{this.player}]";
+    }
+    
     //---------------- Variables
 
     // Objects

@@ -31,9 +31,11 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
         [OnlineField]
         public int circlesAmount = 0;
         [OnlineFieldHalf]
-        public float firstPosX;
+        public float respawnPosX;
         [OnlineFieldHalf]
-        public float firstPosY;
+        public float respawnPosY;
+        [OnlineField]
+        public int respawnExit;
 
         //--------- ctor
 
@@ -56,8 +58,9 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
             this.reviveCounter = lives.reviveCounter;
             this.livesDisplayCounter = lives.livesDisplayCounter;
             this.circlesAmount = lives.circlesAmount;
-            this.firstPosX = lives.firstPos.x;
-            this.firstPosY = lives.firstPos.y;
+            this.respawnPosX = lives.RespawnPos.x;
+            this.respawnPosY = lives.RespawnPos.y;
+            this.respawnExit = lives.respawnExit;
         }
         //--------- Functions
         public override void ReadTo(OnlineEntity.EntityData data, OnlineEntity onlineEntity)
@@ -95,7 +98,8 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
             lives.countedAlive = this.countedAlive;
             lives.livesDisplayCounter = this.livesDisplayCounter;
             lives.circlesAmount = this.circlesAmount;
-            lives.firstPos = new Vector2(this.firstPosX, this.firstPosY);
+            lives.RespawnPos = new Vector2(this.respawnPosX, this.respawnPosY);
+            lives.respawnExit = this.respawnExit;
 
         }
         public override Type GetDataType()

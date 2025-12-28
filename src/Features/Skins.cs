@@ -15,7 +15,7 @@ public class BTWSkins
         On.PlayerGraphics.DrawSprites += Player_Sprite;
         IL.PlayerGraphics.InitiateSprites += Modify_Player_Sprite;
         IL.Player.ctor += Player_ModifyPlayerHeight;
-        Plugin.Log("BTWSkins ApplyHooks Done !");
+        BTWPlugin.Log("BTWSkins ApplyHooks Done !");
     }
 
     // Functions
@@ -37,7 +37,7 @@ public class BTWSkins
         //     FAtlasElement value = keyValuePair.Value;
         //     Plugin.Log(value.name);
         // }
-        Plugin.Log("BTWSkins LoadSkin Done !");
+        BTWPlugin.Log("BTWSkins LoadSkin Done !");
         skinloaded = true;
     }
 
@@ -148,10 +148,10 @@ public class BTWSkins
     }
     private static void Player_ModifyPlayerHeight(ILContext il)
     {
-        Plugin.Log("BTWSkins IL 2 starts");
+        BTWPlugin.Log("BTWSkins IL 2 starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchLdarg(0),
@@ -175,21 +175,21 @@ public class BTWSkins
                 cursor.Emit(OpCodes.Ldarg_0);
                 cursor.EmitDelegate(ChangeSlugHeight);
             }
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
-            Plugin.Log(il);
+            BTWPlugin.logger.LogError(ex);
+            BTWPlugin.Log(il);
         }
-        Plugin.Log("BTWSkins IL 2 ends");
+        BTWPlugin.Log("BTWSkins IL 2 ends");
     }
     private static void Modify_Player_Sprite(ILContext il) // blatandly copied from MagicaJaphet : Extended Slugbase Features. Sorry I really don't get IL atm...
     {
-        Plugin.Log("BTWSkins IL 1 starts");
+        BTWPlugin.Log("BTWSkins IL 1 starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             // gown.InitiateSprite(this.gownIndex, sLeaser, rCam);
             if (cursor.TryGotoNext(MoveType.Before, 
@@ -208,7 +208,7 @@ public class BTWSkins
                     // Load skin if failed
                     if (!skinloaded)
                     {
-                        Plugin.logger.LogError("Skin not loaded ! Loading them now...");
+                        BTWPlugin.logger.LogError("Skin not loaded ! Loading them now...");
                         LoadSkins();
                     }
                     if (SparkFunc.IsSpark(self.player))
@@ -231,12 +231,12 @@ public class BTWSkins
                 }
                 cursor.EmitDelegate(InitiateSprites);
             }
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
-        Plugin.Log("BTWSkins IL 1 ends");
+        BTWPlugin.Log("BTWSkins IL 1 ends");
     }
 } 

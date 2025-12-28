@@ -15,7 +15,7 @@ public class CoreFunc
         On.Player.ctor += Player_coreInit;
         On.Player.Update += Player_CoreUpdate;
         On.Creature.Violence += Player_Explosion_Resistance;
-        Plugin.Log("CoreFunc ApplyHooks Done !");
+        BTWPlugin.Log("CoreFunc ApplyHooks Done !");
     }
 
     public static bool IsCore(Player player)
@@ -24,12 +24,12 @@ public class CoreFunc
     }
     public static void GiveCoreToPlayer(Player player)
     {
-        Plugin.Log("Trying to add core to " + player.ToString());
+        BTWPlugin.Log("Trying to add core to " + player.ToString());
 
         AbstractEnergyCore.AddCore(player.abstractCreature);
         // abstractEnergyCore.RealizeInRoom();
 
-        Plugin.Log("Core of " + player.abstractCreature.ToString() + "(" + player.ToString() + ")" + " added in world !");
+        BTWPlugin.Log("Core of " + player.abstractCreature.ToString() + "(" + player.ToString() + ")" + " added in world !");
     }
 
 
@@ -42,7 +42,7 @@ public class CoreFunc
             bool hasCore = AbstractEnergyCore.TryGetCore(self.abstractCreature, out var AEC);
             if (!hasCore || AEC == null || AEC.world == null || AEC.pos == null)
             {
-                Plugin.Log("Something wrong happened to the core of " + self.ToString() + $". \nHasCore = <{hasCore}>, AEC world = [{AEC?.world}], AEC Pos = {AEC?.pos}. \nFixing it...");
+                BTWPlugin.Log("Something wrong happened to the core of " + self.ToString() + $". \nHasCore = <{hasCore}>, AEC world = [{AEC?.world}], AEC Pos = [{AEC?.pos}]. \nFixing it...");
                 if (hasCore) {
                     if (AEC != null)
                     {

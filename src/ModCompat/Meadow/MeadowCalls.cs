@@ -85,7 +85,7 @@ public static class MeadowCalls
         if (MeadowFunc.ShouldHoldFireFromOnlineArenaTimer())
         {
             abstractEnergyCore.isMeadowArenaTimerCountdown = true;
-            Plugin.Log(abstractEnergyCore.abstractPlayer +" In Timer !");
+            BTWPlugin.Log(abstractEnergyCore.abstractPlayer +" In Timer !");
         }
         if (IsMine && abstractEnergyCore.isMeadow && !onlineCreature.TryGetData<OnlineAbstractCoreData>(out _))
         {
@@ -170,8 +170,8 @@ public static class MeadowCalls
     }
     public static void SparkMeadow_Init(StaticChargeManager staticChargeManager)
     {
-        bool IsMine = !Plugin.meadowEnabled || staticChargeManager.AbstractPlayer.IsLocal();
-        bool IsMeadowLobby = Plugin.meadowEnabled && MeadowFunc.IsMeadowLobby();
+        bool IsMine = !BTWPlugin.meadowEnabled || staticChargeManager.AbstractPlayer.IsLocal();
+        bool IsMeadowLobby = BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowLobby();
         OnlineCreature onlineCreature = SparkMeadow_OnlineCreature(staticChargeManager);
 
         staticChargeManager.particles = true;
@@ -198,7 +198,7 @@ public static class MeadowCalls
             {
                 staticChargeManager.dischargeCooldown = 10;
                 staticChargeManager.isMeadowArenaTimerCountdown = true;
-                Plugin.Log(staticChargeManager.AbstractPlayer + " In Timer !");
+                BTWPlugin.Log(staticChargeManager.AbstractPlayer + " In Timer !");
             }
         }
         if (IsMine && staticChargeManager.isMeadow && !onlineCreature.TryGetData<OnlineStaticChargeManagerData>(out _))
@@ -346,11 +346,9 @@ public static class MeadowCalls
         if (MeadowFunc.IsMeadowLobby())
         {
             arenaLives.IsMeadowLobby = true;
-            arenaLives.canRespawn = false;
-
+            // arenaLives.canRespawn = false;
             if (arenaLives.target is Player player && BTWMeadowArenaSettings.TryGetSettings(out var meadowArenaSettings))
             {
-                // arenaLives.canRespawn = meadowArenaSettings.ArenaLives_ReviveFromAbyss;
                 arenaLives.lifes = meadowArenaSettings.ArenaLives_Amount;
                 arenaLives.lifesleft = meadowArenaSettings.ArenaLives_Amount;
                 arenaLives.reviveAdditionnalTime = meadowArenaSettings.ArenaLives_AdditionalReviveTime * BTWFunc.FrameRate;

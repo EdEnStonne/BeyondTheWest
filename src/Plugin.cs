@@ -4,9 +4,9 @@ using BepInEx.Logging;
 
 namespace BeyondTheWest 
 {
-    [BepInPlugin(MOD_ID, "Beyond The West", "1.3.0")]
+    [BepInPlugin(MOD_ID, "Beyond The West", "1.3.3")]
     [BepInDependency("slime-cubed.slugbase")]
-    class Plugin : BaseUnityPlugin
+    class BTWPlugin : BaseUnityPlugin
     {
         private const string MOD_ID = "edenstonne.beyondthewest";
         private static bool isInit = false;
@@ -161,7 +161,7 @@ namespace BeyondTheWest
         {
             orig(self);
             logger.LogInfo("Post Mods Load starts");
-            Plugin.CheckMods();
+            BTWPlugin.CheckMods();
             if (!ressourceInit)
             {
                 logger.LogError("Mod didn't load properly, loading missing ressources...");

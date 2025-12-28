@@ -71,7 +71,7 @@ public class StaticChargeManager
                 {
                     this.displayBattery = true;
                 }
-                if (Plugin.meadowEnabled)
+                if (BTWPlugin.meadowEnabled)
                 {
                     MeadowCalls.SparkMeadow_Init(this);
                 }
@@ -80,7 +80,7 @@ public class StaticChargeManager
             {
                 this.active = false;
             }
-            Plugin.Log("Spark manager Init ! " + this.init + "/" + this.particles + "/" + this.active + "/" + this.isMeadow + "/" + this.isMeadowFakePlayer + "/" + this.displayBattery + "/" + this.dischargeCooldown);
+            BTWPlugin.Log("Spark manager Init ! " + this.init + "/" + this.particles + "/" + this.active + "/" + this.isMeadow + "/" + this.isMeadowFakePlayer + "/" + this.displayBattery + "/" + this.dischargeCooldown);
         }
     }
 
@@ -144,7 +144,7 @@ public class StaticChargeManager
             )
             {
                 this.eBounceLeft--;
-                Plugin.Log("Spark Jump Tech");
+                BTWPlugin.Log("Spark Jump Tech");
                 this.BounceBack(IsOvercharged);
             }
         }
@@ -250,7 +250,7 @@ public class StaticChargeManager
                 room.InGameNoise(new Noise.InGameNoise(pos, 900f, player, 1f));
                 Discharge(this.FullECharge * 1.5f, 1.0f, 0, pos, 1.5f);
                 this.Charge = 0;
-                Plugin.Log("Seems like Spark "+ player.ToString() +" couldn't handle the charge...");
+                BTWPlugin.Log("Seems like Spark "+ player.ToString() +" couldn't handle the charge...");
                 player.Die();
                 return;
             }
@@ -450,7 +450,7 @@ public class StaticChargeManager
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
     }
     
@@ -494,7 +494,7 @@ public class StaticChargeManager
                     this.overchargeImmunity = Mathf.Max(this.overchargeImmunity, 10);
                 }
                 if (this.Room.game.devToolsActive) { DebugUpdate(); }
-                if (Plugin.meadowEnabled && this.isMeadowArenaTimerCountdown && BTWFunc.OnlineArenaTimerOn())
+                if (BTWPlugin.meadowEnabled && this.isMeadowArenaTimerCountdown && BTWFunc.OnlineArenaTimerOn())
                 {
                     this.dischargeCooldown = 3;
                 }
@@ -1083,7 +1083,7 @@ public static class StaticChargeHooks
         IL.Centipede.Shock += Player_CentipedeShock_Absorb;
         IL.ZapCoil.Update += ZapCoil_StaticChargeManager_Absorb;
 
-        Plugin.Log("StaticChargeHooks ApplyHooks Done !");
+        BTWPlugin.Log("StaticChargeHooks ApplyHooks Done !");
     }
     
     private static void Player_Electric_Charge_Update(On.Player.orig_Update orig, Player self, bool eu)
@@ -1115,10 +1115,10 @@ public static class StaticChargeHooks
     }
     private static void Player_StaticManager_SlideSpearBounce(ILContext il)
     {
-        Plugin.Log("StaticChargeManager IL 1 starts");
+        BTWPlugin.Log("StaticChargeManager IL 1 starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchLdloc(0),
@@ -1144,15 +1144,15 @@ public static class StaticChargeHooks
             }
             else
             {
-                Plugin.logger.LogError("Couldn't find IL hook :<");
+                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
             }
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
-        Plugin.Log("StaticChargeManager IL 1 ends");
+        BTWPlugin.Log("StaticChargeManager IL 1 ends");
     }
     private static void Player_StaticManager_SlideMomentum(On.Player.orig_Jump orig, Player self)
     {
@@ -1173,10 +1173,10 @@ public static class StaticChargeHooks
     
     private static void Player_CentipedeShock_Absorb(ILContext il) // this is the first IL hook I made myself :D
     {
-        Plugin.Log("StaticChargeManager IL 2 starts");
+        BTWPlugin.Log("StaticChargeManager IL 2 starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.Before, x => x.MatchCall<Centipede>("get_Small")))
             {
@@ -1208,11 +1208,11 @@ public static class StaticChargeHooks
                         self.shockGiveUpCounter = Math.Max(self.shockGiveUpCounter, 30);
                         self.AI.annoyingCollisions = Math.Min(self.AI.annoyingCollisions / 2, 150);
 
-                        Plugin.Log("SHOCKING ! " + AddedCharge);
+                        BTWPlugin.Log("SHOCKING ! " + AddedCharge);
                     }
                     else
                     {
-                        Plugin.Log("Can't shock :<");
+                        BTWPlugin.Log("Can't shock :<");
                     }
                 }
 
@@ -1252,15 +1252,15 @@ public static class StaticChargeHooks
             }
             else
             {
-                Plugin.logger.LogError("Couldn't find IL hook :<");
+                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
             }
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
-        Plugin.Log("StaticChargeManager IL 2 ends");
+        BTWPlugin.Log("StaticChargeManager IL 2 ends");
     }
     private static void Player_Electric_Absorb(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
     {
@@ -1284,17 +1284,17 @@ public static class StaticChargeHooks
             Vector2 a = bodyChunk.ContactPoint.ToVector2();
             Vector2 v = bodyChunk.pos + a * (bodyChunk.rad + 30f);
             SCM.RechargeFromExternalSource(v, 1500f);
-            Plugin.Log("Spark got zapped !");
+            BTWPlugin.Log("Spark got zapped !");
             return null;
         }
         return creature;
     }
     private static void ZapCoil_StaticChargeManager_Absorb(ILContext il)
     {
-        Plugin.Log("StaticChargeManager IL 3 starts");
+        BTWPlugin.Log("StaticChargeManager IL 3 starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
 
             Func<Instruction, bool>[] iltarget = {
@@ -1327,23 +1327,23 @@ public static class StaticChargeHooks
                 }
                 else
                 {
-                    Plugin.logger.LogError("Couldn't find IL hook :<");
-                    Plugin.Log(il);
+                    BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                    BTWPlugin.Log(il);
                 }
             }
             else
             {
-                Plugin.logger.LogError("Couldn't find IL hook main :<");
-                Plugin.Log(il);
+                BTWPlugin.logger.LogError("Couldn't find IL hook main :<");
+                BTWPlugin.Log(il);
             }
             
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
-        Plugin.Log("StaticChargeManager IL 3 ends");
+        BTWPlugin.Log("StaticChargeManager IL 3 ends");
     }
 
 }

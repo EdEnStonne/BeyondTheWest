@@ -15,7 +15,7 @@ public static class SpawnWatcherPool
     public static void ApplyHooks()
     {
         InitWatcherPools();
-        Plugin.Log("SpawnWatchePool ApplyHooks Done !");
+        BTWPlugin.Log("SpawnWatchePool ApplyHooks Done !");
     }
 
     private static void InitWatcherPools()

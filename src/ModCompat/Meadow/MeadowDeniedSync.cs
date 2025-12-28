@@ -20,7 +20,7 @@ public static class MeadowDeniedSync
         new Hook(typeof(WorldSession).GetMethod(nameof(WorldSession.ApoLeavingWorld)), WorldSession_DoNotRegisterExit);
         new Hook(typeof(RoomSession).GetMethod(nameof(RoomSession.ApoLeavingRoom)), RoomSession_DoNotRegisterExit);
     
-        Plugin.Log("MeadowDeniedSync ApplyHooks Done !");
+        BTWPlugin.Log("MeadowDeniedSync ApplyHooks Done !");
     }
     
     public static HashSet<AbstractPhysicalObject.AbstractObjectType> deniedSyncedObjects = new()
@@ -31,7 +31,7 @@ public static class MeadowDeniedSync
     private static bool OnlineGameMode_DoNotRegister(Func<OnlineGameMode, OnlineResource, AbstractPhysicalObject, bool> orig, OnlineGameMode self, OnlineResource resource, AbstractPhysicalObject apo)
     {
         if (deniedSyncedObjects.Contains(apo.type)) { 
-            Plugin.Log(apo.ToString() + " shall not be replicated !");
+            BTWPlugin.Log(apo.ToString() + " shall not be replicated !");
             return false; 
         }
         return orig(self, resource, apo);
@@ -39,7 +39,7 @@ public static class MeadowDeniedSync
     private static bool OnlineGameMode_DoNotSyncInWorld(Func<OnlineGameMode, WorldSession, AbstractPhysicalObject, bool> orig, OnlineGameMode self, WorldSession ws, AbstractPhysicalObject apo)
     {
         if (deniedSyncedObjects.Contains(apo.type)) { 
-            Plugin.Log(apo.ToString() + " shall not be sync (world) !");
+            BTWPlugin.Log(apo.ToString() + " shall not be sync (world) !");
             return false; 
         }
         return orig(self, ws, apo);
@@ -47,7 +47,7 @@ public static class MeadowDeniedSync
     private static bool OnlineGameMode_DoNotSyncInRoom(Func<OnlineGameMode, RoomSession, AbstractPhysicalObject, bool> orig, OnlineGameMode self, RoomSession rs, AbstractPhysicalObject apo)
     {
         if (deniedSyncedObjects.Contains(apo.type)) { 
-            Plugin.Log(apo.ToString() + " shall not be sync (room) !");
+            BTWPlugin.Log(apo.ToString() + " shall not be sync (room) !");
             return false; 
         }
         return orig(self, rs, apo);
@@ -55,7 +55,7 @@ public static class MeadowDeniedSync
     private static void WorldSession_DoNotRegisterExit(Action<WorldSession, AbstractPhysicalObject> orig, WorldSession self, AbstractPhysicalObject apo)
     {
         if (deniedSyncedObjects.Contains(apo.type)) { 
-            Plugin.Log(apo.ToString() + " shall not be accounted in deletion (world) !");
+            BTWPlugin.Log(apo.ToString() + " shall not be accounted in deletion (world) !");
             return; 
         }
         orig(self, apo);
@@ -63,7 +63,7 @@ public static class MeadowDeniedSync
     private static void RoomSession_DoNotRegisterExit(Action<RoomSession, AbstractPhysicalObject> orig, RoomSession self, AbstractPhysicalObject apo)
     {
         if (deniedSyncedObjects.Contains(apo.type)) { 
-            Plugin.Log(apo.ToString() + " shall not be accounted in deletion (room) !");
+            BTWPlugin.Log(apo.ToString() + " shall not be accounted in deletion (room) !");
             return; 
         }
         orig(self, apo);

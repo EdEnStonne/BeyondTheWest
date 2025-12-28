@@ -31,7 +31,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
             this.randomItem = BTWRemix.ItemSpawnRandom.Value;
             this.diversity = BTWRemix.ItemSpawnDiversity.Value;
 
-            if (Plugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+            if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
             {
                 MeadowFunc.SetArenaItemSpawnSettings(ref this);
             }
@@ -80,7 +80,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
         this.objectList = objectList;
         this.isFake = isFake;
 
-        if (Plugin.meadowEnabled && notifyMeadow && !isFake)
+        if (BTWPlugin.meadowEnabled && notifyMeadow && !isFake)
         {
             MeadowCalls.BTWArena_RPCAddItemSpawnerToAll(this);
         }
@@ -88,7 +88,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
     public ArenaItemSpawn(Vector2 position, int spawnTime, ObjectType objectType, int intdata = 0, bool notifyMeadow = false)
         : this(position, spawnTime, new List<ObjectData>{ new(objectType, intdata) }, notifyMeadow) {}
     public ArenaItemSpawn(Vector2 position, List<ObjectData> objectList, bool notifyMeadow = false)
-        : this(position, (int)(5 * BTWFunc.FrameRate + BTWFunc.Random(10 * BTWFunc.FrameRate)), objectList, notifyMeadow) {}
+        : this(position, (int)(3 * BTWFunc.FrameRate + BTWFunc.Random(7 * BTWFunc.FrameRate)), objectList, notifyMeadow) {}
     public ArenaItemSpawn(Vector2 position, ObjectType objectType, int intdata = 0, bool notifyMeadow = false)
         : this(position, new List<ObjectData>{ new(objectType, intdata) }, notifyMeadow) {}
     public ArenaItemSpawn(Vector2 position, bool notifyMeadow = false)
@@ -100,7 +100,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
         {
             World world = this.room.world;
             WorldCoordinate coords = this.room.GetWorldCoordinate(this.pos);
-            Plugin.Log($"Spawning items at [{pos}]/[{coords}] !");
+            BTWPlugin.Log($"Spawning items at [{pos}]/[{coords}] !");
             for (int j = 0; j < this.objectList.Count; j++)
             {
                 EntityID newID = world.game.GetNewID();
@@ -198,11 +198,11 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
                             item.RealizeInRoom();
                         }
                     }
-                    Plugin.Log($"   > Spawned [{this.objectList[j].objectType}]<{this.objectList[j].intData}> at [{this.pos}] !");
+                    BTWPlugin.Log($"   > Spawned [{this.objectList[j].objectType}]<{this.objectList[j].intData}> at [{this.pos}] !");
                 }
                 catch (Exception ex)
                 {
-                    Plugin.logger.LogError($"   > Countn't spawn [{this.objectList[j].objectType}]<{this.objectList[j].intData}> at [{this.pos}] ! Maybe item not supported ? \n >Error : {ex}");
+                    BTWPlugin.logger.LogError($"   > Countn't spawn [{this.objectList[j].objectType}]<{this.objectList[j].intData}> at [{this.pos}] ! Maybe item not supported ? \n >Error : {ex}");
                 }
             }
         }
@@ -290,7 +290,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
             {
                 sLeaser.sprites[j + 1 + this.circlesAmount].color = new Color(0.35f, 0.15f, 0.85f);
             }
-            Plugin.Log($"Initiating item sprite [{this.objectList[j].objectType}] with data <{this.objectList[j].intData}> : sprite name is <{sLeaser.sprites[j + 1 + this.circlesAmount].element.name}> and color is [{sLeaser.sprites[j + 1 + this.circlesAmount].color}]");
+            BTWPlugin.Log($"Initiating item sprite [{this.objectList[j].objectType}] with data <{this.objectList[j].intData}> : sprite name is <{sLeaser.sprites[j + 1 + this.circlesAmount].element.name}> and color is [{sLeaser.sprites[j + 1 + this.circlesAmount].color}]");
         }
 
         this.AddToContainer(sLeaser, rCam, null);
@@ -380,7 +380,7 @@ public static class ArenaItemSpawnHooks
     {
         InitPools();
         IL.ArenaGameSession.SpawnItem += ArenaGameSession_NewSpawnSystem;
-        Plugin.Log("ArenaItemSpawnHooks ApplyHooks Done !");
+        BTWPlugin.Log("ArenaItemSpawnHooks ApplyHooks Done !");
     }
 
     private static void InitPools()
@@ -420,7 +420,7 @@ public static class ArenaItemSpawnHooks
             int playersCount = arena.arenaSitting.players.Count;
             int spawnCount = 0;
 
-            if (Plugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+            if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
             {
                 if (!MeadowFunc.IsMeadowHost()) { return 0; }
                 playersCount = MeadowFunc.GetPlayersReadyForArena();
@@ -455,7 +455,7 @@ public static class ArenaItemSpawnHooks
     }
     private static void ArenaGameSession_NewSpawnSystem(ILContext il)
     {
-        Plugin.Log("ArenaItemSpawnHooks IL 1 starts");
+        BTWPlugin.Log("ArenaItemSpawnHooks IL 1 starts");
         try
         {
             ILCursor cursor = new(il);
@@ -467,7 +467,7 @@ public static class ArenaItemSpawnHooks
             body.Variables.Add(spawnCount);
             body.InitLocals = true;
 
-            Plugin.Log($"Added new variable [{spawnCount}] to IL");
+            BTWPlugin.Log($"Added new variable [{spawnCount}] to IL");
             
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchCall(typeof(UnityEngine.Random).GetProperty(nameof(UnityEngine.Random.value)).GetGetMethod()),
@@ -485,8 +485,8 @@ public static class ArenaItemSpawnHooks
             }
             else
             {
-                Plugin.logger.LogError("IL hook 1 not found :<");
-                Plugin.Log(il);
+                BTWPlugin.logger.LogError("IL hook 1 not found :<");
+                BTWPlugin.Log(il);
             }
             
             if (cursor.TryGotoNext(MoveType.Before,
@@ -519,16 +519,16 @@ public static class ArenaItemSpawnHooks
             }
             else
             {
-                Plugin.logger.LogError("IL hook 2 not found :<");
-                Plugin.Log(il);
+                BTWPlugin.logger.LogError("IL hook 2 not found :<");
+                BTWPlugin.Log(il);
             }
             
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
-            Plugin.Log(il);
+            BTWPlugin.logger.LogError(ex);
+            BTWPlugin.Log(il);
         }
-        Plugin.Log("ArenaItemSpawnHooks IL 1 ended !");
+        BTWPlugin.Log("ArenaItemSpawnHooks IL 1 ended !");
     }
 }

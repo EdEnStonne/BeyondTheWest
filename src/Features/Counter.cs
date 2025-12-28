@@ -7,20 +7,26 @@ public class Counter
     public Counter() {}
     public Counter(uint max)
     {
-        this._max = max;
-        if (this._max == 0)
-        {
-            this._max = 1;
-        }
+        this.max = max;
     }
 
     public void Reset()
     {
         this._count = 0;
     }
+    public void Reset(uint max)
+    {
+        this.max = max;
+        Reset();
+    }
     public void ResetUp()
     {
         this._count = this._max;
+    }
+    public void ResetUp(uint max)
+    {
+        this.max = max;
+        ResetUp();
     }
     public void Tick()
     {
@@ -33,12 +39,37 @@ public class Counter
     {
         Tick();
     }
+    public void Add(uint num)
+    {
+        this.value += num;
+    }
     public void Substract()
     {
         if (this._count > 0)
         {
             this._count--;
         }
+    }
+    public void Substract(uint num)
+    {
+        this.value -= num;
+    }
+    public void Up()
+    {
+        Add();
+    }
+    public void Up(uint num)
+    {
+        Add(num);
+    }
+    public void Down()
+    {
+        Substract();
+    }
+
+    public void Down(uint num)
+    {
+        Substract(num);
     }
 
     private uint _max = BTWFunc.FrameRate;
@@ -125,7 +156,7 @@ public class Counter
         }
         set
         {
-            this._count = value;
+            this._count = (uint)Mathf.Clamp(value, 0, this._max);
         }
     }
     public uint valueDown
@@ -136,7 +167,7 @@ public class Counter
         }
         set
         {
-            this._count = this._max - value;
+            this._count = (uint)Mathf.Clamp(this._max - value, 0, this._max);
         }
     }
 }
