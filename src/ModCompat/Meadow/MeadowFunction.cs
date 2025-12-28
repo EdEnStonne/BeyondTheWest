@@ -235,7 +235,6 @@ public static class MeadowFunc
         abstractPlayer.pos.abstractNode = arenaGame.room.ShortcutLeadingToNode(exit).destNode;
 
         // arenaGame.game.world.GetResource().ApoEnteringWorld(abstractPlayer);
-        // abstractPlayer.Room.GetResource()?.ApoEnteringRoom(abstractPlayer, abstractPlayer.pos);
 
         arenaGame.game.cameras[0].followAbstractCreature = abstractPlayer;
 
@@ -251,16 +250,71 @@ public static class MeadowFunc
         }
 
         abstractPlayer.Realize();
-        // onlineCreature.realized = true;
+        onlineCreature.realized = true;
+        abstractPlayer.Room.GetResource()?.ApoEnteringRoom(abstractPlayer, abstractPlayer.pos);
         BTWPlugin.Log($"Realized Creature !");
+        
         ShortcutHandler.ShortCutVessel shortCutVessel = new(room.ShortcutLeadingToNode(exit).DestTile, 
             abstractPlayer.realizedCreature, arenaGame.game.world.GetAbstractRoom(0), 0)
         {
             entranceNode = abstractPlayer.pos.abstractNode,
             room = arenaGame.game.world.GetAbstractRoom(abstractPlayer.Room.name)
         };
-
         arenaGame.game.shortcuts.betweenRoomsWaitingLobby.Add(shortCutVessel);
+
+        if ((abstractPlayer.realizedCreature as Player).SlugCatClass == SlugcatStats.Name.Night)
+        {
+            (abstractPlayer.realizedCreature as Player).slugcatStats.throwingSkill = 1;
+        }
+        if (ModManager.MSC)
+        {
+            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == SlugcatStats.Name.Red)
+            {
+                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.All, -1, 0, -0.75f);
+                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.Scavengers, -1, 0, 0.5f);
+            }
+
+            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == SlugcatStats.Name.Yellow)
+            {
+                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.All, -1, 0, 0.75f);
+                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.Scavengers, -1, 0, 0.3f);
+            }
+
+            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == MoreSlugcats.MoreSlugcatsEnums.SlugcatStatsName.Artificer)
+            {
+                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.All, -1, 0, -0.5f);
+                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.Scavengers, -1, 0, -1f);
+            }
+
+            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == MoreSlugcats.MoreSlugcatsEnums.SlugcatStatsName.Slugpup)
+            {
+                (abstractPlayer.realizedCreature as Player).slugcatStats.throwingSkill = 1;
+            }
+
+            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == MoreSlugcats.MoreSlugcatsEnums.SlugcatStatsName.Sofanthiel)
+            {
+                (abstractPlayer.realizedCreature as Player).slugcatStats.throwingSkill = arenaOnlineGameMode.painCatThrowingSkill;
+            }
+
+
+            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == MoreSlugcats.MoreSlugcatsEnums.SlugcatStatsName.Saint)
+            {
+                if (!arenaOnlineGameMode.sainot)
+                {
+                    (abstractPlayer.realizedCreature as Player).slugcatStats.throwingSkill = 0;
+                }
+                else
+                {
+                    (abstractPlayer.realizedCreature as Player).slugcatStats.throwingSkill = 1;
+
+                }
+            }
+        }
+        if (ModManager.Watcher && (abstractPlayer.realizedCreature as Player).SlugCatClass == Watcher.WatcherEnums.SlugcatStatsName.Watcher)
+        {
+            (abstractPlayer.realizedCreature as Player).enterIntoCamoDuration = 40;
+        }
+
         BTWPlugin.Log($"Player [{abstractPlayer.realizedCreature}] fully revived !");
         // arenaGame.AddPlayer(abstractPlayer);
     }

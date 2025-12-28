@@ -726,7 +726,7 @@ public static class ArenaLivesHooks
                 abstractCreature.Die();
                 lives.wasAbstractCreatureDestroyed = true;
                 abstractCreature.Abstractize(self.Room.realizedRoom.GetWorldCoordinate(lives.RespawnPos));
-                BTWPlugin.Log($"Stopped Abstract Creature [{abstractCreature}] from being destroyed, so they can revive in peace.");
+                BTWPlugin.Log($"Stopped Abstract Creature [{abstractCreature}] from being destroyed, so they can revive in peace (lives : <{lives.lifesleft}>).");
                 return;
             }
             else

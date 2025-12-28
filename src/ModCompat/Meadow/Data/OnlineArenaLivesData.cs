@@ -65,36 +65,38 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
         //--------- Functions
         public override void ReadTo(OnlineEntity.EntityData data, OnlineEntity onlineEntity)
         {
-            if ((onlineEntity as OnlinePhysicalObject)?.apo.realizedObject is not Creature creature)
+            if ((onlineEntity as OnlinePhysicalObject)?.apo is not AbstractCreature abstractCreature)
             {
                 return;
             }
 
-            if (!ArenaLives.TryGetLives(creature.abstractCreature, out var lives) || !lives.fake)
+            if (!ArenaLives.TryGetLives(abstractCreature, out var lives) || !lives.fake)
             {
                 return;
             }
             if (lives.lifesleft != this.lifesleft || lives.countedAlive != this.countedAlive)
             {
                 lives.karmaSymbolNeedToChange = true;
+                BTWPlugin.Log($"Detected a life change for [{onlineEntity} : {abstractCreature}] : <{this.lifesleft}> <{this.countedAlive}>");
             }
             if (lives.countedAlive == false 
                 && this.countedAlive == true 
-                && creature is Player player && player != null)
+                && abstractCreature.creatureTemplate.TopAncestor().type == CreatureTemplate.Type.Slugcat)
             {
-                MeadowFunc.ResetDeathMessage(creature.abstractCreature);
-                MeadowFunc.ResetSlugcatIcon(creature.abstractCreature);
+                MeadowFunc.ResetDeathMessage(abstractCreature);
+                MeadowFunc.ResetSlugcatIcon(abstractCreature);
             }
             if (lives.wasAbstractCreatureDestroyed && this.lifesleft <= 0 && lives.lifesleft > 0)
             {
+                lives.lifesleft = this.lifesleft;
                 lives.abstractTarget?.Destroy();
                 lives.Dismiss();
             }
             else
             {
                 lives.lifesleft = this.lifesleft;
-                lives.reviveCounter = this.reviveCounter;
             }
+            lives.reviveCounter = this.reviveCounter;
             lives.countedAlive = this.countedAlive;
             lives.livesDisplayCounter = this.livesDisplayCounter;
             lives.circlesAmount = this.circlesAmount;
