@@ -1,0 +1,32 @@
+{
+	"priority": 0,
+	"custom_meows": [
+		{
+			"slugcat_id": "Trailseeker",
+			"long_meow_soundid": "SlugcatMeowNormal",
+			"short_meow_soundid": "SlugcatMeowNormalShort",
+			"long_meow_pup_soundid": "SlugcatMeowPup",
+			"short_meow_pup_soundid": "SlugcatMeowPupShort",
+
+			"volume_multiplier": 0.85
+		},
+		{
+			"slugcat_id": "Core",
+			"long_meow_soundid": "SlugcatMeowBTWCore",
+			"short_meow_soundid": "SlugcatMeowBTWCoreShort",
+			"long_meow_pup_soundid": "SlugcatMeowBTWCorePup",
+			"short_meow_pup_soundid": "SlugcatMeowBTWCorePupShort",
+
+			"volume_multiplier": 1.05
+		},
+		{
+			"slugcat_id": "Spark",
+			"long_meow_soundid": "SlugcatMeowBTWSpark",
+			"short_meow_soundid": "SlugcatMeowBTWSparkShort",
+			"long_meow_pup_soundid": "SlugcatMeowPup",
+			"short_meow_pup_soundid": "SlugcatMeowPupShort",
+
+			"volume_multiplier": 1.15
+		}
+	]
+}

@@ -1,18 +1,80 @@
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using SlugBase.Features;
 using UnityEngine;
-using static SlugBase.Features.FeatureTypes;
-using BepInEx.Logging;
 using System;
-using BepInEx;
-using MonoMod.Cil;
-using BeyondTheWest;
+using System.Collections.Generic;
+using BeyondTheWest.MeadowCompat;
+using RWCustom;
 
-public class BTWFunc
+namespace BeyondTheWest;
+public struct RadiusCheckResultObject
+{
+    public PhysicalObject physicalObject;        
+    public List<BodyChunk> bodyChunksHit = new List<BodyChunk>();
+    public BodyChunk closestBodyChunk;
+    public Vector2 vectorDistance = Vector2.zero; // from pos to chunk
+    public float distance = 0f;
+
+    public RadiusCheckResultObject(PhysicalObject physicalObject)
+    {
+        this.physicalObject = physicalObject;
+    }
+}
+public static class BTWFunc
 {
     public const int FrameRate = 40;
-    // ma functions
+
+    public static bool OutOfBounds(Creature creature)
+    {
+        float num6 = -creature.bodyChunks[0].restrictInRoomRange + 1f;
+        if (creature is Player player 
+            && creature.bodyChunks[0].restrictInRoomRange == creature.bodyChunks[0].defaultRestrictInRoomRange)
+        {
+            if (player.bodyMode == Player.BodyModeIndex.WallClimb)
+            {
+                num6 = Mathf.Max(num6, -250f);
+            }
+            else
+            {
+                num6 = Mathf.Max(num6, -500f);
+            }
+        }
+        return creature.bodyChunks[0].pos.y < num6 
+            && (!creature.room.water 
+                || creature.room.waterInverted 
+                || creature.room.defaultWaterLevel < -10) 
+            && (!creature.Template.canFly 
+                || creature.Stunned 
+                || creature.dead) 
+            && (creature is Player 
+                || !creature.room.game.IsArenaSession 
+                || creature.room.game.GetArenaGameSession.chMeta == null 
+                || !creature.room.game.GetArenaGameSession.chMeta.oobProtect);
+    }
+    
+    public static bool IsLocal(AbstractPhysicalObject abstractPhysicalObject)
+    {
+        if (Plugin.meadowEnabled && abstractPhysicalObject != null)
+        {
+            return MeadowFunc.IsObjectMine(abstractPhysicalObject);
+        }
+        return true;
+    }
+    public static bool IsLocal(PhysicalObject physicalObject)
+    {
+        if (Plugin.meadowEnabled && physicalObject?.abstractPhysicalObject != null)
+        {
+            return IsLocal(physicalObject.abstractPhysicalObject);
+        }
+        return true;
+    }
+    public static bool OnlineArenaTimerOn()
+    {
+        if (Plugin.meadowEnabled)
+        {
+            return MeadowFunc.ShouldHoldFireFromOnlineArenaTimer();
+        }
+        return false;
+    }
+
     public static Vector2 OffsetRelativeToRot(float rot, Vector2 offset)
     {
         return new Vector2((float)(offset.x * Math.Cos(rot) - offset.y * Math.Sin(rot)), (float)(offset.x * Math.Sin(rot) + offset.y * Math.Cos(rot)));
@@ -26,6 +88,7 @@ public class BTWFunc
     {
         return OffsetRelativeToVRot(body.Rotation, offset);
     }
+    
     public static int EnergyBoostPossibleAction(Player player)
     {
         if (
@@ -65,6 +128,7 @@ public class BTWFunc
         }
         return 0;
     }
+    
     public static int NightCycleTime(World world, int dayDuration)
     {
         RainWorld rainWorld = world.game.rainWorld;
@@ -72,6 +136,7 @@ public class BTWFunc
             + (rainWorld.setup.cycleTimeMax - rainWorld.setup.cycleTimeMin) * 40
             - (dayDuration - rainWorld.setup.cycleTimeMin * 40);
     }
+    
     public static Player.AnimationIndex PredictJump(Player player)
     {
         PredictJump(player, out var animationPredicted);
@@ -166,10 +231,240 @@ public class BTWFunc
             }
         }
     }
+    
     public static bool BodyChunkSumberged(BodyChunk chunk)
     {
         return chunk.submersion > 0.9f;
     }
+    
+    public static Vector2 GetDirInput(Player player, uint index = 0)
+    {
+        if (player != null && player.input.Length > index)
+        {
+            Player.InputPackage cinput = player.input[index];
+            bool isPC = cinput.controllerType == Options.ControlSetup.Preset.KeyboardSinglePlayer;
+            return isPC ? new Vector2(cinput.x, cinput.y) : cinput.analogueDir;
+        }
+        if (player.input.Length <= index)
+        {
+            Plugin.logger.LogError($"Tried to get input index <{index}> on InputPackage of lenght <{player.input.Length}> !");
+        }
+        return Vector2.zero;
+    }
+    public static IntVector2 GetIntDirInput(Player player, uint index = 0)
+    {
+        int x = 0; int y = 0;
+        Vector2 dirInput = GetDirInput(player, index);
+
+        if (dirInput.x > 0.25f) { x = 1; }
+        else if (dirInput.x < -0.25f) { x = -1; }
+        if (dirInput.y > 0.25f) { y = 1; }
+        else if (dirInput.y < -0.25f) { y = -1; }
+
+        return new IntVector2(x, y);
+    }
+    
+    public static bool IsObjectInRadius(PhysicalObject physicalObject, Vector2 position, float radius, out RadiusCheckResultObject radiusCheckResultObject)
+    {
+        radiusCheckResultObject = new(physicalObject);
+
+        float dist = -1;
+        BodyChunk cbody = null;
+        Vector2 vecDist = Vector2.one;
+        foreach (BodyChunk c in physicalObject.bodyChunks)
+        {
+            Vector2 cdist = c.pos - position;
+            float realdist = Mathf.Max(0, cdist.magnitude - c.rad);
+            if (realdist < radius)
+            {
+                if (realdist < dist || cbody == null)
+                {
+                    cbody = c;
+                    dist = realdist;
+                    vecDist = cdist.normalized;
+                }
+                radiusCheckResultObject.bodyChunksHit.Add(c);
+            }
+        }
+        if (cbody != null)
+        {
+            radiusCheckResultObject.closestBodyChunk = cbody;
+            radiusCheckResultObject.distance = dist;
+            radiusCheckResultObject.vectorDistance = vecDist;   
+            return true;
+        }
+        return false;
+    }
+    public static List<RadiusCheckResultObject> GetAllCreatureInRadius(Room room, Vector2 position, float radius)
+    {
+        List<RadiusCheckResultObject> creatureslist = new();
+        foreach (AbstractCreature Abcreature in room.abstractRoom.creatures)
+        {
+            if (Abcreature.realizedCreature != null 
+                && !Abcreature.realizedCreature.slatedForDeletetion 
+                && !Abcreature.realizedCreature.inShortcut
+                && IsObjectInRadius(Abcreature.realizedCreature, position, radius, out var resultCreature))
+            {
+                creatureslist.Add(resultCreature);
+            }
+        }
+        return creatureslist;
+    }
+    public static List<RadiusCheckResultObject> GetAllObjectsInRadius(Room room, Vector2 position, float radius)
+    {
+        List<RadiusCheckResultObject> objectlist = new();
+        for (int j = 0; j < room.physicalObjects.Length; j++)
+		{
+			for (int k = 0; k < room.physicalObjects[j].Count; k++)
+            {
+                PhysicalObject physicalObject = room.physicalObjects[j][k];
+                if (!physicalObject.slatedForDeletetion
+                    && (physicalObject is not Creature c || !c.inShortcut)
+                    && IsObjectInRadius(physicalObject, position, radius, out var resultCreature))
+                {
+                    objectlist.Add(resultCreature);
+                }
+            }
+        }
+        return objectlist;
+    }
+
+    public static float Random(float minValue, float maxValue)
+    {
+        return UnityEngine.Random.Range(minValue, maxValue);
+    }
+    public static float Random(float MaxValue)
+    {
+        return Random(0, MaxValue);
+    }
+    public static float Random()
+    {
+        return Random(0, 1);
+    }
+    public static float random
+    {
+        get
+        {
+            return Random();
+        }
+    }
+
+    public static Vector2 RandomVector(float minXValue, float maxXValue, float minYValue, float maxYValue)
+    {
+        return new Vector2(Random(minXValue, maxXValue), Random(minYValue, maxYValue));
+    }
+    public static Vector2 RandomCircleVector()
+    {
+        return RandomVector(-1, 1, -1, 1).normalized;
+    }
+    public static Vector2 RandomCircleVector(float rad)
+    {
+        return RandomCircleVector() * rad;
+    }
+    
+    public static void CustomKnockback(BodyChunk bodyChunk, Vector2 force, bool notifyMeadow = false)
+    {
+        bodyChunk.vel += force;
+        if (notifyMeadow && Plugin.meadowEnabled && !MeadowFunc.IsMine(bodyChunk.owner.abstractPhysicalObject))
+        {
+            MeadowCalls.BTWFuncMeadow_RPCCustomKnockBack(bodyChunk.owner, (short)bodyChunk.index, force);
+        }
+    }
+    public static void CustomKnockback(BodyChunk bodyChunk, Vector2 direction, float force, bool notifyMeadow = false)
+    {
+        CustomKnockback(bodyChunk, direction.normalized * force, notifyMeadow);
+    }
+    public static void CustomKnockback(BodyChunk bodyChunk, float forceX, float forceY, bool notifyMeadow = false)
+    {
+        CustomKnockback(bodyChunk, new Vector2(forceX, forceY), notifyMeadow);
+    }
+    public static void CustomKnockback(PhysicalObject physicalObject, Vector2 force, bool notifyMeadow = false)
+    {
+        foreach (BodyChunk bodyChunk in physicalObject.bodyChunks)
+        { 
+            CustomKnockback(bodyChunk, force); 
+        }
+        if (notifyMeadow && Plugin.meadowEnabled && !MeadowFunc.IsMine(physicalObject.abstractPhysicalObject))
+        {
+            MeadowCalls.BTWFuncMeadow_RPCCustomKnockBack(physicalObject, -1, force);
+        }
+    } 
+    public static void CustomKnockback(PhysicalObject physicalObject, Vector2 direction, float force, bool notifyMeadow = false)
+    {
+        CustomKnockback(physicalObject, direction.normalized * force, notifyMeadow);
+    } 
+    public static void CustomKnockback(PhysicalObject physicalObject, Vector2 direction, float force, float randomForce, bool notifyMeadow = false)
+    {
+        foreach (BodyChunk bodyChunk in physicalObject.bodyChunks)
+        { 
+            CustomKnockback(bodyChunk, direction.normalized * (force + Random(-randomForce, randomForce)), notifyMeadow); 
+        }
+    } 
+    public static void CustomKnockback(PhysicalObject physicalObject, float forceX, float forceY, bool notifyMeadow = false)
+    {
+        CustomKnockback(physicalObject, new Vector2(forceX, forceY), notifyMeadow);
+    } 
+
+    public static bool CanTwoObjectsInteract(PhysicalObject physicalObject1, PhysicalObject physicalObject2)
+    {
+        return physicalObject1 != null && physicalObject2 != null
+            && physicalObject1 != physicalObject2 
+            && (
+                physicalObject1.abstractPhysicalObject.rippleLayer == physicalObject2.abstractPhysicalObject.rippleLayer 
+                || physicalObject1.abstractPhysicalObject.rippleBothSides 
+                || physicalObject2.abstractPhysicalObject.rippleBothSides) 
+            && !physicalObject1.slatedForDeletetion
+            && !physicalObject2.slatedForDeletetion;
+    }
+
+    public static Vector2 RandomExitPos(ArenaGameSession arena)
+    {
+        if (arena?.room != null)
+        {
+            return RandomExitPos(arena.room);
+        }
+        return Vector2.zero;
+    }
+    public static Vector2 RandomExitPos(Room room)
+    {
+        if (room != null)
+        {
+            int exit = Mathf.Max(0, (int)Random(room.abstractRoom.exits));
+            ShortcutData shortcutData = room.ShortcutLeadingToNode(exit); 
+            return shortcutData.StartTile.ToVector2() * 20f + Vector2.one * 10;
+        }
+        return Vector2.zero;
+    }
+
+    public static void ResetCore(Player player)
+    {
+        if (AbstractEnergyCore.TryGetCore(player.abstractCreature, out var AEC))
+        {
+            AEC.energy = AEC.CoreMaxEnergy;
+            AEC.antiGravityCount = 0;
+            AEC.oxygenCount = 0;
+            AEC.repairCount = 0;
+            AEC.slowModeCount = 0;
+            AEC.boostingCount = -FrameRate * 5;
+            AEC.antiGravityCount = 0;
+            AEC.waterCorrectionCount = 0;
+            AEC.coreBoostLeft = AEC.CoreMaxBoost;
+            if (AEC.RealizedCore != null)
+            {
+                AEC.RealizedCore.grayScale = 0f;
+            }
+        }
+    }
+    public static void ResetSpark(Player player)
+    {
+        if (StaticChargeManager.TryGetManager(player.abstractCreature, out var SCM))
+        {
+            // SCM.Charge = 0;
+            SCM.dischargeCooldown = FrameRate * 3;
+            SCM.overchargeImmunity = FrameRate * 1;
+        }
+    }
+
     public static float EaseInOutSine(float x) { return -(Mathf.Cos(Mathf.PI * x) - 1) / 2; }
     public static float EaseOut(float x, float pow = 2) { return 1f - Mathf.Pow(1f - x, pow); }
     public static float EaseIn(float x, float pow = 2) { return Mathf.Pow(x, pow); }

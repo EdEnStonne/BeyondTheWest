@@ -43,7 +43,7 @@
 		"cycle_length_max": 11,
 		"perma_unlock_gates": false,
 		"food_min": 5,
-		"food_max": 2,
+		"food_max": 7,
 
 		"expedition_enabled": false,
 		

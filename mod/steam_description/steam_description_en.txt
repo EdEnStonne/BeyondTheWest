@@ -20,7 +20,40 @@ I will not more slugcats here though. 3 is enough for this mod.
 
 
 [h2]The Slugcats :[/h2]
-Learn more about the slugcat abilities on the [url=https://rainworldmods.miraheze.org/wiki/Beyond_The_West] Rain World Modded Wiki [/url]!
+The mod introduce to 3 new slugcats : The Trailseeker, The Core and The Spark !
+Their main abilities will be summarized here, you can learn more about them on the [url=https://rainworldmods.miraheze.org/wiki/Beyond_The_West] Rain World Modded Wiki ![/url]
+
+[h3]The Trailseeker[/h3]
+The Trailseeker has specialized itself into exploring every corner of the world. Its pounce are shorter but longer, and it has alot of new movement tech regarding walls and poles !
+To start gripping on walls, simply hold up while being against one. From there, you can press jump to do a Wall Climb, and press jump again to do a Wall Vertical pounce (you read it right, [i]vertical[/i]). You can also do a Wall Kick by pressing the opposing direction (of the wall) and jump shortly after leaving the wall.
+When pouncing, or flipping, you can also kick your enemies by pressing jump while holding forward. A risky tech with cheap damage, but good knockback (depending on the creature's weight)
+
+[h3]The Core[/h3]
+The Core uses the full capacity of its core to its advantage. As long as you have energy, it has the best mobility of the 3 slugcats. Your jump is replaced by a leap you can charge !
+Hold jump to charge, and release to take off ! While doing a flip, you can also hold jump to be floatier ! Be careful though, as every of those moves uses energy. If you happen to run of energy and enter meltdown mode, don't panic ! You just have to hold grab while not moving and you'll be all fine again.
+
+[h3]The Spark[/h3]
+The Spark may be weak in nature, but has the uncommon ability to be able to gerenerate static electricity. It can be used for defense as well as for movement, but be careful to not eletrocute yourself !
+Your static energy is your best friend, you even use it to throw spears better than you muscles will allow you. To charge, you just need to move around, or crouch and hold special and down at the same time. Then, you can use the energy you have into a small discharge of electricity by pressing special ! The ability will change functions depending on the context (flipping, being on a pole, sliding/rolling, pouncing...) and if you are overcharged or not.
+
+
+[h2]Dev Tool commands : [/h2]
+
+[T] : Spark full charge / Core full energy
+[T + Shift] : infinite Spark overcharge immunity / Core energy set at 0
+[T + Control] : infinite Spark endless charge / Core energy set at minimun
+
+In Arena :
+[L] : Force Kill
+[L + Shift] : Arena Shield
+[L + Control] : Arena Lifes (set to 3)
+
+
+[h2]Arena : [/h2]
+
+(For now only in Meadow)
+You can enable the lifes systen in arena ! With a respawn protection, lives strict enforcement and customizable respawn time !
+Will port into the local competitive when I get how to add some UIs in there.
 
 
 [h2]My plans :[/h2]

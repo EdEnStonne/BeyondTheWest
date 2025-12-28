@@ -1,19 +1,14 @@
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using SlugBase.Features;
 using UnityEngine;
-using static SlugBase.Features.FeatureTypes;
-using BepInEx;
-using BepInEx.Logging;
 using System;
 using MonoMod.Cil;
 using RWCustom;
 using BeyondTheWest;
 using Mono.Cecil.Cil;
-using On.Menu;
 using System.Linq;
 using HUD;
-using Unity.Profiling.LowLevel;
+using BeyondTheWest.MeadowCompat;
 
 public class RainTimerAddition
 {
@@ -832,7 +827,7 @@ public class RainTimerAddition
     {
         if (Plugin.meadowEnabled)
         {
-            return MeadowCompat.IsMeadowLobby();
+            return !MeadowFunc.IsMeadowLobby();
         }
         return true;
     }
