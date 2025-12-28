@@ -9,6 +9,7 @@ The mod should be fully compatible wiht Meadow arena, and partially compatible w
 
 ## The Slugcats : 
 As said above, 3 slugcats awaits you : The Trailseeker, The Core and The Spark !
+Their main abilities will be summarized here, you can learn more about them on the [Rain World Modded Wiki](https://rainworldmods.miraheze.org/wiki/Beyond_The_West) !
 
 ### The Trailseeker 
 The Trailseeker has specialized itself into exploring every corner of the world. Its pounce are shorter but longer, and it has alot of new movement tech regarding walls !
