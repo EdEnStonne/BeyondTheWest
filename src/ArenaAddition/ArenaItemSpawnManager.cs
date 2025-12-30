@@ -73,7 +73,12 @@ public class ArenaItemSpawnManager
         ArenaItemSpawn.ArenaItemSpawnSetting settings = new();
         if (settings.randomItem)
         {
-            objectData = ArenaItemSpawn.allPool.Pool();
+            ObjectDataPool newPoll = new(ArenaItemSpawn.allPool);
+            if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+            {
+                MeadowFunc.RemoveRestrictedItemsInArenaFromPool(ref newPoll);
+            }
+            objectData = newPoll.Pool();
         }
         else
         {
@@ -95,6 +100,11 @@ public class ArenaItemSpawnManager
                     newPoll = new(ArenaItemSpawn.othersPool);
                 }
                 newPoll.AddToPool(objectData, 100);
+
+                if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+                {
+                    MeadowFunc.RemoveRestrictedItemsInArenaFromPool(ref newPoll);
+                }
                 objectData = newPoll.Pool();
             }
         }
@@ -120,13 +130,16 @@ public class ArenaItemSpawnManager
         ArenaItemSpawn itemSpawn = new(placedObject.pos, objectList);
         if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
         {
-            itemSpawn.spawnTime = (int)(2 * BTWFunc.FrameRate + BTWFunc.Random(3 * BTWFunc.FrameRate));
+            int timer = MeadowFunc.ArenaCountdownTimerTotal();
+            itemSpawn.spawnTime = (int)(timer/2f + BTWFunc.Random(timer * 2f));
+            BTWPlugin.Log($"Meadow setting detected ! Timer set at <{itemSpawn.spawnTime}> since timer is at <{timer}>");
         }
         if (TryGetManager(arena, out var arenaItemSpawnManager))
         {
             arenaItemSpawnManager.itemSpawns.Add(itemSpawn);
             itemSpawn.itemSpawnManager = arenaItemSpawnManager;
         }
+        itemSpawn.spawnTime = (int)Mathf.Clamp(itemSpawn.spawnTime, BTWFunc.FrameRate * 0.5f, BTWFunc.FrameRate * 60f);
         room.AddObject(itemSpawn);
     }
 
@@ -191,11 +204,15 @@ public class ArenaItemSpawnManager
             foreach (AbstractSpear abstractSpear in this.room.abstractRoom.entities.FindAll(x => x is AbstractSpear).Cast<AbstractSpear>())
             {
                 if (abstractSpear.realizedObject is Spear spear
+                    && !spear.slatedForDeletetion
+                    && BTWFunc.InRoomBounds(spear)
+                    && spear.room != null
                     && spear.mode != Weapon.Mode.StuckInWall
                     && spear.mode != Weapon.Mode.StuckInCreature
                     && spear.mode != Weapon.Mode.Frozen)
                 {
                     count++;
+                    // BTWPlugin.Log($"Found [{spear}] <{count}> at [{spear.firstChunk.pos} : {abstractSpear.pos}]");
                 }
             }
         }
@@ -246,7 +263,7 @@ public class ArenaItemSpawnManager
             // BTWPlugin.Log($"Counting spears ! Spears <{spearcount}> VS Players : <{this.playersCount}>");
             while (spearcount < this.playersCount + 1)
             {
-                int spawning = (int)Mathf.Pow(BTWFunc.random, 3) + 1;
+                int spawning = (int)Mathf.Pow(BTWFunc.random * 4, 4) + 1;
                 PlacedObject availableSpawn = GetRandomAvailableSpawn();
                 MItemData multiplayerItemData = (MItemData)availableSpawn?.data;
                 BTWPlugin.Log($"Not enough spears ! Adding <{spawning}> spears at [{availableSpawn.pos}]");
@@ -336,7 +353,8 @@ public class ArenaItemSpawnManagerHooks
         orig(self);
         try
         {
-            if (ArenaItemSpawnManager.TryGetManager(self, out var itemSpawnManager))
+            if (ArenaItemSpawnManager.TryGetManager(self, out var itemSpawnManager) 
+                && (!self.game.GamePaused || (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowLobby())))
             {
                 itemSpawnManager.Update();
             }

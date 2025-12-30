@@ -43,12 +43,12 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
         public State() { }
         public State(OnlineEntity onlineEntity)
         {
-            if ((onlineEntity as OnlinePhysicalObject)?.apo.realizedObject is not Creature creature)
+            if ((onlineEntity as OnlinePhysicalObject)?.apo is not AbstractCreature abstractCreature)
             {
                 return;
             }
 
-            if (!ArenaLives.TryGetLives(creature.abstractCreature, out var lives) || lives.fake)
+            if (!ArenaLives.TryGetLives(abstractCreature, out var lives) || lives.fake)
             {
                 return;
             }
@@ -97,6 +97,7 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
                 lives.lifesleft = this.lifesleft;
             }
             lives.reviveCounter = this.reviveCounter;
+            // BTWPlugin.Log($"Counter of Reviving entity [{onlineEntity} : {abstractCreature}] to <{lives.reviveCounter}>");
             lives.countedAlive = this.countedAlive;
             lives.livesDisplayCounter = this.livesDisplayCounter;
             lives.circlesAmount = this.circlesAmount;

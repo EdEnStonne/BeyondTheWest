@@ -259,7 +259,7 @@ public class BTWRemix : OptionInterface
     public static Configurable<bool> MeadowNewItemSpawningSystem = instance.config.Bind("MeadowNewItemSpawningSystem", true, 
         NewItemSpawningSystem.info
     );
-    public static Configurable<int> MeadowItemSpawnMultiplierCent = instance.config.Bind("MeadowItemSpawnMultiplierCent", 400,
+    public static Configurable<int> MeadowItemSpawnMultiplierCent = instance.config.Bind("MeadowItemSpawnMultiplierCent", 300,
         new ConfigurableInfo(
             "How much times the arena will attempt to spawn items in Competitive in percent.  Default 250%.",
             new ConfigAcceptableRange<int>(0, 100000)

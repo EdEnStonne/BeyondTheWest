@@ -327,9 +327,9 @@ public static class MeadowCalls
 
         if (onlineCreature == null) { return; }
         MeadowRPCs.InvokeAllOtherPlayerWithRPC(
-        typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.BTWArenaAddition_DismissArenaShield)).CreateDelegate(
-            typeof(Action<RPCEvent, OnlineCreature>)),
-            onlineCreature
+            typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.BTWArenaAddition_DismissArenaShield)).CreateDelegate(
+                typeof(Action<RPCEvent, OnlineCreature>)),
+                onlineCreature
         );
     }
     

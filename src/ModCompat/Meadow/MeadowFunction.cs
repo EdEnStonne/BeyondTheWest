@@ -3,6 +3,7 @@ using RainMeadow;
 using System.Linq;
 using BeyondTheWest.ArenaAddition;
 using System.Collections.Generic;
+using ObjectType = AbstractPhysicalObject.AbstractObjectType;
 using Unity;
 
 namespace BeyondTheWest.MeadowCompat;
@@ -37,7 +38,7 @@ public static class MeadowFunc
 
         if (playerOpo?.apo?.realizedObject is not Player player)
         {
-            BTWPlugin.logger.LogError(playerOpo.apo.ToString() + " is not a player !!!");
+            // BTWPlugin.logger.LogError(playerOpo.apo.ToString() + " is not a player !!!");
             return null;
         }
         return player;
@@ -45,7 +46,7 @@ public static class MeadowFunc
     public static StaticChargeManager GetOnlinePlayerStaticChargeManager(OnlineEntity playerOE)
     {
         Player player = GetPlayerFromOE(playerOE);
-        if (player == null) { BTWPlugin.logger.LogError(playerOE.ToString() + " player is null !!!"); return null; }
+        if (player == null) {  return null; } //BTWPlugin.logger.LogError(playerOE.ToString() + " player is null !!!");
 
         
         if (!(StaticChargeManager.TryGetManager(player.abstractCreature, out var SCM) && SCM.init))
@@ -59,7 +60,7 @@ public static class MeadowFunc
     public static AbstractEnergyCore GetOnlinePlayerAbstractEnergyCore(OnlineEntity playerOE)
     {
         Player player = GetPlayerFromOE(playerOE);
-        if (player == null) { BTWPlugin.logger.LogError(playerOE.ToString() + " player is null !!!"); return null; }
+        if (player == null) { return null; } // BTWPlugin.logger.LogError(playerOE.ToString() + " player is null !!!");
 
         if (!AbstractEnergyCore.TryGetCore(player.abstractCreature, out var AEC))
         {
@@ -167,6 +168,14 @@ public static class MeadowFunc
         }
         return BTWRemix.EveryoneCanPoleTech.Value;
     }
+    public static int ArenaCountdownTimerTotal()
+    {
+        if (IsMeadowArena(out var arenaOnline))
+        {
+            return arenaOnline.trackSetupTime * BTWFunc.FrameRate;
+        }
+        return RainMeadow.RainMeadow.rainMeadowOptions.ArenaCountDownTimer.Value * BTWFunc.FrameRate;
+    }
 
     // Arena extension
     public static void ResetDeathMessage(AbstractCreature abstractPlayer)
@@ -228,11 +237,13 @@ public static class MeadowFunc
 
         Room room = arenaGame.room;
         if (room == null) { BTWPlugin.logger.LogError($"uh the room is not here...?"); return; }
+        if (room.abstractRoom.GetResource() == null) { BTWPlugin.logger.LogError($"uh the online room is not here...?"); }
         OnlineCreature onlineCreature = abstractPlayer.GetOnlineCreature();
         if (onlineCreature == null) { BTWPlugin.logger.LogError($"uh the onlineCreature is not here...?"); return; }
         if (!onlineCreature.isMine) { BTWPlugin.logger.LogError($"uh the onlineCreature is not yours..."); return; }
-        abstractPlayer.pos.room = arenaGame.game.world.GetAbstractRoom(0).index;
-        abstractPlayer.pos.abstractNode = arenaGame.room.ShortcutLeadingToNode(exit).destNode;
+        abstractPlayer.Move(room.ToWorldCoordinate(BTWFunc.ExitPos(arenaGame, exit)));
+        abstractPlayer.pos.room = room.abstractRoom.index;
+        abstractPlayer.pos.abstractNode = room.ShortcutLeadingToNode(exit).destNode;
 
         // arenaGame.game.world.GetResource().ApoEnteringWorld(abstractPlayer);
 
@@ -251,7 +262,7 @@ public static class MeadowFunc
 
         abstractPlayer.Realize();
         onlineCreature.realized = true;
-        abstractPlayer.Room.GetResource()?.ApoEnteringRoom(abstractPlayer, abstractPlayer.pos);
+        room.abstractRoom.GetResource()?.ApoEnteringRoom(abstractPlayer, abstractPlayer.pos);
         BTWPlugin.Log($"Realized Creature !");
         
         ShortcutHandler.ShortCutVessel shortCutVessel = new(room.ShortcutLeadingToNode(exit).DestTile, 
@@ -317,6 +328,36 @@ public static class MeadowFunc
 
         BTWPlugin.Log($"Player [{abstractPlayer.realizedCreature}] fully revived !");
         // arenaGame.AddPlayer(abstractPlayer);
+    }
+    public static void RemoveRestrictedItemsInArenaFromPool(ref ObjectDataPool itemPool)
+    {
+        if (IsMeadowArena(out var arenaOnline))
+        {
+            // apparently nothing on the blocklist, it's private so I can't even check on it :<
+            if (ModManager.MSC)
+            {
+                // fuck you FireEgg, you're a cool item but you keep CRASHING THE DARN GAME
+                itemPool.pool.RemoveAll(x => x.objectData.objectType == MoreSlugcats.MoreSlugcatsEnums.AbstractObjectType.FireEgg);
+            }
+            if (!arenaOnline.enableBombs)
+            {
+                itemPool.pool.RemoveAll(x => 
+                    x.objectData.objectType == ObjectType.FirecrackerPlant
+                    && x.objectData.objectType == ObjectType.ScavengerBomb);
+                if (ModManager.MSC)
+                {
+                    itemPool.pool.RemoveAll(x => 
+                        x.objectData.objectType == DLCSharedEnums.AbstractObjectType.SingularityBomb
+                        && x.objectData.objectType == MoreSlugcats.MoreSlugcatsEnums.AbstractObjectType.FireEgg);
+                }
+            }
+            if (!arenaOnline.enableBees)
+            {
+                itemPool.pool.RemoveAll(x => 
+                    x.objectData.objectType == ObjectType.JellyFish
+                    && x.objectData.objectType == ObjectType.SporePlant);
+            }
+        }
     }
 
     // Slug on back

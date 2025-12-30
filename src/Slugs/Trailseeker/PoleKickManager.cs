@@ -3,6 +3,7 @@ using RWCustom;
 using BeyondTheWest.MeadowCompat;
 using BeyondTheWest.MSCCompat;
 using System.Collections.Generic;
+using System;
 
 namespace BeyondTheWest;
 
@@ -215,19 +216,16 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
             player.wantToJump = 0;
 
             Vector2 boost = (((player.bodyChunks[0].pos + player.bodyChunks[1].pos) / 2) - chuckHit.pos).normalized * 6f;
+            bool flippin = boost.normalized.y > 0.9f && !this.kickExhausted;
             boost.y += 6f;
-            float yFlipTrechHold = 10.5f;
-            bool flippin = false;
 
 			if (ModManager.MSC && MSCFunc.IsRivulet(player))
             {
                 boost *= 2;
-                yFlipTrechHold *= 1.75f;
             }
             if (ModManager.MSC && player.isSlugpup)
             {
                 boost.y /= 3f;
-                yFlipTrechHold /= 3;
                 boost.x /= 2f;
             }
             if (this.kickExhausted)
@@ -235,8 +233,9 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
                 boost /= 1.5f;
             }
 
-            if (player.animation == Player.AnimationIndex.Flip && boost.y > yFlipTrechHold && !this.kickExhausted)
+            if (flippin)
             {
+                player.animation = Player.AnimationIndex.Flip;
                 player.flipFromSlide = true;
                 flippin = true;
                 boost.x *= -1;
@@ -246,6 +245,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
             {
                 player.animation = Player.AnimationIndex.RocketJump;
                 player.rollDirection = (int)Mathf.Sign(boost.x);
+                kickExhaustCount.Add(BTWFunc.FrameRate * 3);
             }
             if (ModifiedTechManager.TryGetManager(player.abstractCreature, out var MTM))
             {
@@ -261,7 +261,8 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
                 }
             }
 
-            Vector2 knockback = -boost;
+            Vector2 knockback = -boost * (flippin ? 2f : 5f);
+            knockback.y /= flippin ? 0.75f : 4f;
             float weightRatio = player.TotalMass / target.TotalMass;
             float knockbackBonus = Mathf.Clamp(Mathf.Log(weightRatio, 8), -1, 1) + 1;
             boost *= Mathf.Clamp(Mathf.Pow(2 - knockbackBonus, 4), 0.25f, 1.25f);
@@ -338,7 +339,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
 
             if ((target.State is HealthState && (target.State as HealthState).ClampedHealth == 0f) || target.State.dead)
             {
-                room.PlaySound(SoundID.Spear_Stick_In_Creature, kicker.mainBodyChunk, false, exhausted? 0.85f : 1.5f, BTWFunc.Random(1.1f, 1.3f));
+                room.PlaySound(SoundID.Spear_Stick_In_Creature, kicker.mainBodyChunk, false, exhausted? 0.85f : 1.5f, BTWFunc.Random(0.95f, 1.1f));
             }
             else
             {

@@ -74,7 +74,21 @@ public static class BTWFunc
         }
         return false;
     }
-
+    
+    public static bool InRoomBounds(PhysicalObject physicalObject)
+    {
+        if (physicalObject.room != null)
+        {
+            WorldCoordinate pos = physicalObject.abstractPhysicalObject.pos;
+            Room room = physicalObject.room;
+            return pos.x < room.Width 
+                && pos.y < room.Height 
+                && pos.x > -1 
+                && pos.y > -1;
+        }
+        return false;
+    }
+    
     public static Vector2 OffsetRelativeToRot(float rot, Vector2 offset)
     {
         return new Vector2((float)(offset.x * Math.Cos(rot) - offset.y * Math.Sin(rot)), (float)(offset.x * Math.Sin(rot) + offset.y * Math.Cos(rot)));

@@ -163,7 +163,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
                     else if (ModManager.MSC && this.objectList[j].objectType == MoreSlugcats.MoreSlugcatsEnums.AbstractObjectType.FireEgg)
                     {
                         MoreSlugcats.FireEgg.AbstractBugEgg item = new(
-                            world, null, coords, newID, BTWFunc.random
+                            world, null, coords, newID,  Mathf.Lerp(0.35f, 0.6f, Custom.ClampedRandomVariation(0.5f, 0.5f, 2f))
                         );
 
                         this.room.abstractRoom.AddEntity(item);
@@ -380,8 +380,10 @@ public static class ArenaItemSpawnHooks
     {
         InitPools();
         IL.ArenaGameSession.SpawnItem += ArenaGameSession_NewSpawnSystem;
+        IL.Room.Loaded += Room_NewSpawnSystem;
         BTWPlugin.Log("ArenaItemSpawnHooks ApplyHooks Done !");
     }
+
 
     private static void InitPools()
     {
@@ -530,5 +532,66 @@ public static class ArenaItemSpawnHooks
             BTWPlugin.Log(il);
         }
         BTWPlugin.Log("ArenaItemSpawnHooks IL 1 ended !");
+    }
+
+    private static bool IsNewSpawningSystem()
+    {
+        return new ArenaItemSpawn.ArenaItemSpawnSetting().newSystem;
+    }
+    private static void Room_NewSpawnSystem(ILContext il)
+    {
+        BTWPlugin.Log("ArenaItemSpawnHooks IL 2 starts");
+        try
+        {
+            ILCursor cursor = new(il);
+            ILLabel label = null;
+            if (cursor.TryGotoNext(MoveType.Before,
+                x => x.MatchLdarg(0),
+                x => x.MatchCall(typeof(Room).GetProperty(nameof(Room.abstractRoom)).GetGetMethod()),
+                x => x.MatchCallvirt(typeof(AbstractRoom).GetProperty(nameof(AbstractRoom.shelter)).GetGetMethod()),
+                x => x.MatchBrtrue(out _),
+                x => x.MatchLdarg(0),
+                x => x.MatchCall(typeof(Room).GetProperty(nameof(Room.abstractRoom)).GetGetMethod()),
+                x => x.MatchCallvirt(typeof(AbstractRoom).GetProperty(nameof(AbstractRoom.gate)).GetGetMethod()),
+                x => x.MatchBrtrue(out _),
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Room>(nameof(Room.game)),
+                x => x.MatchBrfalse(out _),
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Room>(nameof(Room.game)),
+                x => x.MatchCallvirt(typeof(RainWorldGame).GetProperty(nameof(RainWorldGame.IsArenaSession)).GetGetMethod()),
+                x => x.MatchBrfalse(out _),
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Room>(nameof(Room.game)),
+                x => x.MatchCallvirt(typeof(RainWorldGame).GetProperty(nameof(RainWorldGame.GetArenaGameSession)).GetGetMethod()),
+                x => x.MatchCallvirt(typeof(ArenaGameSession).GetProperty(nameof(ArenaGameSession.GameTypeSetup)).GetGetMethod()),
+                x => x.MatchCallvirt(typeof(ArenaSetup.GameTypeSetup).GetProperty(nameof(ArenaSetup.GameTypeSetup.levelItems)).GetGetMethod()),
+                x => x.MatchBrfalse(out _),
+                x => x.MatchLdsfld<ModManager>(nameof(ModManager.MMF)),
+                x => x.MatchBrfalse(out _),
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Room>(nameof(Room.roomSettings)),
+                x => x.MatchCallvirt(typeof(RoomSettings).GetProperty(nameof(RoomSettings.RandomItemDensity)).GetGetMethod()),
+                x => x.MatchLdcR4(0),
+                x => x.MatchBleUn(out label)
+            ))
+            {
+                cursor.MoveAfterLabels();
+                cursor.EmitDelegate(IsNewSpawningSystem);
+                cursor.Emit(OpCodes.Brtrue, label);
+            }
+            else
+            {
+                BTWPlugin.logger.LogError("IL hook not found :<");
+                BTWPlugin.Log(il);
+            }
+            
+        }
+        catch (Exception ex)
+        {
+            BTWPlugin.logger.LogError(ex);
+            BTWPlugin.Log(il);
+        }
+        BTWPlugin.Log("ArenaItemSpawnHooks IL 2 ended !");
     }
 }

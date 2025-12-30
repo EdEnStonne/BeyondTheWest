@@ -1308,17 +1308,10 @@ public static class StaticChargeHooks
                 x => x.MatchIsinst(typeof(Creature))};
 
             Func<Instruction, bool>[] iltarget2 = {
-                x => x.MatchLdarg(0),
-                x => x.MatchLdfld<UpdatableAndDeletable>(nameof(UpdatableAndDeletable.room)),
-                x => x.MatchLdfld<Room>(nameof(Room.physicalObjects)),
-                x => x.MatchLdloc(1),
-                x => x.MatchLdelemRef(),
-                x => x.MatchLdloc(2),
-                x => x.MatchCallvirt(out _),
-                x => x.MatchIsinst(typeof(Creature)),
                 x => x.MatchCallOrCallvirt<Creature>(nameof(Creature.Die))};
 
-            if (cursor.TryGotoNext(MoveType.Before, iltarget2))
+            if (cursor.TryGotoNext(MoveType.Before, iltarget2) 
+                && cursor.TryGotoPrev(MoveType.Before, iltarget))
             {
                 if (cursor.TryGotoPrev(MoveType.After, iltarget))
                 {

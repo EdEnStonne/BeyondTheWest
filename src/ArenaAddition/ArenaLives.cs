@@ -520,20 +520,24 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
 
         if (this.reviveCounter > 0)
         {
-            for (int i = 1; i < this.circlesAmount; i++)
+            for (int i = 0; i < this.circlesAmount; i++)
             {
-                sLeaser.sprites[i + 1].x += Mathf.Sin(((float)i / this.circlesAmount) * Mathf.PI * 2f) * 30f;
-                sLeaser.sprites[i + 1].y += Mathf.Cos(((float)i / this.circlesAmount) * Mathf.PI * 2f) * 30f;
-                sLeaser.sprites[i + 1].color = Color.white;
-                sLeaser.sprites[i + 1].alpha = 0.35f + 0.65f * (1 - GetCircleFraction(i - 1));
-                sLeaser.sprites[i + 1].scale = 0.5f * BTWFunc.EaseOut(GetCircleFraction(i - 1), 3);
+                sLeaser.sprites[i + 2].x += Mathf.Sin(((float)i / this.circlesAmount) * Mathf.PI * 2f) * 30f;
+                sLeaser.sprites[i + 2].y += Mathf.Cos(((float)i / this.circlesAmount) * Mathf.PI * 2f) * 30f;
+                sLeaser.sprites[i + 2].color = Color.white;
+                sLeaser.sprites[i + 2].alpha = 0.35f + 0.65f * (1 - GetCircleFraction(i));
+                sLeaser.sprites[i + 2].scale = 0.5f * BTWFunc.EaseOut(GetCircleFraction(i), 3);
             }
             if (this.target == null)
             {
                 sLeaser.sprites[circlesAmountMax + 2].alpha = 0.25f + Mathf.Cos((1 / (BTWFunc.FrameRate * 2.5f)) * Mathf.PI * 2f * this.reviveCounter) * 0.3f;
                 sLeaser.sprites[circlesAmountMax + 2].scale = 3f + Mathf.Cos((1 / (BTWFunc.FrameRate * 2.5f)) * Mathf.PI * 2f * this.reviveCounter) * 7f;
-                sLeaser.sprites[circlesAmountMax + 2].color = this.baseColor;
+                sLeaser.sprites[circlesAmountMax + 2].color = this.fake ? Color.gray : this.baseColor;
             }
+            // else
+            // {
+            //     BTWPlugin.Log($"Target [{this.abstractTarget} : {this.target}] is getting revived with count <{this.reviveCounter}>, lives <{this.lifesleft}>");
+            // }
         }
 
         if (this.target != null && (this.target.inShortcut || this.target.room == null))
@@ -717,7 +721,6 @@ public static class ArenaLivesHooks
             && self.Room.realizedRoom != null
             && self is AbstractCreature abstractCreature
             && abstractCreature != null
-            // && BTWFunc.IsLocal(abstractCreature)
             && ArenaLives.TryGetLives(abstractCreature, out var lives))
         {
             if (lives.canRespawn && lives.lifesleft > 0)
@@ -726,6 +729,8 @@ public static class ArenaLivesHooks
                 abstractCreature.Die();
                 lives.wasAbstractCreatureDestroyed = true;
                 abstractCreature.Abstractize(self.Room.realizedRoom.GetWorldCoordinate(lives.RespawnPos));
+                abstractCreature.realizedCreature?.Destroy();
+                abstractCreature.realizedCreature = null;
                 BTWPlugin.Log($"Stopped Abstract Creature [{abstractCreature}] from being destroyed, so they can revive in peace (lives : <{lives.lifesleft}>).");
                 return;
             }
