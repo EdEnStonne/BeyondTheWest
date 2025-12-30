@@ -69,7 +69,6 @@ public class BTWMeadowArenaSettings
     public int ArenaLives_Amount = BTWRemix.MeadowArenaLivesAmount.Value;
     public int ArenaLives_ReviveTime = BTWRemix.MeadowArenaLivesReviveTime.Value;
     public bool ArenaLives_BlockWin = BTWRemix.MeadowArenaLivesBlockWin.Value;
-    public bool ArenaLives_ReviveFromAbyss = false; //BTWRemix.MeadowArenaLivesReviveFromAbyss.Value;
     public bool ArenaLives_Strict = BTWRemix.MeadowArenaLivesStrict.Value;
     public int ArenaLives_RespawnShieldDuration = BTWRemix.MeadowArenaLivesRespawnShieldDuration.Value;
     
@@ -95,14 +94,14 @@ public static class BTWMeadowArenaSettingsHooks
         }
         catch (Exception e)
         {
-            Plugin.logger.LogError(e);
+            BTWPlugin.logger.LogError(e);
         }
-        Plugin.Log("BTWMeadowArenaSettingsHooks ApplyHooks Done !");
+        BTWPlugin.Log("BTWMeadowArenaSettingsHooks ApplyHooks Done !");
     }
 
     private static void ArenaDataHook()
     {
-        Plugin.Log("Meadow BTW Arena Data starts");
+        BTWPlugin.Log("Meadow BTW Arena Data starts");
         try
         {
             new Hook(typeof(Lobby).GetMethod("ActivateImpl", BindingFlags.NonPublic | BindingFlags.Instance), (Action<Lobby> orig, Lobby self) =>
@@ -113,13 +112,13 @@ public static class BTWMeadowArenaSettingsHooks
                     OnlineManager.lobby.AddData(new Data.BTWArenaLobbyRessourceData());
                 }
             });
-            Plugin.Log("Meadow hook ended");
+            BTWPlugin.Log("Meadow hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
-        Plugin.Log("Meadow BTW Arena Data ends");
+        BTWPlugin.Log("Meadow BTW Arena Data ends");
     }
     private static void OnlineSlugcatAbilitiesInterface_AddAllSettings(Action<OnlineSlugcatAbilitiesInterface, string> orig, OnlineSlugcatAbilitiesInterface self, string painCatName)
     {
@@ -145,7 +144,9 @@ public static class BTWMeadowArenaSettingsHooks
         orig(self, abstractCreature, world);
         if (BTWMeadowArenaSettings.TryGetSettings(out var meadowArenaSettings))
         {
-            if (meadowArenaSettings.ArenaLives_Amount > 0 && self.room != null)
+            if (meadowArenaSettings.ArenaLives_Amount > 0 
+                && self.room != null 
+                && !ArenaLives.TryGetLives(abstractCreature, out _))
             {
                 ArenaLives arenaLives = new(
                     abstractCreature, 

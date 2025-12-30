@@ -9,7 +9,7 @@ public static class CompetitiveAddition
     public static void ApplyHooks()
     {
         On.Player.ProcessDebugInputs += Player_ArenaDebug;
-        Plugin.Log("CompetitiveAddition ApplyHooks Done !");
+        BTWPlugin.Log("CompetitiveAddition ApplyHooks Done !");
     }
     
     public static bool ReachedMomentWhenLivesAreSetTo0(ArenaGameSession arenaGame)
@@ -26,19 +26,20 @@ public static class CompetitiveAddition
     private static void Player_ArenaDebug(On.Player.orig_ProcessDebugInputs orig, Player self)
     {
         orig(self);
-        bool targetLocal = !Plugin.meadowEnabled || BTWFunc.IsLocal(self.abstractPhysicalObject);
+        bool targetLocal = !BTWPlugin.meadowEnabled || BTWFunc.IsLocal(self.abstractPhysicalObject);
         if (self.room == null || !self.room.game.devToolsActive || !targetLocal)
         {
             return;
         }
+        bool IsMeadowArena = BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena();
         if (Input.GetKeyDown(KeyCode.L))
         {
-            if (Input.GetKey(KeyCode.LeftShift) && self.room.world.game.IsArenaSession)
+            if (Input.GetKey(KeyCode.LeftShift) && self.room.world.game.IsArenaSession && !IsMeadowArena)
             {
                 ArenaShield arenaShield = new(self);
                 self.room.AddObject( arenaShield );
             }
-            else if (Input.GetKey(KeyCode.LeftControl) && self.room.world.game.IsArenaSession)
+            else if (Input.GetKey(KeyCode.LeftControl) && self.room.world.game.IsArenaSession && !IsMeadowArena)
             {
                 ArenaLives arenaLives = new(self.abstractCreature);
                 self.room.AddObject( arenaLives );

@@ -16,6 +16,7 @@ namespace BeyondTheWest.ArenaAddition;
 public class ArenaShield : UpdatableAndDeletable, IDrawable
 {
     public static ConditionalWeakTable<Player, ArenaShield> arenaShields = new();
+    public static ConditionalWeakTable<AbstractCreature, ArenaShield> shieldToAdd = new();
     public static bool TryGetShield(Player player, out ArenaShield shield)
     {
         return arenaShields.TryGetValue(player, out shield);
@@ -26,53 +27,71 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
         return shield;
     }
 
-    public ArenaShield(Player player, int shieldTime)
+    public ArenaShield(int shieldTime)
     {
         this.shieldTime = shieldTime;
+    }
+    public ArenaShield(Player player, int shieldTime) : this(shieldTime)
+    {
         this.target = player;
-        this.baseColor = player.ShortCutColor();
-        if (this.CreatureMainChunk != null)
+        Init();
+    }
+    public ArenaShield(Player player) : this(player, BTWFunc.FrameRate * 10) { }
+    public ArenaShield() : this(BTWFunc.FrameRate * 10) {}
+    
+    public void Init()
+    {
+        if (this.target != null)
         {
-            this.pos = this.CreatureMainChunk.pos;
-        }
-        if (TryGetShield(player, out var arenaShield))
-        {
-            arenaShield.Destroy();
-        }
-        arenaShields.Add(player, this);
-        if (Plugin.meadowEnabled && MeadowFunc.IsMeadowLobby())
-        {
-            this.isMine = BTWFunc.IsLocal(player.abstractCreature);
-            this.meadowSync = true;
-            if (this.isMine)
+            this.isInit = true;
+            this.baseColor = this.target.ShortCutColor();
+            if (this.CreatureMainChunk != null)
             {
-                MeadowCalls.BTWArena_RPCArenaForcefieldAdded(this);
+                this.pos = this.CreatureMainChunk.pos;
+            }
+            if (TryGetShield(this.target, out var arenaShield))
+            {
+                arenaShield.Destroy();
+            }
+            arenaShields.Add(this.target, this);
+            if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowLobby())
+            {
+                this.isMine = BTWFunc.IsLocal(this.target.abstractCreature);
+                this.meadowSync = true;
+                if (this.isMine)
+                {
+                    MeadowCalls.BTWArena_RPCArenaForcefieldAdded(this);
+                }
             }
         }
     }
-    public ArenaShield(Player player) : this(player, BTWFunc.FrameRate * 10) { }
-
-    public void Block(bool callForSync = true)
+    public void Block(bool callForSync = true, bool fake = false)
     {
         if (this.CreatureMainChunk != null && this.room != null && this.blockAnim <= 0)
         {
             this.blockAnim = blockAnimMax;
             this.room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, CreatureMainChunk, false, 0.65f, 2.5f + BTWFunc.random * 0.5f);
-            this.life += this.shieldTime/8; 
+            if (!fake)
+            {
+                this.life += this.shieldTime/8; 
+            }
         }
-        if (Plugin.meadowEnabled && callForSync && this.meadowSync)
+        if (BTWPlugin.meadowEnabled && callForSync && !fake && this.meadowSync)
         {
             MeadowCalls.BTWArena_RPCArenaForcefieldBlock(this);
         }
     }
     public void Dismiss(bool callForSync = true)
     {
-        if (this.CreatureMainChunk != null && this.room != null && this.isMine)
+        if (this.CreatureMainChunk != null && this.room != null)
         {
-            this.room.PlaySound(SoundID.HUD_Pause_Game, this.CreatureMainChunk, false, 0.75f, 0.4f + BTWFunc.random * 0.2f);
+            if (this.destruction <= 0 || this.Shielding)
+            {
+                this.room.PlaySound(SoundID.HUD_Pause_Game, this.CreatureMainChunk, false, 0.75f, 0.4f + BTWFunc.random * 0.2f);
+            }
             this.life = this.shieldTime;
         }
-        if (Plugin.meadowEnabled && callForSync && this.meadowSync && this.isMine)
+        if (BTWPlugin.meadowEnabled && callForSync && this.meadowSync && this.isMine)
         {
             MeadowCalls.BTWArena_RPCArenaForcefieldDismiss(this);
         }
@@ -92,7 +111,18 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
     public override void Update(bool eu)
     {
         base.Update(eu);
-        if (this.target == null) { this.Destroy(); return; }
+        if (this.target == null) 
+        {  
+            if (this.isInit)
+            {
+                this.Destroy(); 
+            }
+            else
+            {
+                Init();
+            }
+            return; 
+        }
         if (this.blockAnim > 0) { this.blockAnim--; }
         if (CreatureStillValid && this.Shielding)
         {
@@ -107,7 +137,7 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
             }
             if (this.FractionLife == 0)
             {
-                Block();
+                Block(false, true);
                 this.life = 0;
             }
             this.life++;
@@ -163,10 +193,23 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
     {
         if (!sLeaser.deleteMeNextFrame && (base.slatedForDeletetion || this.room != rCam.room))
         {
-            sLeaser.CleanSpritesAndRemove();
+            if (this.isInit)
+            {
+                sLeaser.CleanSpritesAndRemove();
+            }
+            else
+            {
+                foreach (FSprite sprite in sLeaser.sprites)
+                {
+                    sprite.alpha = 0f;
+                }
+            }
             return;
         }
-        if (this.target == null) { sLeaser.CleanSpritesAndRemove(); return; }
+        if (this.target == null) { 
+            sLeaser.CleanSpritesAndRemove(); 
+            return; 
+        }
 
         if (this.CreatureMainChunk != null)
         {
@@ -215,6 +258,8 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
             rCam.ReturnFContainer("HUD").AddChild(sprite);
         }
     }
+
+    private bool isInit = false;
 
     public Player target;
     public Color baseColor = Color.white;
@@ -283,11 +328,13 @@ public static class ArenaShieldHooks
         On.Creature.Violence += Player_BlockViolence;
         On.Creature.Die += Player_BlockLiteralDeath;
         On.Creature.Grab += Player_RemoveShieldOnGrabItem;
+        On.Player.ctor += Player_AddQueuedShield;
         On.Player.ThrowObject += Player_RemoveShieldOnThrowObject;
         On.Creature.Violence += Player_RemoveShieldOnViolence;
-        Plugin.Log("CompetitiveAddition ApplyHooks Done !");
+        BTWPlugin.Log("CompetitiveAddition ApplyHooks Done !");
     }
-    
+
+
     public static bool OutOfBounds(Creature creature)
     {
         float num6 = -creature.bodyChunks[0].restrictInRoomRange + 1f;
@@ -322,7 +369,7 @@ public static class ArenaShieldHooks
             && ArenaShield.TryGetShield(player, out var shield) 
             && shield.Shielding)
         {
-            Plugin.Log("["+ weapon +"] BLOCKED BY SHIELD OF PLAYER ["+ player +"]");
+            BTWPlugin.Log("["+ weapon +"] BLOCKED BY SHIELD OF PLAYER ["+ player +"]");
 
             shield.Block();
             Vector2 inbetweenPos = Vector2.Lerp(result.obj.firstChunk.lastPos, weapon.firstChunk.lastPos, 0.5f);
@@ -334,12 +381,24 @@ public static class ArenaShieldHooks
         return false;
     }
     // Hooks  
+    private static void Player_AddQueuedShield(On.Player.orig_ctor orig, Player self, AbstractCreature abstractCreature, World world)
+    {
+        orig(self, abstractCreature, world);
+        if (ArenaShield.shieldToAdd.TryGetValue(abstractCreature, out var shield))
+        {
+            shield.target = self;
+            shield.Init();
+            self.room.AddObject( shield );
+            ArenaShield.shieldToAdd.Remove(abstractCreature);
+            BTWPlugin.Log($"Spared shield added to [{self}] ! Can the shield be found ? <{ArenaShield.TryGetShield(self, out _)}>");
+        }
+    }
     private static void Player_RemoveShieldOnThrowObject(On.Player.orig_ThrowObject orig, Player self, int grasp, bool eu)
     {
         if (ArenaShield.TryGetShield(self, out var shield) 
             && shield.Shielding)
         {
-            Plugin.Log("REMOVED SHIELD OF PLAYER ["+ self +"]. Reason : item throw.");
+            BTWPlugin.Log("REMOVED SHIELD OF PLAYER ["+ self +"]. Reason : item throw.");
             shield.Dismiss();
         }
         orig(self, grasp, eu);
@@ -350,7 +409,7 @@ public static class ArenaShieldHooks
             && ArenaShield.TryGetShield(player, out var shield) 
             && shield.Shielding)
         {
-            Plugin.Log("REMOVED SHIELD OF PLAYER ["+ player +"]. Reason : item grab.");
+            BTWPlugin.Log("REMOVED SHIELD OF PLAYER ["+ player +"]. Reason : item grab.");
             shield.Dismiss();
         }
         return orig(self, obj, graspUsed, chunkGrabbed, shareability, dominance, overrideEquallyDominant, pacifying);
@@ -363,7 +422,7 @@ public static class ArenaShieldHooks
         {
             if (!OutOfBounds(self))
             {
-                Plugin.Log("DEATH BLOCKED BY SHIELD OF PLAYER ["+ player +"]");
+                BTWPlugin.Log("DEATH BLOCKED BY SHIELD OF PLAYER ["+ player +"]");
 
                 shield.Block();
                 player.Stun(BTWFunc.FrameRate * 1);
@@ -400,10 +459,10 @@ public static class ArenaShieldHooks
     }
     private static void Weapon_BlockWithArenaShield(ILContext il)
     {
-        Plugin.Log("Weapon PassThrough IL starts");
+        BTWPlugin.Log("Weapon PassThrough IL starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchLdarg(0),
@@ -429,18 +488,18 @@ public static class ArenaShieldHooks
                 {
                     cursor.Emit(OpCodes.Brfalse_S, Mark2);
                 }
-                else { Plugin.logger.LogError("Couldn't find IL hook 2 :<"); }
+                else { BTWPlugin.logger.LogError("Couldn't find IL hook 2 :<"); }
             }
-            else { Plugin.logger.LogError("Couldn't find IL hook 1 :<"); }
+            else { BTWPlugin.logger.LogError("Couldn't find IL hook 1 :<"); }
 
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
         // Plugin.Log(il);
-        Plugin.Log("Weapon PassThrough IL ends");
+        BTWPlugin.Log("Weapon PassThrough IL ends");
     }
     private static void Player_BlockViolence(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
     {
@@ -448,7 +507,7 @@ public static class ArenaShieldHooks
             && ArenaShield.TryGetShield(player, out var shield) 
             && shield.Shielding)
         {
-            Plugin.Log("VIOLENCE BLOCKED BY SHIELD OF PLAYER ["+ player +"]");
+            BTWPlugin.Log("VIOLENCE BLOCKED BY SHIELD OF PLAYER ["+ player +"]");
 
             shield.Block();
             if (source?.owner != null && source.owner is Creature creature)
@@ -469,7 +528,7 @@ public static class ArenaShieldHooks
             && ArenaShield.TryGetShield(player, out var shield) 
             && shield.Shielding)
         {
-            Plugin.Log("REMOVED SHIELD OF PLAYER ["+ player +"]. Reason : violence.");
+            BTWPlugin.Log("REMOVED SHIELD OF PLAYER ["+ player +"]. Reason : violence.");
 
             shield.Dismiss();
             Vector2 dir = (source.lastPos - (hitChunk ?? self.firstChunk).lastPos).normalized * 3f + BTWFunc.RandomCircleVector() + Vector2.up;

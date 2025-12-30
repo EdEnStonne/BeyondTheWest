@@ -71,6 +71,6 @@ public class ObjectDataPool
                 }
             }
         }
-        return new();
+        return new ObjectData();
     }
 }

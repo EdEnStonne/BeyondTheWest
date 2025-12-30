@@ -47,7 +47,7 @@ In Arena :
 [L] : Force Kill
 [L + Shift] : Arena Shield
 [L + Control] : Arena Lifes (set to 3)
-
+[L + Alt] : Spawns a random item from the test pool
 
 [h2]Arena : [/h2]
 

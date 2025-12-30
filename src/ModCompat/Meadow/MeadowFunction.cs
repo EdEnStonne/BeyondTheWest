@@ -3,6 +3,8 @@ using RainMeadow;
 using System.Linq;
 using BeyondTheWest.ArenaAddition;
 using System.Collections.Generic;
+using ObjectType = AbstractPhysicalObject.AbstractObjectType;
+using Unity;
 
 namespace BeyondTheWest.MeadowCompat;
 
@@ -36,7 +38,7 @@ public static class MeadowFunc
 
         if (playerOpo?.apo?.realizedObject is not Player player)
         {
-            Plugin.logger.LogError(playerOpo.apo.ToString() + " is not a player !!!");
+            // BTWPlugin.logger.LogError(playerOpo.apo.ToString() + " is not a player !!!");
             return null;
         }
         return player;
@@ -44,12 +46,12 @@ public static class MeadowFunc
     public static StaticChargeManager GetOnlinePlayerStaticChargeManager(OnlineEntity playerOE)
     {
         Player player = GetPlayerFromOE(playerOE);
-        if (player == null) { Plugin.logger.LogError(playerOE.ToString() + " player is null !!!"); return null; }
+        if (player == null) {  return null; } //BTWPlugin.logger.LogError(playerOE.ToString() + " player is null !!!");
 
         
         if (!(StaticChargeManager.TryGetManager(player.abstractCreature, out var SCM) && SCM.init))
         {
-            Plugin.logger.LogError("No StaticChargeManager detected on " + player.ToString());
+            BTWPlugin.logger.LogError("No StaticChargeManager detected on " + player.ToString());
             return null;
         }
 
@@ -58,11 +60,11 @@ public static class MeadowFunc
     public static AbstractEnergyCore GetOnlinePlayerAbstractEnergyCore(OnlineEntity playerOE)
     {
         Player player = GetPlayerFromOE(playerOE);
-        if (player == null) { Plugin.logger.LogError(playerOE.ToString() + " player is null !!!"); return null; }
+        if (player == null) { return null; } // BTWPlugin.logger.LogError(playerOE.ToString() + " player is null !!!");
 
         if (!AbstractEnergyCore.TryGetCore(player.abstractCreature, out var AEC))
         {
-            Plugin.logger.LogError("No AbstractEnergyCore detected on " + player.ToString());
+            BTWPlugin.logger.LogError("No AbstractEnergyCore detected on " + player.ToString());
             
             return null;
         }
@@ -76,7 +78,7 @@ public static class MeadowFunc
 
         if (AEC.realizedObject == null || AEC.realizedObject is not EnergyCore core)
         {
-            Plugin.logger.LogError("No EnergyCore detected on " + playerOE.ToString());
+            BTWPlugin.logger.LogError("No EnergyCore detected on " + playerOE.ToString());
             return null;
         }
         return core;
@@ -146,7 +148,15 @@ public static class MeadowFunc
     {
         if (IsMeadowArena())
         {
-            ArenaHelpers.GetReadiedPlayerCount(OnlineManager.players);
+            return ArenaHelpers.GetReadiedPlayerCount(OnlineManager.players);
+        }
+        return 0;
+    }
+    public static int GetPlayersInLobby()
+    {
+        if (IsMeadowLobby())
+        {
+            return OnlineManager.players.Count;
         }
         return 0;
     }
@@ -157,6 +167,14 @@ public static class MeadowFunc
             return arenaSettings.Trailseeker_EveryoneCanPoleTech;
         }
         return BTWRemix.EveryoneCanPoleTech.Value;
+    }
+    public static int ArenaCountdownTimerTotal()
+    {
+        if (IsMeadowArena(out var arenaOnline))
+        {
+            return arenaOnline.trackSetupTime * BTWFunc.FrameRate;
+        }
+        return RainMeadow.RainMeadow.rainMeadowOptions.ArenaCountDownTimer.Value * BTWFunc.FrameRate;
     }
 
     // Arena extension
@@ -207,6 +225,138 @@ public static class MeadowFunc
             arenaItemSpawnSetting.doScalePerPlayer = true;
             arenaItemSpawnSetting.randomItem = settings.ArenaItems_ItemSpawnRandom;
             arenaItemSpawnSetting.diversity = settings.ArenaItems_ItemSpawnDiversity;
+        }
+    }
+    public static void ReviveOnlinePlayer(ArenaGameSession arenaGame, AbstractCreature abstractPlayer, int exit = 0)
+    {
+        if (!IsMeadowArena(out var arenaOnlineGameMode)) { BTWPlugin.logger.LogError($"uh the online arena is not here to revive on...?"); return; }
+        BTWPlugin.Log($"Reviving [{abstractPlayer}] in room [{arenaGame.room}], pipe <{exit}>, in meadow lobby !");
+
+
+        // abstractPlayer.Room.AddEntity(abstractPlayer);
+
+        Room room = arenaGame.room;
+        if (room == null) { BTWPlugin.logger.LogError($"uh the room is not here...?"); return; }
+        if (room.abstractRoom.GetResource() == null) { BTWPlugin.logger.LogError($"uh the online room is not here...?"); }
+        OnlineCreature onlineCreature = abstractPlayer.GetOnlineCreature();
+        if (onlineCreature == null) { BTWPlugin.logger.LogError($"uh the onlineCreature is not here...?"); return; }
+        if (!onlineCreature.isMine) { BTWPlugin.logger.LogError($"uh the onlineCreature is not yours..."); return; }
+        abstractPlayer.Move(room.ToWorldCoordinate(BTWFunc.ExitPos(arenaGame, exit)));
+        abstractPlayer.pos.room = room.abstractRoom.index;
+        abstractPlayer.pos.abstractNode = room.ShortcutLeadingToNode(exit).destNode;
+
+        // arenaGame.game.world.GetResource().ApoEnteringWorld(abstractPlayer);
+
+        arenaGame.game.cameras[0].followAbstractCreature = abstractPlayer;
+
+        if (abstractPlayer.GetOnlineObject(out var oe) && oe.TryGetData<SlugcatCustomization>(out var customization))
+        {
+            abstractPlayer.state = new PlayerState(abstractPlayer, 0, customization.playingAs, isGhost: false);
+            BTWPlugin.Log($"Gave customization to slugcat !");  
+        }
+        else
+        {
+            RainMeadow.RainMeadow.Error("Could not get online owner for spawned player on BTW revive!");
+            abstractPlayer.state = new PlayerState(abstractPlayer, 0, arenaGame.arenaSitting.players[ArenaHelpers.FindOnlinePlayerNumber(arenaOnlineGameMode, OnlineManager.mePlayer)].playerClass, isGhost: false);
+        }
+
+        abstractPlayer.Realize();
+        onlineCreature.realized = true;
+        room.abstractRoom.GetResource()?.ApoEnteringRoom(abstractPlayer, abstractPlayer.pos);
+        BTWPlugin.Log($"Realized Creature !");
+        
+        ShortcutHandler.ShortCutVessel shortCutVessel = new(room.ShortcutLeadingToNode(exit).DestTile, 
+            abstractPlayer.realizedCreature, arenaGame.game.world.GetAbstractRoom(0), 0)
+        {
+            entranceNode = abstractPlayer.pos.abstractNode,
+            room = arenaGame.game.world.GetAbstractRoom(abstractPlayer.Room.name)
+        };
+        arenaGame.game.shortcuts.betweenRoomsWaitingLobby.Add(shortCutVessel);
+
+        if ((abstractPlayer.realizedCreature as Player).SlugCatClass == SlugcatStats.Name.Night)
+        {
+            (abstractPlayer.realizedCreature as Player).slugcatStats.throwingSkill = 1;
+        }
+        if (ModManager.MSC)
+        {
+            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == SlugcatStats.Name.Red)
+            {
+                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.All, -1, 0, -0.75f);
+                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.Scavengers, -1, 0, 0.5f);
+            }
+
+            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == SlugcatStats.Name.Yellow)
+            {
+                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.All, -1, 0, 0.75f);
+                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.Scavengers, -1, 0, 0.3f);
+            }
+
+            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == MoreSlugcats.MoreSlugcatsEnums.SlugcatStatsName.Artificer)
+            {
+                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.All, -1, 0, -0.5f);
+                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.Scavengers, -1, 0, -1f);
+            }
+
+            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == MoreSlugcats.MoreSlugcatsEnums.SlugcatStatsName.Slugpup)
+            {
+                (abstractPlayer.realizedCreature as Player).slugcatStats.throwingSkill = 1;
+            }
+
+            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == MoreSlugcats.MoreSlugcatsEnums.SlugcatStatsName.Sofanthiel)
+            {
+                (abstractPlayer.realizedCreature as Player).slugcatStats.throwingSkill = arenaOnlineGameMode.painCatThrowingSkill;
+            }
+
+
+            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == MoreSlugcats.MoreSlugcatsEnums.SlugcatStatsName.Saint)
+            {
+                if (!arenaOnlineGameMode.sainot)
+                {
+                    (abstractPlayer.realizedCreature as Player).slugcatStats.throwingSkill = 0;
+                }
+                else
+                {
+                    (abstractPlayer.realizedCreature as Player).slugcatStats.throwingSkill = 1;
+
+                }
+            }
+        }
+        if (ModManager.Watcher && (abstractPlayer.realizedCreature as Player).SlugCatClass == Watcher.WatcherEnums.SlugcatStatsName.Watcher)
+        {
+            (abstractPlayer.realizedCreature as Player).enterIntoCamoDuration = 40;
+        }
+
+        BTWPlugin.Log($"Player [{abstractPlayer.realizedCreature}] fully revived !");
+        // arenaGame.AddPlayer(abstractPlayer);
+    }
+    public static void RemoveRestrictedItemsInArenaFromPool(ref ObjectDataPool itemPool)
+    {
+        if (IsMeadowArena(out var arenaOnline))
+        {
+            // apparently nothing on the blocklist, it's private so I can't even check on it :<
+            if (ModManager.MSC)
+            {
+                // fuck you FireEgg, you're a cool item but you keep CRASHING THE DARN GAME
+                itemPool.pool.RemoveAll(x => x.objectData.objectType == MoreSlugcats.MoreSlugcatsEnums.AbstractObjectType.FireEgg);
+            }
+            if (!arenaOnline.enableBombs)
+            {
+                itemPool.pool.RemoveAll(x => 
+                    x.objectData.objectType == ObjectType.FirecrackerPlant
+                    && x.objectData.objectType == ObjectType.ScavengerBomb);
+                if (ModManager.MSC)
+                {
+                    itemPool.pool.RemoveAll(x => 
+                        x.objectData.objectType == DLCSharedEnums.AbstractObjectType.SingularityBomb
+                        && x.objectData.objectType == MoreSlugcats.MoreSlugcatsEnums.AbstractObjectType.FireEgg);
+                }
+            }
+            if (!arenaOnline.enableBees)
+            {
+                itemPool.pool.RemoveAll(x => 
+                    x.objectData.objectType == ObjectType.JellyFish
+                    && x.objectData.objectType == ObjectType.SporePlant);
+            }
         }
     }
 

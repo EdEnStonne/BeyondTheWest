@@ -52,7 +52,7 @@ public static class BTWFunc
     
     public static bool IsLocal(AbstractPhysicalObject abstractPhysicalObject)
     {
-        if (Plugin.meadowEnabled && abstractPhysicalObject != null)
+        if (BTWPlugin.meadowEnabled && abstractPhysicalObject != null)
         {
             return MeadowFunc.IsObjectMine(abstractPhysicalObject);
         }
@@ -60,7 +60,7 @@ public static class BTWFunc
     }
     public static bool IsLocal(PhysicalObject physicalObject)
     {
-        if (Plugin.meadowEnabled && physicalObject?.abstractPhysicalObject != null)
+        if (BTWPlugin.meadowEnabled && physicalObject?.abstractPhysicalObject != null)
         {
             return IsLocal(physicalObject.abstractPhysicalObject);
         }
@@ -68,13 +68,27 @@ public static class BTWFunc
     }
     public static bool OnlineArenaTimerOn()
     {
-        if (Plugin.meadowEnabled)
+        if (BTWPlugin.meadowEnabled)
         {
             return MeadowFunc.ShouldHoldFireFromOnlineArenaTimer();
         }
         return false;
     }
-
+    
+    public static bool InRoomBounds(PhysicalObject physicalObject)
+    {
+        if (physicalObject.room != null)
+        {
+            WorldCoordinate pos = physicalObject.abstractPhysicalObject.pos;
+            Room room = physicalObject.room;
+            return pos.x < room.Width 
+                && pos.y < room.Height 
+                && pos.x > -1 
+                && pos.y > -1;
+        }
+        return false;
+    }
+    
     public static Vector2 OffsetRelativeToRot(float rot, Vector2 offset)
     {
         return new Vector2((float)(offset.x * Math.Cos(rot) - offset.y * Math.Sin(rot)), (float)(offset.x * Math.Sin(rot) + offset.y * Math.Cos(rot)));
@@ -247,7 +261,7 @@ public static class BTWFunc
         }
         if (player.input.Length <= index)
         {
-            Plugin.logger.LogError($"Tried to get input index <{index}> on InputPackage of lenght <{player.input.Length}> !");
+            BTWPlugin.logger.LogError($"Tried to get input index <{index}> on InputPackage of lenght <{player.input.Length}> !");
         }
         return Vector2.zero;
     }
@@ -365,7 +379,7 @@ public static class BTWFunc
     public static void CustomKnockback(BodyChunk bodyChunk, Vector2 force, bool notifyMeadow = false)
     {
         bodyChunk.vel += force;
-        if (notifyMeadow && Plugin.meadowEnabled && !MeadowFunc.IsMine(bodyChunk.owner.abstractPhysicalObject))
+        if (notifyMeadow && BTWPlugin.meadowEnabled && !MeadowFunc.IsMine(bodyChunk.owner.abstractPhysicalObject))
         {
             MeadowCalls.BTWFuncMeadow_RPCCustomKnockBack(bodyChunk.owner, (short)bodyChunk.index, force);
         }
@@ -384,7 +398,7 @@ public static class BTWFunc
         { 
             CustomKnockback(bodyChunk, force); 
         }
-        if (notifyMeadow && Plugin.meadowEnabled && !MeadowFunc.IsMine(physicalObject.abstractPhysicalObject))
+        if (notifyMeadow && BTWPlugin.meadowEnabled && !MeadowFunc.IsMine(physicalObject.abstractPhysicalObject))
         {
             MeadowCalls.BTWFuncMeadow_RPCCustomKnockBack(physicalObject, -1, force);
         }
@@ -417,11 +431,36 @@ public static class BTWFunc
             && !physicalObject2.slatedForDeletetion;
     }
 
-    public static Vector2 RandomExitPos(ArenaGameSession arena)
+    public static int RandomExit(Room room)
+    {
+        if (room != null)
+        {
+            return (int)Random(room.abstractRoom.exits);
+        }
+        return 0;
+    }
+    public static int RandomExit(ArenaGameSession arena)
     {
         if (arena?.room != null)
         {
-            return RandomExitPos(arena.room);
+            return RandomExit(arena.room);
+        }
+        return 0;
+    }
+    public static Vector2 ExitPos(Room room, int exit)
+    {
+        if (room != null && exit >= 0 && exit < room.abstractRoom.exits)
+        {
+            ShortcutData shortcutData = room.ShortcutLeadingToNode(exit); 
+            return shortcutData.StartTile.ToVector2() * 20f + Vector2.one * 10;
+        }
+        return Vector2.zero;
+    }
+    public static Vector2 ExitPos(ArenaGameSession arena, int exit)
+    {
+        if (arena?.room != null)
+        {
+            return ExitPos(arena.room, exit);
         }
         return Vector2.zero;
     }
@@ -429,9 +468,16 @@ public static class BTWFunc
     {
         if (room != null)
         {
-            int exit = Mathf.Max(0, (int)Random(room.abstractRoom.exits));
-            ShortcutData shortcutData = room.ShortcutLeadingToNode(exit); 
-            return shortcutData.StartTile.ToVector2() * 20f + Vector2.one * 10;
+            int exit = RandomExit(room);
+            return ExitPos(room, exit);
+        }
+        return Vector2.zero;
+    }
+    public static Vector2 RandomExitPos(ArenaGameSession arena)
+    {
+        if (arena?.room != null)
+        {
+            return RandomExitPos(arena.room);
         }
         return Vector2.zero;
     }

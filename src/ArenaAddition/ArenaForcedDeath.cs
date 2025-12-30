@@ -26,7 +26,7 @@ public class ArenaForcedDeath : UpdatableAndDeletable, IDrawable
                 this.pos = this.CreatureMainChunk.pos;
             }
         }
-        if (!fake && Plugin.meadowEnabled && MeadowFunc.IsMine(abstractCreature) && MeadowFunc.IsMeadowLobby())
+        if (!fake && BTWPlugin.meadowEnabled && MeadowFunc.IsMine(abstractCreature) && MeadowFunc.IsMeadowLobby())
         {
             MeadowCalls.BTWArena_RPCArenaForcedDeathEffect(this);
         }
@@ -61,7 +61,7 @@ public class ArenaForcedDeath : UpdatableAndDeletable, IDrawable
                     BTWFunc.CustomKnockback(creature, BTWFunc.RandomCircleVector(20f));
                 }
                 if (this.killTagHolder != null) { creature.SetKillTag(this.killTagHolder.abstractCreature); }
-                if (Plugin.meadowEnabled)
+                if (BTWPlugin.meadowEnabled)
                 {
                     ArenaDeathTracker.SetDeathTrackerOfCreature(creature.abstractCreature, 40);
                 }
@@ -170,8 +170,16 @@ public class ArenaForcedDeath : UpdatableAndDeletable, IDrawable
         sLeaser.sprites[0].alpha = this.FractionLife;
         if (this.destruction > 0)
         {
-            sLeaser.sprites[1].alpha /= 2;
-            sLeaser.sprites[0].alpha = easedDesc;
+            if (this.jobDone)
+            {
+                sLeaser.sprites[1].alpha /= 2;
+                sLeaser.sprites[0].alpha = easedDesc;
+            }
+            else
+            {
+                sLeaser.sprites[1].alpha /= 4;
+                sLeaser.sprites[0].alpha = 0f;
+            }
         }
         if (this.target != null && this.target.inShortcut)
         {

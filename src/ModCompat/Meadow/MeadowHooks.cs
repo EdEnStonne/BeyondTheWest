@@ -26,7 +26,7 @@ public static class MeadowHookHelper
         new Hook(typeof(ArenaOnlineGameMode).GetConstructor(new[] { typeof(Lobby) }), SetUpArenaDescription);
         
         On.ArenaGameSession.Initiate += ArenaGameSession_RequestAllItemSpawner;
-        Plugin.Log("MeadowCompat ApplyHooks Done !");
+        BTWPlugin.Log("MeadowCompat ApplyHooks Done !");
     }
 
     private static void ArenaGameSession_RequestAllItemSpawner(On.ArenaGameSession.orig_Initiate orig, ArenaGameSession self)
@@ -66,7 +66,7 @@ public static class MeadowHookHelper
     
     private static int ChangePlayerCount(int orig, ExitManager exitManager)
     {
-        // Plugin.Log($"The current player count is <{orig}>, with exit manager [{exitManager}] of arena [{exitManager?.gameSession}]."); 
+        // Plugin.Log($"The current player count is <{orig}>, with exit manager [{exitManager}] of arena [{exitManager?.gameSession}] <{exitManager?.gameSession?.initiated}>."); 
         if (exitManager?.gameSession != null)
         {
             int addcount = ArenaLives.AdditionalPlayerInArenaCount(exitManager.gameSession);
@@ -78,10 +78,10 @@ public static class MeadowHookHelper
     }
     private static void FFA_DontOpenExitIfPlayerIsReviving(ILContext il)
     {
-        Plugin.Log("MeadowCompat IL 3 starts");
+        BTWPlugin.Log("MeadowCompat IL 3 starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
 
             if (cursor.TryGotoNext(MoveType.Before,
@@ -97,17 +97,17 @@ public static class MeadowHookHelper
             }
             else
             {
-                Plugin.logger.LogError("Couldn't find IL hook :<");
-                Plugin.Log(il);
+                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                BTWPlugin.Log(il);
             }
 
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
-        Plugin.Log("MeadowCompat IL 3 ends");
+        BTWPlugin.Log("MeadowCompat IL 3 ends");
     }
     
     private static bool CheckPlayerAsAlive(bool orig, AbstractCreature abstractCreature, ExitManager exitManager)
@@ -120,10 +120,10 @@ public static class MeadowHookHelper
     }
     private static void TeamBattleMode_DontOpenExitIfPlayerIsReviving(ILContext il)
     {
-        Plugin.Log("MeadowCompat IL 4 starts");
+        BTWPlugin.Log("MeadowCompat IL 4 starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
 
             if (cursor.TryGotoNext(MoveType.Before,
@@ -139,8 +139,8 @@ public static class MeadowHookHelper
             }
             else
             {
-                Plugin.logger.LogError("Couldn't find IL hook 1 :<");
-                Plugin.Log(il);
+                BTWPlugin.logger.LogError("Couldn't find IL hook 1 :<");
+                BTWPlugin.Log(il);
             }
 
             if (cursor.TryGotoNext(MoveType.After,
@@ -156,16 +156,16 @@ public static class MeadowHookHelper
             }
             else
             {
-                Plugin.logger.LogError("Couldn't find IL hook 2 :<");
-                Plugin.Log(il);
+                BTWPlugin.logger.LogError("Couldn't find IL hook 2 :<");
+                BTWPlugin.Log(il);
             }
 
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
-        Plugin.Log("MeadowCompat IL 4 ends");
+        BTWPlugin.Log("MeadowCompat IL 4 ends");
     }
 }

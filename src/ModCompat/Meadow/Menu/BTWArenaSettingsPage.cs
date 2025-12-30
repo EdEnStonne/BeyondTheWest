@@ -37,7 +37,6 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         ArenaItems_ItemSpawnMultiplierCent_Label,
         ArenaItems_ItemSpawnMultiplierPerPlayersCent_Label;
     public RestorableCheckbox ArenaLives_BlockWin_CheckBox, 
-        // ArenaLives_ReviveFromAbyss_CheckBox, 
         ArenaLives_Strict_CheckBox, 
         ArenaItems_NewItemSpawningSystem_CheckBox, 
         ArenaItems_ItemSpawnDiversity_CheckBox, 
@@ -107,10 +106,6 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         // ArenaLives_BlockWin
         CreateCheckBox(ref ArenaLives_BlockWin_CheckBox, BTWRemix.MeadowArenaLivesBlockWin,
             "Block session end on revival :", AL_BLOCKWIN, 3);
-
-        // ArenaLives_ReviveFromAbyss
-        // CreateCheckBox(ref ArenaLives_ReviveFromAbyss_CheckBox, BTWRemix.MeadowArenaLivesReviveFromAbyss,
-        //     "Revive destroyed bodies :", AL_REVIVEFROMABYSS, 4);
 
         //  ArenaLives_ReviveTime
         CreateIntTextBox(ref ArenaLives_ReviveTime_TextBox, ref ArenaLives_ReviveTime_Label,
@@ -188,7 +183,6 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
             WIP_Warning, ArenaLives_Title, ArenaItems_Title,
 
             ArenaLives_BlockWin_CheckBox, 
-            // ArenaLives_ReviveFromAbyss_CheckBox, 
             ArenaLives_Strict_CheckBox,
             ArenaItems_NewItemSpawningSystem_CheckBox,
             ArenaItems_ItemSpawnDiversity_CheckBox,
@@ -211,7 +205,6 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         BTWRemix.MeadowArenaLivesAdditionalReviveTime.Value = this.ArenaLives_AdditionalReviveTime_TextBox.valueInt;
         BTWRemix.MeadowArenaLivesAmount.Value = this.ArenaLives_Amount_TextBox.valueInt;
         BTWRemix.MeadowArenaLivesBlockWin.Value = this.ArenaLives_BlockWin_CheckBox.Checked;
-        // BTWRemix.MeadowArenaLivesReviveFromAbyss.Value = this.ArenaLives_ReviveFromAbyss_CheckBox.Checked;
         BTWRemix.MeadowArenaLivesReviveTime.Value = this.ArenaLives_ReviveTime_TextBox.valueInt;
         BTWRemix.MeadowArenaLivesRespawnShieldDuration.Value = this.ArenaLives_RespawnShieldDuration_TextBox.valueInt;
         BTWRemix.MeadowArenaLivesStrict.Value = this.ArenaLives_Strict_CheckBox.Checked;
@@ -258,7 +251,6 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         {
             if (obj != backButton && obj is ButtonTemplate btn) { btn.buttonBehav.greyedOut = greyoutAll; }
         }
-        // ArenaLives_ReviveFromAbyss_CheckBox.buttonBehav.greyedOut = true;
         
         if (BTWMeadowArenaSettings.TryGetSettings(out var settings))
         {
@@ -301,7 +293,6 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         if (BTWMeadowArenaSettings.TryGetSettings(out var settings))
         {
             if (id == AL_BLOCKWIN) return settings.ArenaLives_BlockWin;
-            if (id == AL_REVIVEFROMABYSS) return false; // settings.ArenaLives_ReviveFromAbyss;
             if (id == AL_STRICT) return settings.ArenaLives_Strict;
 
             if (id == AI_ITEMSPAWNDIVERSITY) return settings.ArenaItems_ItemSpawnDiversity;
@@ -316,7 +307,6 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         if (!BTWMeadowArenaSettings.TryGetSettings(out var settings)) return;
         string id = box.IDString;
         if (id == AL_BLOCKWIN) {settings.ArenaLives_BlockWin = c;}
-        else if (id == AL_REVIVEFROMABYSS) {settings.ArenaLives_ReviveFromAbyss = false;}//c;}
         else if (id == AL_STRICT) {settings.ArenaLives_Strict = c;}
 
         else if (id == AI_ITEMSPAWNDIVERSITY) {settings.ArenaItems_ItemSpawnDiversity = c;}

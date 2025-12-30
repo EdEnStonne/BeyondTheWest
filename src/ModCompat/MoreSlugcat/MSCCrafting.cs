@@ -23,16 +23,16 @@ public static class CraftHooks
         On.Player.GraspsCanBeCrafted += Player_StaticChargeManager_GraspsCanBeCrafted;
         On.Player.SpitUpCraftedObject += Player_StaticChargeManager_SpitUpCraftedObject;
         IL.Player.GrabUpdate += Player_StaticChargeManager_CanCraftObject;
-        Plugin.Log("CraftHooks ApplyHooks Done !");
+        BTWPlugin.Log("CraftHooks ApplyHooks Done !");
     }
 
     //----------- Hooks
     private static void Player_StaticChargeManager_CanCraftObject(ILContext il)
     {
-        Plugin.Log("MSC IL 1 starts");
+        BTWPlugin.Log("MSC IL 1 starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchLdsfld<ModManager>(nameof(ModManager.MSC)),
@@ -61,15 +61,15 @@ public static class CraftHooks
             }
             else
             {
-                Plugin.logger.LogError("Couldn't find IL hook :<");
+                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
             }
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
-        Plugin.Log("MSC IL 1 ends");
+        BTWPlugin.Log("MSC IL 1 ends");
     }
     private static bool ElectricSpear_SparkIsElectric(On.MoreSlugcats.ElectricSpear.orig_CheckElectricCreature orig, ElectricSpear self, Creature otherObject)
     {

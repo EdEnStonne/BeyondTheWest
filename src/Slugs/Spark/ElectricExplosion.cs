@@ -67,7 +67,7 @@ public class ElectricExplosion : UpdatableAndDeletable
             }
         }
 
-        if (Plugin.meadowEnabled && notifyMeadow && !BTWFunc.IsLocal(target))
+        if (BTWPlugin.meadowEnabled && notifyMeadow && !BTWFunc.IsLocal(target))
         {
             MeadowCalls.SparMeadow_ShockCreatureRPC(target, closestBodyChunk, sourceObject, 
                 killTagHolder, killTagHolderDmgFactor, damage, stun, color, doSpams);
@@ -109,7 +109,7 @@ public class ElectricExplosion : UpdatableAndDeletable
         this.doSpams = doSpams;
         this.notifyMeadow = notifyMeadow;
 
-        if (Plugin.meadowEnabled && notifyMeadow)
+        if (BTWPlugin.meadowEnabled && notifyMeadow)
         {
             MeadowCalls.SparMeadow_ElectricExplosionRPC(this);
         }
@@ -176,7 +176,7 @@ public class ElectricExplosion : UpdatableAndDeletable
                         && (!this.passThroughObjects.Exists(x => x == obj))
                         && (this.sourceObject == null || BTWFunc.CanTwoObjectsInteract(this.sourceObject, obj))
                         && BTWFunc.IsObjectInRadius(obj, this.pos, this.rad, out result)
-                        && !(Plugin.meadowEnabled 
+                        && !(BTWPlugin.meadowEnabled 
                             && MeadowFunc.IsMeadowArena() 
                             && this.killTagHolder != null 
                             && this.killTagHolder is Player pl && pl != null 
@@ -218,9 +218,9 @@ public class ElectricExplosion : UpdatableAndDeletable
                         }
                         if (obj is Creature creature)
                         {
-                            Plugin.Log("Ouch ! Creature ["+ creature +"] got shocked by ["+ this.killTagHolder 
+                            BTWPlugin.Log("Ouch ! Creature ["+ creature +"] got shocked by ["+ this.killTagHolder 
                                 +"] using ["+ this.sourceObject +"] !");
-                            Plugin.Log("Took <"+ dmg +"/"+ this.maxDamage +"> damage and <"
+                            BTWPlugin.Log("Took <"+ dmg +"/"+ this.maxDamage +"> damage and <"
                                 + stun +"/"+ this.maxStun +"> stun (reach ratio is <"+ ratioDist +">).");
                             
                             ShockCreature(creature, result.closestBodyChunk, this.sourceObject, this.killTagHolder,

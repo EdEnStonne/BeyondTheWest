@@ -63,8 +63,6 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
         [OnlineField(group = "ArenaLives")]
         public bool AL_BlockWin;
         [OnlineField(group = "ArenaLives")]
-        public bool AL_ReviveFromAbyss;
-        [OnlineField(group = "ArenaLives")]
         public bool AL_Strict;
         [OnlineField(group = "ArenaLives")]
         public int AL_RespawnShieldDuration;
@@ -110,7 +108,6 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
             this.AL_AdditionalReviveTime = BTWMeadowArenaSettings.ArenaLives_AdditionalReviveTime;
             this.AL_Amount = BTWMeadowArenaSettings.ArenaLives_Amount;
             this.AL_BlockWin = BTWMeadowArenaSettings.ArenaLives_BlockWin;
-            this.AL_ReviveFromAbyss = BTWMeadowArenaSettings.ArenaLives_ReviveFromAbyss;
             this.AL_ReviveTime = BTWMeadowArenaSettings.ArenaLives_ReviveTime;
             this.AL_Strict = BTWMeadowArenaSettings.ArenaLives_Strict;
             this.AL_RespawnShieldDuration = BTWMeadowArenaSettings.ArenaLives_RespawnShieldDuration;
@@ -149,7 +146,6 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
                 btwData.ArenaLives_AdditionalReviveTime = this.AL_AdditionalReviveTime;
                 btwData.ArenaLives_Amount = this.AL_Amount;
                 btwData.ArenaLives_BlockWin = this.AL_BlockWin;
-                btwData.ArenaLives_ReviveFromAbyss = this.AL_ReviveFromAbyss;
                 btwData.ArenaLives_ReviveTime = this.AL_ReviveTime;
                 btwData.ArenaLives_Strict = this.AL_Strict;
                 btwData.ArenaLives_RespawnShieldDuration = this.AL_RespawnShieldDuration;

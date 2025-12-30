@@ -17,7 +17,7 @@ public class SparkFunc
 
         On.Player.ctor += Player_Electric_Charge_Init;
         On.Player.ThrownSpear += Player_Spear_Elec_Modifier;
-        Plugin.Log("SparkFunc ApplyHooks Done !");
+        BTWPlugin.Log("SparkFunc ApplyHooks Done !");
     }
 
     public static bool IsSpark(Player player)
@@ -31,9 +31,9 @@ public class SparkFunc
         orig(self, abstractCreature, world);
         if (IsSpark(self) && !StaticChargeManager.TryGetManager(self.abstractCreature, out _))
         {
-            Plugin.Log("Spark StaticChargeManager initiated");
+            BTWPlugin.Log("Spark StaticChargeManager initiated");
             StaticChargeManager.AddManager(abstractCreature);
-            Plugin.Log("Spark StaticChargeManager created !");
+            BTWPlugin.Log("Spark StaticChargeManager created !");
         }
     }
     private static void Player_Spear_Elec_Modifier(On.Player.orig_ThrownSpear orig, Player self, Spear spear)

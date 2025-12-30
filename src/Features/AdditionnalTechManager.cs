@@ -53,10 +53,11 @@ public abstract class AdditionnalTechManager<TSelf> where TSelf : AdditionnalTec
 
     public virtual void Update()
     {
-        if (Plugin.meadowEnabled)
+        Player player = this.RealizedPlayer;
+        Room room = player.room;
+        if (BTWPlugin.meadowEnabled)
         {
-            if (RealizedPlayer is Player player 
-                && player != null
+            if (player != null
                 && MeadowFunc.TryGetBottomPlayer(player, out Player pupeter))
             {
                 abstractPlayerInControl = pupeter.abstractCreature;
@@ -66,15 +67,63 @@ public abstract class AdditionnalTechManager<TSelf> where TSelf : AdditionnalTec
                 abstractPlayerInControl = null;
             }
         }
+        if (this.debugEnabled)
+        {
+            if (this.debugCircle != null && (room == null || this.debugCircle.room != room))
+            {
+                this.debugCircle.room?.RemoveObject( this.debugCircle );
+                this.debugCircle.Destroy();
+                this.debugCircle = null;
+            }
+            else if (room != null)
+            {
+                if (this.debugCircle == null)
+                {
+                    this.debugCircle = new();
+                    room.AddObject( this.debugCircle );
+                }
+                this.debugCircle.visible = this.debugCircleVisible;
+            }
+        }
+        else if (this.debugCircle != null)
+        {
+            room?.RemoveObject( this.debugCircle );
+            this.debugCircle.Destroy();
+            this.debugCircle = null;
+        }
     }
-    
+    public virtual void ResetPlayerCustomStates()
+    {
+        Player player = this.RealizedPlayer;
+        if (player != null)
+        {
+            if (AbstractEnergyCore.TryGetCore(player.abstractCreature, out var core))
+            {
+                core.boostingCount = -20;
+            }
+            if (this is not WallClimbManager && WallClimbManager.TryGetManager(player.abstractCreature, out var WCM))
+            {
+                WCM.flipFromWallKick = false;
+                WCM.rocketJumpFromWallKick = false;
+                WCM.rocketJumpFromWallVerticalPounce = false;
+            }
+            if (this is not PoleKickManager && PoleKickManager.TryGetManager(player.abstractCreature, out var PKM))
+            {
+                PKM.poleTechCooldown.Reset(10);
+            }
+        }
+    }
     // ------ Variables
 
     // Objects
     public AbstractCreature abstractPlayer;
     public AbstractCreature abstractPlayerInControl = null;
+    
+    public DebugCircle debugCircle;
 
     // Basic
+    public bool debugCircleVisible = false;
+    public bool debugEnabled = false;
     
     // Get - Set
     public Player RealizedPlayer
@@ -143,7 +192,7 @@ public abstract class AdditionnalTechManager<TSelf> where TSelf : AdditionnalTec
             Player player = this.RealizedPlayer;
             if (player != null)
             {
-                return (int)Mathf.Sign(player.mainBodyChunk.vel.x);
+                return (int)Mathf.Sign(player.bodyChunks[0].vel.x + player.bodyChunks[1].vel.x);
             }
             return 0;
         }

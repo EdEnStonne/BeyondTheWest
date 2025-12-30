@@ -284,7 +284,7 @@ public static class StaticChargeBatteryUIHooks
     public static void ApplyHooks()
     {
         On.Player.SpitOutOfShortCut += Player_MoveSparkUI;
-        Plugin.Log("StaticChargeBatteryUIHooks ApplyHooks Done !");
+        BTWPlugin.Log("StaticChargeBatteryUIHooks ApplyHooks Done !");
     }
     private static void Player_MoveSparkUI(On.Player.orig_SpitOutOfShortCut orig, Player self, IntVector2 pos, Room newRoom, bool spitOutAllSticks)
     {

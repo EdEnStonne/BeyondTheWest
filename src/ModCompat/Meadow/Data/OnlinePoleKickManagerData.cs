@@ -20,6 +20,7 @@ public class OnlinePoleKickManagerData : OnlineEntity.EntityData
         //--------- Variables
         [OnlineField]
         public bool bodyInFrontOfPole;
+        public bool kickExhausted;
 
         //--------- ctor
 
@@ -38,6 +39,7 @@ public class OnlinePoleKickManagerData : OnlineEntity.EntityData
             }
 
             this.bodyInFrontOfPole = PKM.bodyInFrontOfPole;
+            this.kickExhausted = PKM.kickExhausted;
         }
         //--------- Functions
         public override void ReadTo(OnlineEntity.EntityData data, OnlineEntity onlineEntity)
@@ -53,6 +55,7 @@ public class OnlinePoleKickManagerData : OnlineEntity.EntityData
             }
 
             PKM.bodyInFrontOfPole = this.bodyInFrontOfPole;
+            PKM.kickExhausted = this.kickExhausted;
         }
         public override Type GetDataType()
         {

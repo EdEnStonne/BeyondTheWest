@@ -63,7 +63,7 @@ public class AbstractEnergyCore : AbstractPhysicalObject
             this.RealizedOnce = true;
         }
         
-        if (Plugin.meadowEnabled)
+        if (BTWPlugin.meadowEnabled)
         {
             try
             {
@@ -71,7 +71,7 @@ public class AbstractEnergyCore : AbstractPhysicalObject
             }
             catch (System.Exception ex)
             {
-                Plugin.logger.LogError($"Error while adding meadow's option of core of player [{abstractPlayer}] : " + ex);
+                BTWPlugin.logger.LogError($"Error while adding meadow's option of core of player [{abstractPlayer}] : " + ex);
             }
         }
     }
@@ -85,22 +85,23 @@ public class AbstractEnergyCore : AbstractPhysicalObject
     }
     public override void Realize()
     {
+        Player player = this.Player;
         // Plugin.Log((this.realizedObject != null) + "/" + (this.Player) + "/" + (this.Player.room == this.world?.GetAbstractRoom(this.pos)?.realizedRoom) + "/" + (this.world) + "/" + (this.world?.GetAbstractRoom(this.pos)) + "/" + (this.world?.GetAbstractRoom(this.pos)?.realizedRoom));
-        if (this.realizedObject != null || this.Player == null 
+        if (this.realizedObject != null || player == null 
             || this.world?.GetAbstractRoom(this.pos)?.realizedRoom == null
-            || this.world?.GetAbstractRoom(this.pos)?.realizedRoom != this.Player.room) 
+            || this.world?.GetAbstractRoom(this.pos)?.realizedRoom != player.room) 
         {
             return;
         }
 
-        Plugin.Log("Realizing Core...");
-        this.realizedObject = new EnergyCore(this, this.Player);
+        BTWPlugin.Log("Realizing Core...");
+        this.realizedObject = new EnergyCore(this, player);
         this.realizedObject.room = this.world.GetAbstractRoom(this.pos).realizedRoom;
-        this.realizedObject.firstChunk.HardSetPosition(this.Player.mainBodyChunk.pos);
+        this.realizedObject.firstChunk.HardSetPosition(player.mainBodyChunk.pos);
 
         if (!this.RealizedOnce && this.realizedObject != null && this.realizedObject.room != null) {
             this.RealizedOnce = true; 
-            Plugin.Log("Realized for the first time " + this.realizedObject.ToString() + " of " + this.Player.ToString() + " !");
+            BTWPlugin.Log($"Realized for the first time [{this.realizedObject}] !");
         }
 
     }
@@ -119,41 +120,46 @@ public class AbstractEnergyCore : AbstractPhysicalObject
         if (abstractPlayer.Room != this.Room) // all of those function doing literally nothing.
         {
             this.Move(abstractPlayer.pos);
-            Plugin.Log(this.ToString() + " of " + this.abstractPlayer.ToString() + " changed rooms !!");
+            BTWPlugin.Log($"[{this}] changed rooms !!");
         }
+        Player player = this.Player;
 
         if (!this.RealizedOnce)
         {
-            Plugin.Log("Attempting to realize for the first time " + this.ToString() + " of " + this.abstractPlayer.ToString());
-            if (this.Player == null || this.Room == null) { return; }
+            if (player == null || this.Room == null) { return; }
+            BTWPlugin.Log($"Attempting to realize for the first time [{this}]");
             this.RealizeInRoom();
             return;
         }
 
-        if (this.Player == null && this.realizedObject != null)
+        if ((player == null || player.room == null) && this.realizedObject != null)
         {
             this.Abstractize(abstractPlayer.pos);
         }
-        else if (this.Player != null && this.realizedObject == null)
+        else if (player != null && player.room != null && this.realizedObject == null)
         {
-            Plugin.Log("Attempting to realize " + this.ToString() + " of " + this.abstractPlayer.ToString());
+            BTWPlugin.Log($"Attempting to realize [{this}]");
             this.RealizeInRoom();
         }
 
-        if (this.realizedObject != null && this.Player != null && this.Player.room != null &&
-            this.Player.room != this.realizedObject.room) // why do you not log ???
+        if (this.realizedObject != null && player != null && player.room != null &&
+            player.room != this.realizedObject.room)
         {
-            Plugin.Log(this.ToString() + " of " + this.abstractPlayer.ToString() + " is not in the good room !!");
+            BTWPlugin.Log($"[{this.realizedObject}] is not in the good room !!");
             this.Abstractize(abstractPlayer.pos);
             this.RealizeInRoom();
         }
 
-        if (Plugin.meadowEnabled && this.isMeadow)
+        if (BTWPlugin.meadowEnabled && this.isMeadow)
         {
             MeadowCalls.CoreMeadow_Update(this);
         }
     }
 
+    public override string ToString()
+    {
+        return $"AbstractEnergyCore <{this.ID}> of [{this.abstractPlayer}]";
+    }
     // ----------- Variables
 
     // Objects
@@ -237,7 +243,7 @@ public static class AbstractEnergyCoreHooks
         On.Player.SlugSlamConditions += Player_CoreSLAM;
         On.Creature.Die += Player_ConsideredDead;
 
-        Plugin.Log("AbstractEnergyCoreHooks ApplyHooks Done !");
+        BTWPlugin.Log("AbstractEnergyCoreHooks ApplyHooks Done !");
     }
 
     private static void Player_CoreBetaJump(On.Player.orig_Jump orig, Player self)
@@ -260,7 +266,7 @@ public static class AbstractEnergyCoreHooks
                             predictedAnim == Player.AnimationIndex.LedgeCrawl ||
                             predictedAnim == Player.AnimationIndex.Flip)))
                 {
-                    Plugin.Log("Tech exception applied, no boosting");
+                    BTWPlugin.Log("Tech exception applied, no boosting");
                 }
                 else
                 {
@@ -283,17 +289,17 @@ public static class AbstractEnergyCoreHooks
             weapon.thrownBy is Player player && player != null && result.obj is EnergyCore core
             && player == core.player)
         {
-            Plugin.Log("Allowed spear to go through core");
+            BTWPlugin.Log("Allowed spear to go through core");
             return true;
         }
         return false;
     }
     private static void Weapon_PassThroughCore(ILContext il)
     {
-        Plugin.Log("Weapon PassThrough IL starts");
+        BTWPlugin.Log("Weapon PassThrough IL starts");
         try
         {
-            Plugin.Log("Trying to hook IL");
+            BTWPlugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchLdarg(0),
@@ -321,18 +327,18 @@ public static class AbstractEnergyCoreHooks
                 {
                     cursor.Emit(OpCodes.Brfalse_S, Mark2);
                 }
-                else { Plugin.logger.LogError("Couldn't find IL hook 2 :<"); }
+                else { BTWPlugin.logger.LogError("Couldn't find IL hook 2 :<"); }
             }
-            else { Plugin.logger.LogError("Couldn't find IL hook 1 :<"); }
+            else { BTWPlugin.logger.LogError("Couldn't find IL hook 1 :<"); }
 
-            Plugin.Log("IL hook ended");
+            BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError(ex);
+            BTWPlugin.logger.LogError(ex);
         }
         // Plugin.Log(il);
-        Plugin.Log("Weapon PassThrough IL ends");
+        BTWPlugin.Log("Weapon PassThrough IL ends");
     }
     private static void Player_ConsideredDead(On.Creature.orig_Die orig, Creature self)
     {
@@ -361,7 +367,7 @@ public static class AbstractEnergyCoreHooks
             if (!ModManager.CoopAvailable 
                 || otherObject is not Player
                 || Custom.rainWorld.options.friendlyFire 
-                || (Plugin.meadowEnabled 
+                || (BTWPlugin.meadowEnabled 
                     && MeadowFunc.IsMeadowArena() 
                     && !MeadowFunc.IsCreatureFriendlies(self, creature)))
             {
@@ -392,8 +398,8 @@ public static class AbstractEnergyCoreHooks
         orig(self, pos, newRoom, spitOutAllSticks);
         if (AbstractEnergyCore.TryGetCore(self.abstractCreature, out var abstractEnergyCore))
         {
-            Plugin.Log("Changing room of core "+ abstractEnergyCore.ToString() +" of player " + self.abstractCreature.ToString() + " !");
-            Plugin.Log("Changing room of abstract core "+ abstractEnergyCore.ToString() +" of player " + self.ToString() + " !");
+            BTWPlugin.Log("Changing room of core "+ abstractEnergyCore.ToString() +" of player " + self.abstractCreature.ToString() + " !");
+            BTWPlugin.Log("Changing room of abstract core "+ abstractEnergyCore.ToString() +" of player " + self.ToString() + " !");
             if (abstractEnergyCore.world != null 
                 && self.abstractCreature.pos != null 
                 && abstractEnergyCore.world.GetAbstractRoom(abstractEnergyCore.pos) != null
@@ -404,7 +410,7 @@ public static class AbstractEnergyCoreHooks
             }
             else
             {
-                Plugin.Log("Something wrong happened to the core "+ abstractEnergyCore.ToString() +" of " + self.ToString() + ".");
+                BTWPlugin.Log("Something wrong happened to the core "+ abstractEnergyCore.ToString() +" of " + self.ToString() + ".");
             }
         }
     }
@@ -413,7 +419,7 @@ public static class AbstractEnergyCoreHooks
         orig(self, newCoord);
         if (AbstractEnergyCore.TryGetCore(self, out var abstractEnergyCore))
         {
-            Plugin.Log("Changing room of abstract core "+ abstractEnergyCore.ToString() +" of player " + self.ToString() + " !");
+            BTWPlugin.Log("Changing room of abstract core "+ abstractEnergyCore.ToString() +" of player " + self.ToString() + " !");
             if (abstractEnergyCore.world != null 
                 && newCoord != null 
                 && abstractEnergyCore.world.GetAbstractRoom(abstractEnergyCore.pos) != null
@@ -429,7 +435,7 @@ public static class AbstractEnergyCoreHooks
             }
             else
             {
-                Plugin.Log("Something wrong happened to the core "+ abstractEnergyCore.ToString() +" of " + self.ToString() + ".");
+                BTWPlugin.Log("Something wrong happened to the core "+ abstractEnergyCore.ToString() +" of " + self.ToString() + ".");
             }
         }
     }
