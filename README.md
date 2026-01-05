@@ -50,12 +50,12 @@ You can enable the lifes systen in arena ! With a respawn protection, lives stri
 Will port into the local competitive when I get how to add some UIs in there.  
 
 
-[h2]My plans :[/h2]
+## My plans :
 For now, the top priority is fixing all bugs, balance issues and problem the mod has.  
 If I decide to develop it more, I'll go and add new arenas and items, before finally heading toward the actual campaign of those 3.  
 Let's see how far I go with this one.  
 
-### Short term planned additions :  
+## Short term planned additions :  
 - **Wiki**
   - Update the wiki (oh God it's outdated)  
 - **Meadow**
