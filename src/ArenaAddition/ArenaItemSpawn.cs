@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using BeyondTheWest.MeadowCompat;
 using ObjectType = AbstractPhysicalObject.AbstractObjectType;
 using MItemData = PlacedObject.MultiplayerItemData;
+using BepInEx;
 
 namespace BeyondTheWest.ArenaAddition;
 public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
@@ -34,7 +35,13 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
             if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
             {
                 MeadowFunc.SetArenaItemSpawnSettings(ref this);
+                // BTWPlugin.Log($"Getting arena setting from meadow !");
             }
+            else
+            {
+                // BTWPlugin.Log($"Getting arena setting from remix options !");
+            }
+            // BTWPlugin.Log($"Settings : \nnewSystem : <{newSystem}> \nmultiplier : <{multiplier}> \nmultiplierPerPlayer : <{multiplierPerPlayer}> \ndoScalePerPlayer : <{doScalePerPlayer}> \nrandomItem : <{randomItem}> \ndiversity : <{diversity}>");
         }
     }
     public static List<List<ObjectData>> testObjectLists = new()
@@ -79,10 +86,10 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
         this.spawnTime = spawnTime;
         this.objectList = objectList;
         this.isFake = isFake;
-
-        if (BTWPlugin.meadowEnabled && notifyMeadow && !isFake)
+        this.notifyMeadow = notifyMeadow;
+        if (this.room != null)
         {
-            MeadowCalls.BTWArena_RPCAddItemSpawnerToAll(this);
+            Init();
         }
     }
     public ArenaItemSpawn(Vector2 position, int spawnTime, ObjectType objectType, int intdata = 0, bool notifyMeadow = false)
@@ -93,7 +100,18 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
         : this(position, new List<ObjectData>{ new(objectType, intdata) }, notifyMeadow) {}
     public ArenaItemSpawn(Vector2 position, bool notifyMeadow = false)
         : this(position, ObjectType.Rock, 0, notifyMeadow) {}
-
+    
+    public void Init()
+    {
+        if (!this.isInit && this.room != null)
+        {
+            if (BTWPlugin.meadowEnabled && this.notifyMeadow && !this.isFake)
+            {
+                MeadowCalls.BTWArena_RPCAddItemSpawnerToAll(this);
+            }
+            this.isInit = true;
+        }
+    }
     public void SpawnItems()
     {
         if (this.room != null)
@@ -213,11 +231,25 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
         base.Update(eu);
         if (this.room != null && !this.slatedForDeletetion)
         {
+            if (!this.isInit) { Init(); }
             if (this.spawnCount < this.spawnTime)
             {
                 this.spawnCount++;
-                if (this.spawnCount == this.spawnTime)
+                var radiusCheck = BTWFunc.GetAllCreatureInRadius(this.room, this.pos, 20f);
+                int i = radiusCheck.FindIndex(x => x.physicalObject is Player);
+                if (i != -1)
                 {
+                    // BTWPlugin.Log($"Player [{radiusCheck[i].physicalObject}] found near : <{radiusCheck[i].distance}> unit ! Spawn was accelerated !");
+                    this.forceSpawnCount.Up();
+                }
+                else
+                {
+                    this.forceSpawnCount.Down(3);
+                }
+                if (this.spawnCount == this.spawnTime || (this.forceSpawnCount.ended && i != -1))
+                {
+                    if (this.forceSpawnCount.ended && i != -1) { BTWPlugin.Log($"Forced Spawn event ! Triggered by [{radiusCheck[i].physicalObject}] at dist <{radiusCheck[i].distance}>"); }
+                    this.spawnCount = this.spawnTime;
                     this.room.PlaySound(SoundID.HUD_Pause_Game, this.pos, 0.35f, 0.65f + BTWFunc.random * 0.25f);
                     if (!this.isFake)
                     {
@@ -234,7 +266,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
                 this.Destroy();
             }
         }
-        else
+        else if (!this.slatedForDeletetion)
         {
             this.Destroy();
         }
@@ -313,7 +345,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
         }
 
         sLeaser.sprites[0].scale = 0.2f * easedSpawn + 0.6f * easedDesc;
-        sLeaser.sprites[0].alpha = 0.9f - (0.4f * easedSpawn + 0.5f * easedDesc);
+        sLeaser.sprites[0].alpha = 0.9f - (0.4f * easedSpawn + 0.5f * easedDesc) * this.forceSpawnCount.fractInv;
 
         for (int i = 1; i <= this.circlesAmount; i++)
         {
@@ -326,7 +358,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
         {
             sLeaser.sprites[j + 1 + this.circlesAmount].y += 25f;
             sLeaser.sprites[j + 1 + this.circlesAmount].x += -(this.objectList.Count - 1) * 6f + j * 12f;
-            sLeaser.sprites[j + 1 + this.circlesAmount].alpha = Mathf.Clamp01(easedDesc - 0.5f * easedSpawn);
+            sLeaser.sprites[j + 1 + this.circlesAmount].alpha = Mathf.Clamp01(easedDesc - 0.5f * easedSpawn * this.forceSpawnCount.fractInv);
         }
     }
     public void ApplyPalette(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, RoomPalette palette) 
@@ -347,10 +379,14 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
     public List<ObjectData> objectList = new();
     public Vector2 pos;
 
+    public bool isInit = false;
+    private bool notifyMeadow = true;
+
     public Color baseColor = Color.gray;
     public int spawnCount = 0;
     private int destructionCount = 0;
     private int circlesAmount = 0;
+    private Counter forceSpawnCount = new(30);
     
     public int spawnTime = BTWFunc.FrameRate * 5;
     private const int destructionTime = (int)(BTWFunc.FrameRate * 0.5);
@@ -387,10 +423,10 @@ public static class ArenaItemSpawnHooks
 
     private static void InitPools()
     {
-        ArenaItemSpawn.rockPool.AddToPool(ObjectType.Rock, 20);
+        ArenaItemSpawn.rockPool.AddToPool(ObjectType.Rock, 125);
         ArenaItemSpawn.rockPool.AddToPool(ObjectType.ScavengerBomb, 7);
 
-        ArenaItemSpawn.spearPool.AddToPool(ObjectType.Spear, 35);
+        ArenaItemSpawn.spearPool.AddToPool(ObjectType.Spear, 200);
         ArenaItemSpawn.spearPool.AddToPool(ObjectType.Spear, 1, 15);
 
         ArenaItemSpawn.othersPool.AddToPool(ObjectType.SporePlant, 12);
@@ -425,7 +461,7 @@ public static class ArenaItemSpawnHooks
             if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
             {
                 if (!MeadowFunc.IsMeadowHost()) { return 0; }
-                playersCount = MeadowFunc.GetPlayersReadyForArena();
+                playersCount = MeadowFunc.GetPlayersInLobby();
             }
 
             if (settings.doScalePerPlayer)

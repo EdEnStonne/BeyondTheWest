@@ -69,7 +69,6 @@ public class BTWMeadowArenaSettings
     public int ArenaLives_Amount = BTWRemix.MeadowArenaLivesAmount.Value;
     public int ArenaLives_ReviveTime = BTWRemix.MeadowArenaLivesReviveTime.Value;
     public bool ArenaLives_BlockWin = BTWRemix.MeadowArenaLivesBlockWin.Value;
-    public bool ArenaLives_Strict = BTWRemix.MeadowArenaLivesStrict.Value;
     public int ArenaLives_RespawnShieldDuration = BTWRemix.MeadowArenaLivesRespawnShieldDuration.Value;
     
     // Arena Item Spawn 
@@ -78,6 +77,7 @@ public class BTWMeadowArenaSettings
     public int ArenaItems_ItemSpawnMultiplierPerPlayersCent = BTWRemix.MeadowItemSpawnMultiplierPerPlayersCent.Value;
     public bool ArenaItems_ItemSpawnDiversity = BTWRemix.MeadowItemSpawnDiversity.Value;
     public bool ArenaItems_ItemSpawnRandom = BTWRemix.MeadowItemSpawnRandom.Value;
+    public bool ArenaItems_ItemRespawn = BTWRemix.MeadowItemRespawn.Value;
 }
 public static class BTWMeadowArenaSettingsHooks
 {
@@ -123,11 +123,11 @@ public static class BTWMeadowArenaSettingsHooks
     private static void OnlineSlugcatAbilitiesInterface_AddAllSettings(Action<OnlineSlugcatAbilitiesInterface, string> orig, OnlineSlugcatAbilitiesInterface self, string painCatName)
     {
         orig(self, painCatName);
-        ArenaMenu.BTWEssentialSettingsPage essentialSettingsPage = new(self.menu, self, new Vector2(0f, 30f), 300f);
+        BTWMenu.BTWEssentialSettingsPage essentialSettingsPage = new(self.menu, self, new Vector2(0f, 30f), 300f);
         self.AddSettingsTab(essentialSettingsPage, "BTWESSSETTINGS");
-        ArenaMenu.BTWAdditionalSettingsPage additionalSettingsPage = new(self.menu, self, new Vector2(0f, 28.5f), 300f);
+        BTWMenu.BTWAdditionalSettingsPage additionalSettingsPage = new(self.menu, self, new Vector2(0f, 28.5f), 300f);
         self.AddSettingsTab(additionalSettingsPage, "BTWADDSETTINGS");
-        ArenaMenu.BTWArenaSettingsPage arenaSettingsPage = new(self.menu, self, new Vector2(0f, 28.5f), 300f);
+        BTWMenu.BTWArenaSettingsPage arenaSettingsPage = new(self.menu, self, new Vector2(0f, 28.5f), 300f);
         self.AddSettingsTab(arenaSettingsPage, "BTWARESETTINGS");
     }
     private static void ArenaMode_AddData(Action<ArenaMode, Lobby> orig, ArenaMode self, Lobby lobby)

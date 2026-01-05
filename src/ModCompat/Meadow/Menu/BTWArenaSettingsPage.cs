@@ -11,16 +11,16 @@ using static RainMeadow.UI.Components.OnlineSlugcatAbilitiesInterface;
 using RainMeadow.UI.Components;
 
 
-namespace BeyondTheWest.MeadowCompat.ArenaMenu;
+namespace BeyondTheWest.MeadowCompat.BTWMenu;
 
 public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
 {
     public const string AL_BLOCKWIN = "BTW_AL_BLW";
     public const string AL_REVIVEFROMABYSS = "BTW_AL_RFA";
-    public const string AL_STRICT = "BTW_AL_STR";
     public const string AI_NEWITEMSPAWNSYSTEM = "BTW_AI_NSS";
     public const string AI_ITEMSPAWNDIVERSITY = "BTW_AI_ISD";
     public const string AI_ITEMSPAWNRANDOM = "BTW_AI_ISR";
+    public const string AI_ITEMRESPAWN = "BTW_AI_IRS";
     public MenuTabWrapper tabWrapper;
 
     public MenuLabel ArenaLives_Title, ArenaItems_Title, WIP_Warning;
@@ -37,16 +37,16 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         ArenaItems_ItemSpawnMultiplierCent_Label,
         ArenaItems_ItemSpawnMultiplierPerPlayersCent_Label;
     public RestorableCheckbox ArenaLives_BlockWin_CheckBox, 
-        ArenaLives_Strict_CheckBox, 
         ArenaItems_NewItemSpawningSystem_CheckBox, 
         ArenaItems_ItemSpawnDiversity_CheckBox, 
-        ArenaItems_ItemSpawnRandom_CheckBox;
+        ArenaItems_ItemSpawnRandom_CheckBox, 
+        ArenaItems_ItemRespawn_CheckBox;
 
     public SimpleButton backButton;
 
     public override string Name => "BTW Arena Settings"; //this will appear on Select Settings Page
 
-    public BTWArenaSettingsPage(Menu.Menu menu, MenuObject owner, Vector2 spacing, float textSpacing = 300) : base(menu, owner)
+    public BTWArenaSettingsPage(global::Menu.Menu menu, MenuObject owner, Vector2 spacing, float textSpacing = 300) : base(menu, owner)
     {
         tabWrapper = new(menu, this);
         Vector2 positioner = new(360 + ((textSpacing - 300) / 2), 410);
@@ -99,17 +99,13 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
                 BTWRemix.MeadowArenaLivesAmount.ClampValue(ArenaLives_Amount_TextBox.valueInt);
         };
 
-        // ArenaLives_Strict
-        CreateCheckBox(ref ArenaLives_Strict_CheckBox, BTWRemix.MeadowArenaLivesStrict,
-            "Block revives after reaching 0 live :", AL_STRICT, 2);
-
         // ArenaLives_BlockWin
         CreateCheckBox(ref ArenaLives_BlockWin_CheckBox, BTWRemix.MeadowArenaLivesBlockWin,
-            "Block session end on revival :", AL_BLOCKWIN, 3);
+            "Block session end on revival :", AL_BLOCKWIN, 2);
 
         //  ArenaLives_ReviveTime
         CreateIntTextBox(ref ArenaLives_ReviveTime_TextBox, ref ArenaLives_ReviveTime_Label,
-            BTWRemix.MeadowArenaLivesReviveTime, "Revive time :", 4);
+            BTWRemix.MeadowArenaLivesReviveTime, "Revive time :", 3);
 
         ArenaLives_ReviveTime_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
         {
@@ -120,7 +116,7 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
 
         //  ArenaLives_ReviveTime
         CreateIntTextBox(ref ArenaLives_AdditionalReviveTime_TextBox, ref ArenaLives_AdditionalReviveTime_Label,
-            BTWRemix.MeadowArenaLivesAdditionalReviveTime, "Additionnal per life revive time :", 5);
+            BTWRemix.MeadowArenaLivesAdditionalReviveTime, "Additionnal per life revive time :", 4);
 
         ArenaLives_AdditionalReviveTime_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
         {
@@ -131,7 +127,7 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
 
         //  ArenaLives_RespawnShieldDuration
         CreateIntTextBox(ref ArenaLives_RespawnShieldDuration_TextBox, ref ArenaLives_RespawnShieldDuration_Label,
-            BTWRemix.MeadowArenaLivesRespawnShieldDuration, "Respawn shield duration :", 6);
+            BTWRemix.MeadowArenaLivesRespawnShieldDuration, "Respawn shield duration :", 5);
 
         ArenaLives_RespawnShieldDuration_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
         {
@@ -141,23 +137,23 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         };
         
         //--------------------- Arena Item Spawn 
-        CreateTitle(ref ArenaItems_Title, "Arena Item Spawn", 7);
+        CreateTitle(ref ArenaItems_Title, "Arena Item Spawn", 6);
 
         // ArenaItems_NewItemSpawningSystem
         CreateCheckBox(ref ArenaItems_NewItemSpawningSystem_CheckBox, BTWRemix.MeadowNewItemSpawningSystem,
-            "New item spawning system :", AI_ITEMSPAWNDIVERSITY, 8);
+            "New item spawning system :", AI_ITEMSPAWNDIVERSITY, 7);
 
         // ArenaItems_ItemSpawnDiversity
         CreateCheckBox(ref ArenaItems_ItemSpawnDiversity_CheckBox, BTWRemix.MeadowItemSpawnDiversity,
-            "Item Diversity :", AI_NEWITEMSPAWNSYSTEM, 9);
+            "Item Diversity :", AI_NEWITEMSPAWNSYSTEM, 8);
 
         // ArenaItems_ItemSpawnRandom
         CreateCheckBox(ref ArenaItems_ItemSpawnRandom_CheckBox, BTWRemix.MeadowItemSpawnRandom,
-            "Random Items :", AI_ITEMSPAWNRANDOM, 10);
+            "Random Items :", AI_ITEMSPAWNRANDOM, 9);
 
         //  ArenaItems_ItemSpawnMultiplierCent
         CreateIntTextBox(ref ArenaItems_ItemSpawnMultiplierCent_TextBox, ref ArenaItems_ItemSpawnMultiplierCent_Label,
-            BTWRemix.MeadowItemSpawnMultiplierCent, "Item Spawn multiplicator % :", 11, true);
+            BTWRemix.MeadowItemSpawnMultiplierCent, "Item Spawn multiplicator % :", 10, true);
 
         ArenaItems_ItemSpawnMultiplierCent_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
         {
@@ -168,7 +164,7 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
 
         //  ArenaItems_ItemSpawnMultiplierPerPlayersCent
         CreateIntTextBox(ref ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox, ref ArenaItems_ItemSpawnMultiplierPerPlayersCent_Label,
-            BTWRemix.MeadowItemSpawnMultiplierPerPlayersCent, "Added multiplicator per player % :", 12, true);
+            BTWRemix.MeadowItemSpawnMultiplierPerPlayersCent, "Added multiplicator per player % :", 11, true);
 
         ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
         {
@@ -177,16 +173,20 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
                 BTWRemix.MeadowItemSpawnMultiplierPerPlayersCent.ClampValue(ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox.valueInt);
         };
 
+        // ArenaItems_ItemSpawnRandom
+        CreateCheckBox(ref ArenaItems_ItemRespawn_CheckBox, BTWRemix.MeadowItemRespawn,
+            "Items Respawn :", AI_ITEMRESPAWN, 12);
+
 
         this.SafeAddSubobjects(
             tabWrapper,
             WIP_Warning, ArenaLives_Title, ArenaItems_Title,
 
             ArenaLives_BlockWin_CheckBox, 
-            ArenaLives_Strict_CheckBox,
             ArenaItems_NewItemSpawningSystem_CheckBox,
             ArenaItems_ItemSpawnDiversity_CheckBox,
             ArenaItems_ItemSpawnRandom_CheckBox,
+            ArenaItems_ItemRespawn_CheckBox,
 
             ArenaLives_AdditionalReviveTime_Label,
             ArenaLives_Amount_Label, 
@@ -207,13 +207,13 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         BTWRemix.MeadowArenaLivesBlockWin.Value = this.ArenaLives_BlockWin_CheckBox.Checked;
         BTWRemix.MeadowArenaLivesReviveTime.Value = this.ArenaLives_ReviveTime_TextBox.valueInt;
         BTWRemix.MeadowArenaLivesRespawnShieldDuration.Value = this.ArenaLives_RespawnShieldDuration_TextBox.valueInt;
-        BTWRemix.MeadowArenaLivesStrict.Value = this.ArenaLives_Strict_CheckBox.Checked;
         
         BTWRemix.MeadowNewItemSpawningSystem.Value = this.ArenaItems_NewItemSpawningSystem_CheckBox.Checked;
         BTWRemix.MeadowItemSpawnDiversity.Value = this.ArenaItems_ItemSpawnDiversity_CheckBox.Checked;
         BTWRemix.MeadowItemSpawnRandom.Value = this.ArenaItems_ItemSpawnRandom_CheckBox.Checked;
         BTWRemix.MeadowItemSpawnMultiplierCent.Value = this.ArenaItems_ItemSpawnMultiplierCent_TextBox.valueInt;
         BTWRemix.MeadowItemSpawnMultiplierPerPlayersCent.Value = this.ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox.valueInt;
+        BTWRemix.MeadowItemRespawn.Value = this.ArenaItems_ItemRespawn_CheckBox.Checked;
     }
     public override void CallForSync()
     {
@@ -293,11 +293,11 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         if (BTWMeadowArenaSettings.TryGetSettings(out var settings))
         {
             if (id == AL_BLOCKWIN) return settings.ArenaLives_BlockWin;
-            if (id == AL_STRICT) return settings.ArenaLives_Strict;
 
             if (id == AI_ITEMSPAWNDIVERSITY) return settings.ArenaItems_ItemSpawnDiversity;
             if (id == AI_ITEMSPAWNRANDOM) return settings.ArenaItems_ItemSpawnRandom; 
             if (id == AI_NEWITEMSPAWNSYSTEM) return settings.ArenaItems_NewItemSpawningSystem;
+            if (id == AI_ITEMRESPAWN) return settings.ArenaItems_ItemRespawn;
         }
         return false;
     }
@@ -307,10 +307,10 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         if (!BTWMeadowArenaSettings.TryGetSettings(out var settings)) return;
         string id = box.IDString;
         if (id == AL_BLOCKWIN) {settings.ArenaLives_BlockWin = c;}
-        else if (id == AL_STRICT) {settings.ArenaLives_Strict = c;}
 
         else if (id == AI_ITEMSPAWNDIVERSITY) {settings.ArenaItems_ItemSpawnDiversity = c;}
         else if (id == AI_ITEMSPAWNRANDOM) {settings.ArenaItems_ItemSpawnRandom = c;}
         else if (id == AI_NEWITEMSPAWNSYSTEM) {settings.ArenaItems_NewItemSpawningSystem = c;}
+        else if (id == AI_ITEMRESPAWN) {settings.ArenaItems_ItemRespawn = c;}
     }
 }

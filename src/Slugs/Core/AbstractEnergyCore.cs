@@ -254,23 +254,30 @@ public static class AbstractEnergyCoreHooks
             if ((AEC.coreBoostLeft > 0 || AEC.CoreMaxBoost <= 0) && AEC.boostingCount >= 0)
             {
                 EnergyCore energyCore = AEC.RealizedCore;
-                var predictedAnim = BTWFunc.PredictJump(self);
 
-                if (energyCore == null 
-                    || !energyCore.BoostAllowed     
-                    || (
-                        (predictedAnim != self.animation) 
-                        && (predictedAnim == Player.AnimationIndex.BellySlide ||
-                            predictedAnim == Player.AnimationIndex.RocketJump ||
-                            predictedAnim == Player.AnimationIndex.LedgeGrab ||
-                            predictedAnim == Player.AnimationIndex.LedgeCrawl ||
-                            predictedAnim == Player.AnimationIndex.Flip)))
+                if (energyCore.allowJumpException)
                 {
-                    BTWPlugin.Log("Tech exception applied, no boosting");
+                    BTWPlugin.Log("Jump allowed by core, jumping...");
                 }
                 else
                 {
-                    return;
+                    var predictedAnim = BTWFunc.PredictJump(self);
+                    if (energyCore == null 
+                        || !energyCore.BoostAllowed     
+                        || (
+                            (predictedAnim != self.animation) 
+                            && (predictedAnim == Player.AnimationIndex.BellySlide ||
+                                predictedAnim == Player.AnimationIndex.RocketJump ||
+                                predictedAnim == Player.AnimationIndex.LedgeGrab ||
+                                predictedAnim == Player.AnimationIndex.LedgeCrawl ||
+                                predictedAnim == Player.AnimationIndex.Flip)))
+                    {
+                        BTWPlugin.Log("Tech exception applied, no boosting");
+                    }
+                    else
+                    {
+                        return;
+                    }
                 }
             }
             

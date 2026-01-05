@@ -139,7 +139,10 @@ public class StaticChargeManager
                 this.BounceUp(IsOvercharged);
             }
             else if (
-                player.animation == Player.AnimationIndex.RocketJump &&
+                (
+                    player.animation == Player.AnimationIndex.RocketJump ||
+                    (BTWPlayerData.TryGetManager(this.AbstractPlayer, out var BTWData) && BTWData.isSuperLaunchJump)
+                ) &&
                 inputs.spec && !lastInputs.spec && intInput.x * player.mainBodyChunk.vel.x < 0
             )
             {
@@ -646,19 +649,9 @@ public class StaticChargeManager
                 this.Room.PlaySound(SoundID.Slugcat_Sectret_Super_Wall_Jump, player.mainBodyChunk, false, 1f, 1.25f);
                 player.bodyChunks[1].pos = player.bodyChunks[0].pos;
                 player.bodyChunks[0].pos += new Vector2(direction * -10f, 10f);
+                
                 player.rollDirection = -direction;
-                player.slideDirection = -direction;
-                // player.animation = Player.AnimationIndex.Flip;
-                // Plugin.Log("BounceBack ! \nPlayer current direction : " + direction
-                //     + "\nWanted direction : " + (-direction)
-                //     + "\nPlayer stats : " 
-                //     + "\nflip : " + player.flipDirection
-                //     + "\nroll : " + player.rollDirection
-                //     + "\nslide : " + player.slideDirection
-                //     + "\nthrow : " + player.ThrowDirection
-                //     + "\nanim : " + player.animation
-                //     + "\nbody : " + player.bodyMode
-                // );
+                player.animation = Player.AnimationIndex.RocketJump;
 
                 foreach (BodyChunk bodyChunk in player.bodyChunks)
                 {
@@ -878,12 +871,12 @@ public class StaticChargeManager
                 }
                 if (this.CrawlChargeRatio > 0)
                 {
-                    ContactFriction = Mathf.Max(ContactFriction, this.CrawlChargeRatio * 0.15f);
+                    ContactFriction = Mathf.Max(ContactFriction, this.CrawlChargeRatio * 0.2f);
                 }
 
                 if (this.IsCrawlingOnFloor)
                 {
-                    BodyFriction = 100f;
+                    BodyFriction = 120f;
                 }
                 else if (player.bodyMode == Player.BodyModeIndex.ClimbingOnBeam)
                 {
@@ -939,6 +932,10 @@ public class StaticChargeManager
                 else if (player.animation == Player.AnimationIndex.RocketJump)
                 {
                     ActionFriction = 0.1f;
+                }
+                else if (BTWPlayerData.TryGetManager(this.AbstractPlayer, out var BTWData) && BTWData.isSuperLaunchJump)
+                {
+                    ActionFriction = 0.15f;
                 }
 
                 return this.RechargeMult * ActionFriction * BodyFriction * ContactFriction;

@@ -21,6 +21,27 @@ public struct RadiusCheckResultObject
 public static class BTWFunc
 {
     public const int FrameRate = 40;
+    
+    public static InGameTranslator Translator => Custom.rainWorld.inGameTranslator; // yoinked from Rain Meadow
+    public static string Translate(string text)
+    {
+        return Translator.Translate(text);
+    }
+
+    public static string[] GetVersionArray()
+    {
+        return BTWPlugin.MOD_VERSION.Split(new char[]{'.'}, 3);
+    }
+    public static int[] GetVersionIntArray()
+    {
+        int[] version = new int[3];
+        string[] strVersion = GetVersionArray();
+        for (int i = 0; i < 3; i++)
+        {
+            version[i] = int.Parse(strVersion[i]);
+        }
+        return version;
+    }
 
     public static bool OutOfBounds(Creature creature)
     {
@@ -75,6 +96,30 @@ public static class BTWFunc
         return false;
     }
     
+    public static bool CanSuperJump(Player player)
+    {
+        return player.animation != Player.AnimationIndex.ZeroGSwim
+            && player.animation != Player.AnimationIndex.ZeroGPoleGrab
+            && !(
+                player.animation == Player.AnimationIndex.DownOnFours 
+                && player.bodyChunks[1].ContactPoint.y < 0 
+                && player.input[0].downDiagonal == player.flipDirection
+            )
+            && !player.standing;
+    }
+
+    public static int GetPlayerArenaNumber(Player player)
+    {
+        if (BTWPlugin.meadowEnabled)
+        {
+            return MeadowFunc.GetPlayerArenaOnlineNumber(player);
+        }
+        else
+        {
+            return player.abstractCreature.ID.number;
+        }
+    }
+
     public static bool InRoomBounds(PhysicalObject physicalObject)
     {
         if (physicalObject.room != null)

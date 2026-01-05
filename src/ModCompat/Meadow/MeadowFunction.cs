@@ -176,6 +176,23 @@ public static class MeadowFunc
         }
         return RainMeadow.RainMeadow.rainMeadowOptions.ArenaCountDownTimer.Value * BTWFunc.FrameRate;
     }
+    public static int ArenaCountdownTimerCurrent()
+    {
+        if (IsMeadowArena(out var arenaOnline))
+        {
+            return arenaOnline.setupTime * BTWFunc.FrameRate;
+        }
+        return RainMeadow.RainMeadow.rainMeadowOptions.ArenaCountDownTimer.Value * BTWFunc.FrameRate;
+    }
+    public static int GetPlayerArenaOnlineNumber(Player player)
+    {
+        if (IsMeadowArena(out var arenaOnline) 
+            && player?.abstractCreature?.GetOnlineCreature()?.owner is OnlinePlayer onlinePlayer)
+        {
+            return ArenaHelpers.FindOnlinePlayerNumber(arenaOnline, onlinePlayer);
+        }
+        return player.abstractCreature.ID.number;
+    }
 
     // Arena extension
     public static void ResetDeathMessage(AbstractCreature abstractPlayer)

@@ -46,7 +46,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
         {
             try
             {
-                revivingPlayers = arenaGame.Players?.Count(x => PlayerCountedAsAliveInArena (x)) ?? 0;
+                revivingPlayers = arenaGame.Players?.Count(x => PlayerCountedAsAliveInArena(x)) ?? 0;
             }
             catch (Exception ex)
             {
@@ -80,7 +80,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
             if (this.CreatureMainChunk != null)
             {
                 this.pos = this.CreatureMainChunk.pos;
-                this.RespawnPos = this.pos;
+                this.respawnPos = this.pos;
             }
         }
         if (ArenaLives.TryGetLives(abstractCreature, out var arenaLives))
@@ -116,12 +116,18 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
             {
                 player.room?.AddObject( new ArenaShield(player, this.shieldTime) );
             }
+            if (player.room.game.session is ArenaGameSession arenaGameSession) {
+                // Thanks to Alex for pointing this out, check also his SimpleRespawn Mod for Meadow !
+                arenaGameSession.arenaSitting.players[BTWFunc.GetPlayerArenaNumber(player)].alive = true; 
+                arenaGameSession.arenaSitting.players[BTWFunc.GetPlayerArenaNumber(player)].deaths++;
+            }
 
             if (BTWPlugin.meadowEnabled)
             {
                 MeadowFunc.ResetDeathMessage(this.abstractTarget);
                 MeadowFunc.ResetSlugcatIcon(this.abstractTarget);
             }
+            BTWPlugin.Log($"Reset stat of [{player}] for revival !");
         }
     }
     public void ReviveCreature() // taken from Mouse drag method of revival, credit to them !
@@ -183,6 +189,14 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
         {
             this.room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, CreatureMainChunk, false, 0.65f, 2f + BTWFunc.random * 0.5f);
         }
+
+        if (this.target != null)
+        {
+            foreach (var chunk in this.target.bodyChunks)
+            {
+                chunk.pos = this.respawnPos;
+            }
+        }
         ResetVariablesOnRevival();
     }
     public void Respawn() // taken from Dev Console, credit to them !
@@ -195,12 +209,18 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
             && this.room != null)
         {
             // this.abstractTarget.realizedObject?.Destroy();
-            this.abstractTarget.Abstractize(this.room.GetWorldCoordinate(this.RespawnPos));
+            this.abstractTarget.slatedForDeletion = false;
+            this.abstractTarget.Abstractize(this.room.GetWorldCoordinate(this.respawnPos));
             if(this.abstractTarget.state is PlayerState state)
             {
                 state.alive = true;
                 state.permaDead = false;
                 state.permanentDamageTracking = 0f;
+            }
+            if (!this.room.abstractRoom.creatures.Exists(x => x == this.abstractTarget))
+            {
+                BTWPlugin.Log($"[{this.abstractTarget}] was removed from the creature list ! Adding it back"); 
+                this.room.abstractRoom.creatures.Add(this.abstractTarget);
             }
 
             if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
@@ -210,18 +230,13 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
             else
             {
                 this.abstractTarget.RealizeInRoom();
+
                 if (this.target != null)
                 {
                     foreach (var chunk in this.target.bodyChunks)
                     {
-                        chunk.pos = this.RespawnPos;
+                        chunk.pos = this.respawnPos;
                     }
-                    ShortcutHandler.ShortCutVessel shortCutVessel = new(room.ShortcutLeadingToNode(this.respawnExit).DestTile, 
-                        this.target, this.room.abstractRoom, 0)
-                    {
-                        entranceNode = this.room.ShortcutLeadingToNode(this.respawnExit).destNode,
-                        room = this.room.abstractRoom
-                    };
                 }
                 if (this.abstractTarget.realizedObject is Player realPlayer)
                 {
@@ -241,7 +256,10 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
                     }
                 }
             }
-            
+            if (this.target != null)
+            {
+                this.target.slatedForDeletetion = false;
+            }
             this.countedAlive = this.target != null ? this.target.State.alive : false; 
             DisplayLives(false);
             ResetVariablesOnRevival();
@@ -291,17 +309,10 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
             if (this.room != null)
             {
                 this.respawnExit = BTWFunc.RandomExit(this.room);
-                this.RespawnPos = BTWFunc.ExitPos(this.room, this.respawnExit);
-                this.abstractTarget?.Move(this.room.GetWorldCoordinate(this.RespawnPos));
+                this.respawnPos = BTWFunc.ExitPos(this.room, this.respawnExit);
+                this.abstractTarget?.Move(this.room.GetWorldCoordinate(this.respawnPos));
             }
             DisplayLives();
-        }
-        if (this.target != null)
-        {
-            if (this.target is Player player)
-            {
-                this.baseColor = player.ShortCutColor();
-            }
         }
     }
     public void DisplayLives(bool sound = true)
@@ -310,7 +321,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
         this.livesDisplayCounter = livesDisplayCounterMax;
         if (sound && this.CreatureMainChunk != null && !this.fake)
         {
-            this.room.PlaySound(SoundID.HUD_Exit_Game, CreatureMainChunk, false, 1f, 1.5f + BTWFunc.random * 0.5f);
+            this.room.PlaySound(SoundID.HUD_Exit_Game, this.respawnPos, 1f, 1.5f + BTWFunc.random * 0.5f);
         }
     }
     public void Dismiss()
@@ -415,7 +426,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
     {
         int karma = Mathf.Clamp(this.lifesleft - (this.countedAlive ? 1 : 0), 0, 9);
         Color color = this.countedAlive && this.lifesleft > 0 ? Color.white : Color.red;
-        sLeaser.sprites[1].SetElementByName(KarmaMeter.KarmaSymbolSprite(false, new IntVector2(karma, karma)));
+        sLeaser.sprites[1].SetElementByName(KarmaMeter.KarmaSymbolSprite(false, new IntVector2(karma, 9)));
         sLeaser.sprites[1].color = color;
         sLeaser.sprites[0].color = color;
         this.karmaSymbolNeedToChange = false;
@@ -477,11 +488,15 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
         }
         if (this.abstractTarget == null) { sLeaser.CleanSpritesAndRemove(); return; }
 
-        Vector2 position = this.RespawnPos;
+        Vector2 position = this.respawnPos;
         if (this.CreatureMainChunk != null)
         {
             this.pos = this.CreatureMainChunk.pos;
             position = this.pos;
+        }
+        if (this.target != null && this.target is Player pl)
+        {
+            this.baseColor = pl.ShortCutColor();
         }
 
         if (this.karmaSymbolNeedToChange) 
@@ -522,22 +537,29 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
         {
             for (int i = 0; i < this.circlesAmount; i++)
             {
-                sLeaser.sprites[i + 2].x += Mathf.Sin(((float)i / this.circlesAmount) * Mathf.PI * 2f) * 30f;
-                sLeaser.sprites[i + 2].y += Mathf.Cos(((float)i / this.circlesAmount) * Mathf.PI * 2f) * 30f;
+                sLeaser.sprites[i + 2].x = this.respawnPos.x - camPos.x + Mathf.Sin(((float)i / this.circlesAmount) * Mathf.PI * 2f) * 30f;
+                sLeaser.sprites[i + 2].y = this.respawnPos.y - camPos.y + Mathf.Cos(((float)i / this.circlesAmount) * Mathf.PI * 2f) * 30f;
                 sLeaser.sprites[i + 2].color = Color.white;
                 sLeaser.sprites[i + 2].alpha = 0.35f + 0.65f * (1 - GetCircleFraction(i));
                 sLeaser.sprites[i + 2].scale = 0.5f * BTWFunc.EaseOut(GetCircleFraction(i), 3);
+                if (this.fake)
+                {
+                    sLeaser.sprites[i + 2].color = Color.Lerp(sLeaser.sprites[i + 2].color, Color.black, 0.5f);
+                    sLeaser.sprites[i + 2].x = this.respawnPos.x - camPos.x + Mathf.Sin(((float)i / this.circlesAmount) * Mathf.PI * 2f) * 20f;
+                    sLeaser.sprites[i + 2].y = this.respawnPos.y - camPos.y + Mathf.Cos(((float)i / this.circlesAmount) * Mathf.PI * 2f) * 20f;
+                }
             }
-            if (this.target == null)
+
+            sLeaser.sprites[circlesAmountMax + 2].x = this.respawnPos.x - camPos.x;
+            sLeaser.sprites[circlesAmountMax + 2].y = this.respawnPos.y - camPos.y;
+            sLeaser.sprites[circlesAmountMax + 2].alpha = 0.25f + Mathf.Cos((1 / (BTWFunc.FrameRate * 2.5f)) * Mathf.PI * 2f * this.reviveCounter) * 0.2f;
+            sLeaser.sprites[circlesAmountMax + 2].scale = 4f + Mathf.Cos((1 / (BTWFunc.FrameRate * 2.5f)) * Mathf.PI * 2f * this.reviveCounter) * 3f;
+            sLeaser.sprites[circlesAmountMax + 2].color = this.baseColor;
+            if (this.fake)
             {
-                sLeaser.sprites[circlesAmountMax + 2].alpha = 0.25f + Mathf.Cos((1 / (BTWFunc.FrameRate * 2.5f)) * Mathf.PI * 2f * this.reviveCounter) * 0.3f;
-                sLeaser.sprites[circlesAmountMax + 2].scale = 3f + Mathf.Cos((1 / (BTWFunc.FrameRate * 2.5f)) * Mathf.PI * 2f * this.reviveCounter) * 7f;
-                sLeaser.sprites[circlesAmountMax + 2].color = this.fake ? Color.gray : this.baseColor;
+                sLeaser.sprites[circlesAmountMax + 2].alpha = Mathf.Lerp(sLeaser.sprites[circlesAmountMax + 2].alpha, 0, 0.5f);
+                sLeaser.sprites[circlesAmountMax + 2].scale /= 2;
             }
-            // else
-            // {
-            //     BTWPlugin.Log($"Target [{this.abstractTarget} : {this.target}] is getting revived with count <{this.reviveCounter}>, lives <{this.lifesleft}>");
-            // }
         }
 
         if (this.target != null && (this.target.inShortcut || this.target.room == null))
@@ -577,7 +599,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
     public bool wasAbstractCreatureDestroyed = false;
     // public int respawnPlayerID = -1;
     public Vector2 pos;
-    public Vector2 RespawnPos;
+    public Vector2 respawnPos;
     public int respawnExit;
     public int TotalReviveTime
     {
@@ -675,7 +697,6 @@ public static class ArenaLivesHooks
         }
     }
     
-
     // Hooks  
     private static void KarmaFlower_AddLifeToPlayer(On.KarmaFlower.orig_BitByPlayer orig, KarmaFlower self, Creature.Grasp grasp, bool eu)
     {
@@ -704,7 +725,7 @@ public static class ArenaLivesHooks
             if (creature == creature.abstractCreature.realizedCreature)
             {
                 creature.Die();
-                creature.abstractCreature.Abstractize(self.room.GetWorldCoordinate(lives.RespawnPos));
+                creature.abstractCreature.Abstractize(self.room.GetWorldCoordinate(lives.respawnPos));
                 BTWPlugin.Log($"Creature [{creature}] was destroyed while having some lives left !");
                 // return;
             }
@@ -728,7 +749,7 @@ public static class ArenaLivesHooks
                 abstractCreature.destroyOnAbstraction = false;
                 abstractCreature.Die();
                 lives.wasAbstractCreatureDestroyed = true;
-                abstractCreature.Abstractize(self.Room.realizedRoom.GetWorldCoordinate(lives.RespawnPos));
+                abstractCreature.Abstractize(self.Room.realizedRoom.GetWorldCoordinate(lives.respawnPos));
                 abstractCreature.realizedCreature?.Destroy();
                 abstractCreature.realizedCreature = null;
                 BTWPlugin.Log($"Stopped Abstract Creature [{abstractCreature}] from being destroyed, so they can revive in peace (lives : <{lives.lifesleft}>).");

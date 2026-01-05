@@ -19,6 +19,7 @@ public static class MeadowHookHelper
         ArenaDeathTrackerHooks.ApplyHooks();
         MeadowDeniedSync.ApplyHooks();
         BTWMeadowArenaSettingsHooks.ApplyHooks();
+        BTWVersionChecker.ApplyHooks();
 
         new ILHook(typeof(FFA).GetMethod(nameof(FFA.IsExitsOpen)), FFA_DontOpenExitIfPlayerIsReviving);
         new ILHook(typeof(TeamBattleMode).GetMethod(nameof(TeamBattleMode.IsExitsOpen)), TeamBattleMode_DontOpenExitIfPlayerIsReviving);

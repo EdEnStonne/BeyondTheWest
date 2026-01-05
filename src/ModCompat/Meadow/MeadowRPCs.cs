@@ -11,6 +11,16 @@ namespace BeyondTheWest.MeadowCompat;
 public static class MeadowRPCs
 {
     [RPCMethod]
+    public static void BTWVersionChecker_VersionMismatch(RPCEvent rpc, string subscribedVersion)
+    {
+        if (OnlineManager.lobby != null && OnlineManager.lobby.isOwner && rpc.from != null)
+        {
+            ChatLogManager.LogSystemMessage(rpc.from.id.GetPersonaName() + " " 
+                + BTWFunc.Translate("doesn't have the good version of Beyond the West ! (Player : ") 
+                + $"{subscribedVersion} / " + BTWFunc.Translate("Host : " ) + $"{BTWPlugin.MOD_VERSION})");
+        }
+    }
+    [RPCMethod]
     public static void PoleKickManager_Kick(RPCEvent rpc, OnlineCreature playerOpo, 
         OnlineCreature targetOpo, byte chuckIndex, Vector2 knockback, byte kBonusCent)
     {

@@ -8,6 +8,7 @@ public class Counter
     public Counter(uint max)
     {
         this.max = max;
+        this._count = 0;
     }
 
     public void Reset()
@@ -52,7 +53,10 @@ public class Counter
     }
     public void Substract(uint num)
     {
-        this.value -= num;
+        if (this._count > 0)
+        {
+            this._count -= (uint)Mathf.Min(this._count, num); // overflow my beloved
+        }
     }
     public void Up()
     {
@@ -81,20 +85,12 @@ public class Counter
         {
             return 1 - this.fract;
         }
-        set
-        {
-            this.fract = 1 - value;
-        }
     }
     public float fract
     {
         get
         {
             return Mathf.Clamp01((float)this._count/this._max);
-        }
-        set
-        {
-            this._count = (uint)Mathf.Clamp01((float)value/this._max);
         }
     }
     public uint max

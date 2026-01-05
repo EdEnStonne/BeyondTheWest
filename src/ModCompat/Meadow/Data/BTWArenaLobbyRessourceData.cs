@@ -63,8 +63,6 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
         [OnlineField(group = "ArenaLives")]
         public bool AL_BlockWin;
         [OnlineField(group = "ArenaLives")]
-        public bool AL_Strict;
-        [OnlineField(group = "ArenaLives")]
         public int AL_RespawnShieldDuration;
         
         // Group: ArenaItems
@@ -78,6 +76,8 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
         public bool AT_ItemSpawnDiversity;
         [OnlineField(group = "ArenaItems")]
         public bool AT_ItemSpawnRandom;
+        [OnlineField(group = "ArenaItems")]
+        public bool AT_ItemRespawn;
         
         
 
@@ -109,7 +109,6 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
             this.AL_Amount = BTWMeadowArenaSettings.ArenaLives_Amount;
             this.AL_BlockWin = BTWMeadowArenaSettings.ArenaLives_BlockWin;
             this.AL_ReviveTime = BTWMeadowArenaSettings.ArenaLives_ReviveTime;
-            this.AL_Strict = BTWMeadowArenaSettings.ArenaLives_Strict;
             this.AL_RespawnShieldDuration = BTWMeadowArenaSettings.ArenaLives_RespawnShieldDuration;
             
             this.AT_ItemSpawnDiversity = BTWMeadowArenaSettings.ArenaItems_ItemSpawnDiversity;
@@ -117,6 +116,7 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
             this.AT_ItemSpawnMultiplierPerPlayersCent = BTWMeadowArenaSettings.ArenaItems_ItemSpawnMultiplierPerPlayersCent;
             this.AT_ItemSpawnRandom = BTWMeadowArenaSettings.ArenaItems_ItemSpawnRandom;
             this.AT_NewItemSpawningSystem = BTWMeadowArenaSettings.ArenaItems_NewItemSpawningSystem;
+            this.AT_ItemRespawn = BTWMeadowArenaSettings.ArenaItems_ItemRespawn;
         }
 
         public override void ReadTo(OnlineResource.ResourceData data, OnlineResource resource)
@@ -147,7 +147,6 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
                 btwData.ArenaLives_Amount = this.AL_Amount;
                 btwData.ArenaLives_BlockWin = this.AL_BlockWin;
                 btwData.ArenaLives_ReviveTime = this.AL_ReviveTime;
-                btwData.ArenaLives_Strict = this.AL_Strict;
                 btwData.ArenaLives_RespawnShieldDuration = this.AL_RespawnShieldDuration;
 
                 btwData.ArenaItems_ItemSpawnDiversity = this.AT_ItemSpawnDiversity;
@@ -155,6 +154,7 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
                 btwData.ArenaItems_ItemSpawnMultiplierPerPlayersCent = this.AT_ItemSpawnMultiplierPerPlayersCent;
                 btwData.ArenaItems_ItemSpawnRandom = this.AT_ItemSpawnRandom;
                 btwData.ArenaItems_NewItemSpawningSystem = this.AT_NewItemSpawningSystem;
+                btwData.ArenaItems_ItemRespawn = this.AT_ItemRespawn;
             }
         }
 

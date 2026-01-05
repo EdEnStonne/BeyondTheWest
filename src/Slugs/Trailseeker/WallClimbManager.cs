@@ -155,6 +155,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
                 bodyChunk.vel.x = this.wallKickDirection * (this.flipFromWallKick ? this.WallKickFlipForce : this.WallKickForce);
                 bodyChunk.vel.y = Mathf.Max(bodyChunk.vel.y, this.flipFromWallKick ? this.WallKickFlipForce : this.WallKickForce);
             }
+            // player.jumpStun = 40 * this.wallKickDirection;
             
             ResetPlayerCustomStates();
 
@@ -188,10 +189,10 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
         if (player != null && room != null)
         {
             player.bodyChunks[0].pos = player.bodyChunks[1].pos + new Vector2(this.wallKickDirection, player.bodyChunks[0].vel.y / 4f).normalized * 10f;
-            foreach (BodyChunk bodyChunk in player.bodyChunks)
-            {
-                bodyChunk.vel.x = this.wallKickDirection * this.WallKickForce;
-            }
+            // foreach (BodyChunk bodyChunk in player.bodyChunks)
+            // {
+            //     bodyChunk.vel.x = this.wallKickDirection * this.WallKickForce;
+            // }
         }
     }
 
@@ -307,6 +308,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
                     || player.slideDirection != this.wallKickDirection))
             {
                 this.rocketJumpFromWallKick = false;
+                // player.jumpStun = 0;
             }
             if (this.rocketJumpFromWallVerticalPounce && player.animation != Player.AnimationIndex.RocketJump)
             {
@@ -409,6 +411,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
             bool specHeld = player.input[0].spec;
             bool specPressed = specHeld && !player.input[1].spec;
             bool ignorePoleToggle = BTWRemix.TrailseekerIgnorePoleToggle.Value;
+            bool ignorePoleInvert = BTWRemix.TrailseekerIgnorePoleInvert.Value;
 
             if (ignorePoleToggle)
             {
@@ -420,7 +423,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
             }
             else
             {
-                this.holdToPoles = !specHeld;
+                this.holdToPoles = ignorePoleInvert ? specHeld : !specHeld;
                 if (specPressed) { this.indicatorUI?.ShowPoleIcon(); }
             }
 

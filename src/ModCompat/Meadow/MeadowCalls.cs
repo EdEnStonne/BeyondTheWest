@@ -354,7 +354,7 @@ public static class MeadowCalls
                 arenaLives.reviveAdditionnalTime = meadowArenaSettings.ArenaLives_AdditionalReviveTime * BTWFunc.FrameRate;
                 arenaLives.blockArenaOut = meadowArenaSettings.ArenaLives_BlockWin;
                 arenaLives.reviveTime = meadowArenaSettings.ArenaLives_ReviveTime * BTWFunc.FrameRate;
-                arenaLives.enforceAfterReachingZero = meadowArenaSettings.ArenaLives_Strict;
+                arenaLives.enforceAfterReachingZero = true;
                 arenaLives.shieldTime = meadowArenaSettings.ArenaLives_RespawnShieldDuration * BTWFunc.FrameRate;
             }
             if (IsMine && !arenaLives.fake)
@@ -424,5 +424,16 @@ public static class MeadowCalls
                 typeof(Action<RPCEvent, RoomSession>)),
                 roomSession
         );
+    }
+    public static void BTWArena_ArenaItemSpawnManagerInit(ArenaItemSpawnManager arenaItemSpawnManager)
+    {
+        if (BTWMeadowArenaSettings.TryGetSettings(out var meadowArenaSettings))
+        {
+            arenaItemSpawnManager.doRespawn = meadowArenaSettings.ArenaItems_ItemRespawn;
+            arenaItemSpawnManager.doCheckSpearsCount = meadowArenaSettings.ArenaItems_ItemRespawn;
+            arenaItemSpawnManager.doCheckThrowableCount = meadowArenaSettings.ArenaItems_ItemRespawn;
+            arenaItemSpawnManager.doCheckMiscellaniousCount = meadowArenaSettings.ArenaItems_ItemRespawn;
+        }
+        arenaItemSpawnManager.playersCount = MeadowFunc.GetPlayersInLobby();
     }
 }
