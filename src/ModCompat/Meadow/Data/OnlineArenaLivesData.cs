@@ -58,8 +58,8 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
             this.reviveCounter = lives.reviveCounter;
             this.livesDisplayCounter = lives.livesDisplayCounter;
             this.circlesAmount = lives.circlesAmount;
-            this.respawnPosX = lives.RespawnPos.x;
-            this.respawnPosY = lives.RespawnPos.y;
+            this.respawnPosX = lives.respawnPos.x;
+            this.respawnPosY = lives.respawnPos.y;
             this.respawnExit = lives.respawnExit;
         }
         //--------- Functions
@@ -78,6 +78,14 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
             {
                 lives.karmaSymbolNeedToChange = true;
                 BTWPlugin.Log($"Detected a life change for [{onlineEntity} : {abstractCreature}] : <{this.lifesleft}> <{this.countedAlive}>");
+            }
+            if (this.countedAlive && lives.room != null && lives.abstractTarget?.realizedCreature != null)
+            {
+                if (!lives.room.abstractRoom.creatures.Exists(x => x == lives.abstractTarget))
+                {
+                    BTWPlugin.Log($"[{lives.abstractTarget}] was removed from the creature list ! Adding it back"); 
+                    lives.room.abstractRoom.creatures.Add(lives.abstractTarget);
+                }
             }
             if (lives.countedAlive == false 
                 && this.countedAlive == true 
@@ -101,7 +109,7 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
             lives.countedAlive = this.countedAlive;
             lives.livesDisplayCounter = this.livesDisplayCounter;
             lives.circlesAmount = this.circlesAmount;
-            lives.RespawnPos = new Vector2(this.respawnPosX, this.respawnPosY);
+            lives.respawnPos = new Vector2(this.respawnPosX, this.respawnPosY);
             lives.respawnExit = this.respawnExit;
 
         }

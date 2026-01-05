@@ -11,7 +11,7 @@ using static RainMeadow.UI.Components.OnlineSlugcatAbilitiesInterface;
 using RainMeadow.UI.Components;
 
 
-namespace BeyondTheWest.MeadowCompat.ArenaMenu;
+namespace BeyondTheWest.MeadowCompat.BTWMenu;
 public class BTWEssentialSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
 {
     public const string TS_EVERYONECANPOLETECH = "BTW_TR_EPT";
@@ -36,7 +36,7 @@ public class BTWEssentialSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
 
     public override string Name => "BTW Essential Settings"; //this will appear on Select Settings Page
 
-    public BTWEssentialSettingsPage(Menu.Menu menu, MenuObject owner, Vector2 spacing, float textSpacing = 300) : base(menu, owner)
+    public BTWEssentialSettingsPage(global::Menu.Menu menu, MenuObject owner, Vector2 spacing, float textSpacing = 300) : base(menu, owner)
     {
         tabWrapper = new(menu, this);
         Vector2 positioner = new(360 + ((textSpacing - 300) / 2), 400);

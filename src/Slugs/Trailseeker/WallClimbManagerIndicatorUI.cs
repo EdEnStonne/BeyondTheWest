@@ -39,9 +39,15 @@ public class WallClimbManagerIndicatorUI : UpdatableAndDeletable, IDrawable
                 player.firstChunk.pos + new Vector2(0f, 60f)
                 : this.SpriteHeadPos + new Vector2(0f, 40f);
             bool ignorePoleToggle = BTWRemix.TrailseekerIgnorePoleToggle.Value;
+            bool ignorePoleInvert = BTWRemix.TrailseekerIgnorePoleInvert.Value;
             
             sLeaser.sprites[0].alpha = this.WCM.holdToPoles ? 0f : 1f;
-            sLeaser.sprites[1].alpha = this.WCM.holdToPoles && ignorePoleToggle ? 1f : 0f;
+            sLeaser.sprites[1].alpha = this.WCM.holdToPoles ? 1f : 0f;
+            if (!ignorePoleToggle)
+            {
+                if (ignorePoleInvert) { sLeaser.sprites[0].alpha = 0f; }
+                else { sLeaser.sprites[1].alpha = 0f; }
+            }
             foreach (FSprite sprite in sLeaser.sprites)
             {
                 sprite.x = pos.x;

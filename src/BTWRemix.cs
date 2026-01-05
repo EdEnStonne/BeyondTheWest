@@ -19,6 +19,8 @@ public class BTWRemix : OptionInterface
 
             new OpCheckBox(TrailseekerIgnorePoleToggle, new Vector2(20f, basePosY - spacingY * 1)) { description = TrailseekerIgnorePoleToggle.info.description },
             new OpLabel(50f, basePosY - spacingY * 1 + textUpY, "Ignore Poles button is toggle") { description = TrailseekerIgnorePoleToggle.info.description },
+            new OpCheckBox(TrailseekerIgnorePoleInvert, new Vector2(230f, basePosY - spacingY * 1)) { description = TrailseekerIgnorePoleInvert.info.description },
+            new OpLabel(260f, basePosY - spacingY * 1 + textUpY, "Invert Ignore Poles") { description = TrailseekerIgnorePoleInvert.info.description },
 
             new OpCheckBox(EveryoneCanPoleTech, new Vector2(20f, basePosY - spacingY * 2)) { description = EveryoneCanPoleTech.info.description },
             new OpLabel(50f, basePosY - spacingY * 2 + textUpY, "Everyone has Pole tech") { description = EveryoneCanPoleTech.info.description },
@@ -119,6 +121,9 @@ public class BTWRemix : OptionInterface
     public static Configurable<bool> TrailseekerIgnorePoleToggle = instance.config.Bind("TrailseekerIgnorePoleToggle", true, 
         new ConfigurableInfo("If the \"ignore poles\" feature of Trailseeker (special) is toggle. False makes it hold to active.  Default true.")
     );
+    public static Configurable<bool> TrailseekerIgnorePoleInvert = instance.config.Bind("TrailseekerIgnorePoleInvert", false, 
+        new ConfigurableInfo("If the \"ignore poles\" feature of Trailseeker (special) is inverted. False makes it hold to deactivate when toggle is on.  Default false.")
+    );
     public static Configurable<bool> EveryoneCanPoleTech = instance.config.Bind("EveryoneCanPoleTech", true, 
         new ConfigurableInfo("If the new tech with poles can be done by every slugcat. Default true.")
     );
@@ -165,7 +170,7 @@ public class BTWRemix : OptionInterface
     
     // Meadow Configuration
     public static Configurable<bool> MeadowEveryoneCanPoleTech = instance.config.Bind("MeadowEveryoneCanPoleTech", true, 
-        EveryoneCanPoleTech.info
+        new ConfigurableInfo("If the new tech with poles can be done by every slugcat. Default true.")
     );
     public static Configurable<int> MeadowTrailseekerPoleClimbBonus = instance.config.Bind("MeadowTrailseekerPoleClimbBonus", 4, 
         new ConfigurableInfo("How much bonus frame the Trailseeker will slide up a pole. Default: 4 frames.",
@@ -224,10 +229,10 @@ public class BTWRemix : OptionInterface
         new ConfigurableInfo("Change if the Discharge ability does damage to player. False means it'll only stun. Default: true.")
     );
     public static Configurable<bool> MeadowSparkRiskyOvercharge = instance.config.Bind("MeadowSparkRiskyOvercharge", true, 
-        SparkRiskyOvercharge.info
+        new ConfigurableInfo("Change if being overcharge has a chance to stun The Spark. Default: true.")
     );
     public static Configurable<bool> MeadowSparkDeadlyOvercharge = instance.config.Bind("MeadowSparkDeadlyOvercharge", true, 
-        SparkDeadlyOvercharge.info
+        new ConfigurableInfo("Change if going above overcharge will kill The Spark. If false, it'll stun the spark instead. Default: true.")
     );
     
     public static Configurable<int> MeadowArenaLivesAmount = instance.config.Bind("MeadowArenaLivesAmount", 1, 
@@ -242,9 +247,6 @@ public class BTWRemix : OptionInterface
         new ConfigurableInfo("The additional time in seconds to revive a player after each time they die. Default : 0s",
         new ConfigAcceptableRange<int>(int.MinValue, int.MaxValue))
     );
-    public static Configurable<bool> MeadowArenaLivesStrict = instance.config.Bind("MeadowArenaLivesStrict", true, 
-        new ConfigurableInfo("Change if the Arena Lives system will strictly enforce lives. This can be a solution against Revivify Meadow. Default: true.")
-    );
     public static Configurable<bool> MeadowArenaLivesBlockWin = instance.config.Bind("MeadowArenaLivesBlockWin", true, 
         new ConfigurableInfo("Change if the Arena Lives system will wait for everyone to revive before closing the arena session. Default: true.")
     );
@@ -257,7 +259,7 @@ public class BTWRemix : OptionInterface
     );
     
     public static Configurable<bool> MeadowNewItemSpawningSystem = instance.config.Bind("MeadowNewItemSpawningSystem", true, 
-        NewItemSpawningSystem.info
+        new ConfigurableInfo("Check if the new spawning system is on, disable if you get incompatibility issues.  Default true.")
     );
     public static Configurable<int> MeadowItemSpawnMultiplierCent = instance.config.Bind("MeadowItemSpawnMultiplierCent", 300,
         new ConfigurableInfo(
@@ -272,9 +274,12 @@ public class BTWRemix : OptionInterface
         )
     );
     public static Configurable<bool> MeadowItemSpawnDiversity = instance.config.Bind("MeadowItemSpawnDiversity", true, 
-        ItemSpawnDiversity.info
+        new ConfigurableInfo("If the items spawned in arena are more diverse, adding some new items from time to time.  Default true.")
     );
     public static Configurable<bool> MeadowItemSpawnRandom = instance.config.Bind("MeadowItemSpawnRandom", false, 
-        ItemSpawnRandom.info
+        new ConfigurableInfo("If the items spawned in arena are random from an arbitrary pool.  Default false.")
+    );
+    public static Configurable<bool> MeadowItemRespawn = instance.config.Bind("MeadowItemRespawn", true, 
+        new ConfigurableInfo("If the item manager will spawn some more items under certain conditions (spear missing, 1 minute passed, etc..).  Default true.")
     );
 }

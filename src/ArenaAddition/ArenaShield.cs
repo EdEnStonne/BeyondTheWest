@@ -170,7 +170,7 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
         FSprite Shield = new FSprite("Futile_White", true)
         {
             shader = rCam.room.game.rainWorld.Shaders["VectorCircleFadable"],
-            color = this.baseColor,
+            color = Color.white,
             alpha = 0f,
             scale = 5f
         };
@@ -181,7 +181,7 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
             sLeaser.sprites[i] = new FSprite("Futile_White", true)
             {
                 shader = rCam.room.game.rainWorld.Shaders["VectorCircleFadable"],
-                color = Color.white,
+                color = Color.gray,
                 alpha = 0f,
                 scale = 1.0f
             };
@@ -233,9 +233,13 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
         {
             sLeaser.sprites[i].x += Mathf.Sin(((float)i / this.circlesAmount) * Mathf.PI * 2f) * 35f;
             sLeaser.sprites[i].y += Mathf.Cos(((float)i / this.circlesAmount) * Mathf.PI * 2f) * 35f;
-            sLeaser.sprites[i].color = Color.white;
+            sLeaser.sprites[i].color = Color.Lerp(Color.white, Color.black, 0.75f - easedLife);
             sLeaser.sprites[i].alpha = 0.4f + 0.6f * (1 - GetCircleFraction(i));
             sLeaser.sprites[i].scale = 0.45f * BTWFunc.EaseOut(GetCircleFraction(i), 3);
+            if (!this.isMine)
+            {
+                sLeaser.sprites[i].color = Color.Lerp(sLeaser.sprites[i].color, Color.black, 0.35f);
+            }
         }
 
         if (this.destruction > 0)

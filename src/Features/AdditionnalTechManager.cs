@@ -110,6 +110,14 @@ public abstract class AdditionnalTechManager<TSelf> where TSelf : AdditionnalTec
             if (this is not PoleKickManager && PoleKickManager.TryGetManager(player.abstractCreature, out var PKM))
             {
                 PKM.poleTechCooldown.Reset(10);
+                PKM.isPolePounce = false;
+                PKM.bodyInFrontOfPole = false;
+                PKM.kickKaizo.Reset();
+                PKM.CancelPoolLoop();
+            }
+            if (this is not BTWPlayerData && BTWPlayerData.TryGetManager(player.abstractCreature, out var BTWPD))
+            {
+                BTWPD.isSuperLaunchJump = false;
             }
         }
     }
@@ -130,13 +138,7 @@ public abstract class AdditionnalTechManager<TSelf> where TSelf : AdditionnalTec
     {
         get
         {
-            if (this.abstractPlayer != null
-                && this.abstractPlayer.realizedCreature != null
-                && this.abstractPlayer.realizedCreature is Player player)
-            {
-                return player;
-            }
-            return null;
+            return this.abstractPlayer?.realizedCreature as Player;
         }
     }
     public Player RealizedPlayerInControl

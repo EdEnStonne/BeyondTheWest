@@ -64,4 +64,5 @@ Let's see how far I go with this one.
 
 [h2]Credits :[/h2]
 A BIG thanks to the alpha testers Martyn and M'eien for helping me test Meadow compatibility !
-A big thanks to also all the people in the Meadow Discord server and the Rain Wolrd Discord server who helped me throughout all this journey, helping me transform this summer random idea into a fully released mod !
+Another BIG thanks to UO who helped me SO MUCH on understanding Meadow's system.
+And yet ANOTHER big thanks to all the people in the Meadow Discord server and the Rain Wolrd Discord server who helped me throughout all this journey, helping me transform this summer random idea into a fully released mod !

@@ -4,11 +4,12 @@ using BepInEx.Logging;
 
 namespace BeyondTheWest 
 {
-    [BepInPlugin(MOD_ID, "Beyond The West", "1.3.3")]
+    [BepInPlugin(MOD_ID, "Beyond The West", MOD_VERSION)]
     [BepInDependency("slime-cubed.slugbase")]
     class BTWPlugin : BaseUnityPlugin
     {
         private const string MOD_ID = "edenstonne.beyondthewest";
+        public const string MOD_VERSION = "1.3.7";
         private static bool isInit = false;
         private static bool ressourceInit = false;
         private static bool modcheckInit = false;
@@ -58,6 +59,7 @@ namespace BeyondTheWest
                 TrailseekerFunc.ApplyHooks();
 
                 WIPSlugLock.ApplyHooks();
+                BTWPlayerDataHooks.ApplyHooks();
 
                 ArenaAddition.ArenaHookHelper.ApplyHooks();
                 BTWSkins.ApplyHooks();

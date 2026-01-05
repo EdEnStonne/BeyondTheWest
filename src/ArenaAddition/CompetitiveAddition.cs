@@ -16,7 +16,7 @@ public static class CompetitiveAddition
     {
         if (arenaGame == null) { return true; }
         if (!arenaGame.SessionStillGoing 
-            || (arenaGame.game?.world?.rainCycle != null && arenaGame.game.world.rainCycle.TimeUntilRain <= 2000))
+            || (arenaGame.game?.world?.rainCycle != null && arenaGame.game.world.rainCycle.TimeUntilRain <= 0))
         {
             return true;
         }

@@ -270,17 +270,26 @@ public class EnergyCore : PhysicalObject, IDrawable
         if (this.player != null && this.room != null)
         {
             bool boostJump = false;
+            bool chargedJump = false;
+            bool slideUpBoost = false;
             var pos = this.firstChunk.pos;
             Vector2 inputDir = this.DirectionalInput;
             Vector2 intInput = this.IntDirectionalInput;
 
             this.canSlam = false;
 
-            if (isReal && this.Landed)
+            if (isReal && (this.Landed || (player.superLaunchJump >= 20 && BTWFunc.CanSuperJump(this.player))))
             {
                 boostJump = true;
-
-                if (this.player.bodyMode == Player.BodyModeIndex.ClimbingOnBeam)
+                if (player.superLaunchJump >= 20 && BTWFunc.CanSuperJump(this.player))
+                {
+                    chargedJump = true;
+                    this.player.superLaunchJump = (int)pow;
+                    this.allowJumpException = true;
+                    this.player.Jump();
+                    this.allowJumpException = false;
+                }
+                else if (this.player.bodyMode == Player.BodyModeIndex.ClimbingOnBeam)
                 {
                     if (intInput.y == -1)
                     {
@@ -289,19 +298,24 @@ public class EnergyCore : PhysicalObject, IDrawable
                     }
                     else if (this.player.animation == Player.AnimationIndex.ClimbOnBeam && intInput.y == 1 && this.player.slideUpPole < 1)
                     {
+                        slideUpBoost = true;
                         this.player.slideUpPole = (int)Mathf.Min(pow / 4 + 10, 60);
                         this.player.Blink(this.player.slideUpPole / 3);
                         this.room.PlaySound(SoundID.Slugcat_From_Vertical_Pole_Jump, this.player.mainBodyChunk, false, 0.8f, 1f);
                     }
                     else
                     {
+                        this.allowJumpException = true;
                         this.player.Jump();
+                        this.allowJumpException = false;
                         this.player.animation = Player.AnimationIndex.None;
                     }
                 }
                 else
                 {
+                    this.allowJumpException = true;
                     this.player.Jump();
+                    this.allowJumpException = false;
                 }
                 if (!this.BoostAllowed) { return; }
             }
@@ -337,62 +351,78 @@ public class EnergyCore : PhysicalObject, IDrawable
                     this.AEC.coreBoostLeft--;
                 }
 
-                Vector2 baseBoost = Vector2.zero;
-                Vector2 scaleBoost = Vector2.zero;
-                float diagonalPenalty = 0.5f;
-                if (boostJump)
+                if (chargedJump)
                 {
-                    baseBoost.y = intInput.y == -1 ? this.player.firstChunk.vel.y : 10.0f;
-                    scaleBoost.y = (1f + inputDir.y) * 0.085f;
-
-                    baseBoost.x = 7.5f * inputDir.x;
-                    scaleBoost.x = inputDir.x * 0.09f;
-
-                    diagonalPenalty = 0.75f;
+                    foreach (var b in this.player.bodyChunks)
+                    {
+                        b.vel.x *= 1 + Mathf.Pow(pow / 200f, 2f);
+                        b.vel.y *= Mathf.Max(pow / 75f, 1);
+                    }
                 }
                 else
                 {
-                    if (intInput.x == 0 && intInput.y == 0) { intInput.y = 1; }
+                    Vector2 baseBoost = Vector2.zero;
+                    Vector2 scaleBoost = Vector2.zero;
+                    float diagonalPenalty;
+                    if (boostJump)
+                    {
+                        baseBoost.y = intInput.y == -1 ? this.player.firstChunk.vel.y : 10.0f;
+                        scaleBoost.y = (1f + inputDir.y) * 0.085f;
 
-                    baseBoost.y = intInput.y == -1 ? -15f : 8f * (inputDir.y + 0.5f);
-                    scaleBoost.y = inputDir.y * 0.20f;
+                        baseBoost.x = 7.5f * inputDir.x;
+                        scaleBoost.x = inputDir.x * 0.09f;
 
-                    baseBoost.x = 10f * inputDir.x;
-                    scaleBoost.x = inputDir.x * 0.15f;
-                    
-                    diagonalPenalty = 0.5f;
+                        diagonalPenalty = 0.75f;
+                    }
+                    else
+                    {
+                        if (intInput.x == 0 && intInput.y == 0) { intInput.y = 1; }
+
+                        baseBoost.y = intInput.y == -1 ? -15f : 8f * (inputDir.y + 0.5f);
+                        scaleBoost.y = inputDir.y * 0.20f;
+
+                        baseBoost.x = 10f * inputDir.x;
+                        scaleBoost.x = inputDir.x * 0.15f;
+                        
+                        diagonalPenalty = 0.5f;
+                    }
+
+                    scaleBoost *= pow;
+                    Vector2 penaltyMultiplier = new Vector2 
+                    {
+                        x = Mathf.Abs(intInput.y) > 0 ? diagonalPenalty : 1,
+                        y = Mathf.Abs(intInput.x) > 0 ? diagonalPenalty : 1
+                    };
+                    Vector2 leapBoost = new Vector2
+                    {
+                        x = (baseBoost.x + scaleBoost.x) * penaltyMultiplier.x,
+                        y = (baseBoost.y + scaleBoost.y) * penaltyMultiplier.y
+                    };
+
+                    foreach (var b in this.player.bodyChunks)
+                    {
+                        b.vel.x = intInput.x != 0 && b.vel.x * intInput.x > Math.Abs(leapBoost.x) ? 
+                            b.vel.x + scaleBoost.x * penaltyMultiplier.x : leapBoost.x;
+                        b.vel.y = intInput.y != 0 && b.vel.y * intInput.y > Math.Abs(leapBoost.y) ? 
+                            b.vel.y + scaleBoost.y * penaltyMultiplier.y : leapBoost.y;
+                    }
+                    if (!boostJump && intInput.y == -1 && pow > 40)
+                    {
+                        this.canSlam = true;
+                    }
                 }
-
-                scaleBoost *= pow;
-                Vector2 penaltyMultiplier = new Vector2 
-                {
-                    x = Mathf.Abs(intInput.y) > 0 ? diagonalPenalty : 1,
-                    y = Mathf.Abs(intInput.x) > 0 ? diagonalPenalty : 1
-                };
-                Vector2 leapBoost = new Vector2
-                {
-                    x = (baseBoost.x + scaleBoost.x) * penaltyMultiplier.x,
-                    y = (baseBoost.y + scaleBoost.y) * penaltyMultiplier.y
-                };
-
-                foreach (var b in this.player.bodyChunks)
-                {
-                    b.vel.x = intInput.x != 0 && b.vel.x * intInput.x > Math.Abs(leapBoost.x) ? 
-                        b.vel.x + scaleBoost.x * penaltyMultiplier.x : leapBoost.x;
-                    b.vel.y = intInput.y != 0 && b.vel.y * intInput.y > Math.Abs(leapBoost.y) ? 
-                        b.vel.y + scaleBoost.y * penaltyMultiplier.y : leapBoost.y;
-                }
-                if (!boostJump && intInput.y == -1 && pow > 40)
-                {
-                    this.canSlam = true;
-                }
+                
                 this.AEC.boostingCount = -15;
             }
 
             if (this.AEC.energy > 0)
             {
-                this.AEC.energy -= Mathf.Clamp(pow * 3f, 50f, 1000f);
-                if (this.AEC.energy <= 0) { MeltdownStart(); }
+                float powPenalty = 3.5f;
+                if (boostJump) { powPenalty = 2.5f; }
+                if (slideUpBoost) { powPenalty = 2f; }
+                if (chargedJump) { powPenalty = 1.5f; }
+                this.AEC.energy -= Mathf.Clamp(pow * powPenalty, 50f, 1000f);
+                if (this.AEC.energy <= 0) { this.AEC.energy = -1; MeltdownStart(); }
             }
             else
             {
@@ -684,6 +714,11 @@ public class EnergyCore : PhysicalObject, IDrawable
                 this.AEC.coreBoostLeft = this.AEC.CoreMaxBoost;
                 this.flipFromBoost = false;
             }
+
+            // if (player.superLaunchJump > 0)
+            // {
+            //     this.AEC.boostingCount = -20;
+            // }
         }
     }
     public void RepairUpdate()
@@ -932,7 +967,8 @@ public class EnergyCore : PhysicalObject, IDrawable
                         {
                             if (this.BoostAllowed)
                             {
-                                this.AEC.boostingCount += this.AEC.IsBetaBoost && this.player.input[0].spec ? 3 : 1;
+                                this.AEC.boostingCount += (this.AEC.IsBetaBoost && this.player.input[0].spec ? 3 : 1) 
+                                    * (player.superLaunchJump > 0 && BTWFunc.CanSuperJump(this.player) ? 2 : 1);
                                 this.player.slowMovementStun = 10;
                                 if (this.AEC.boostingCount > 400)
                                 {
@@ -951,7 +987,9 @@ public class EnergyCore : PhysicalObject, IDrawable
                         if (this.AEC.boostingCount < 5 && this.AEC.IsBetaBoost && this.player.canJump > 0)
                         {
                             this.AEC.boostingCount = -20;
+                            this.allowJumpException = true;
                             this.player.Jump();
+                            this.allowJumpException = false;
                         }
                         else
                         {
@@ -1022,6 +1060,7 @@ public class EnergyCore : PhysicalObject, IDrawable
     public bool canSlam = false;
     public bool oxygenCooldown = true;
     public bool consideredDead = false;
+    public bool allowJumpException = false;
     public int disableCooldown = 0;
 
     // Get - Set

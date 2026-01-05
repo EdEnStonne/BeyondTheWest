@@ -10,7 +10,7 @@ using RainMeadow.UI.Components.Patched;
 using static RainMeadow.UI.Components.OnlineSlugcatAbilitiesInterface;
 
 
-namespace BeyondTheWest.MeadowCompat.ArenaMenu;
+namespace BeyondTheWest.MeadowCompat.BTWMenu;
 public class BTWAdditionalSettingsPage : SettingsPage
 {
     public MenuTabWrapper tabWrapper;
@@ -28,7 +28,7 @@ public class BTWAdditionalSettingsPage : SettingsPage
 
     public override string Name => "BTW Additional Settings"; 
 
-    public BTWAdditionalSettingsPage(Menu.Menu menu, MenuObject owner, Vector2 spacing, float textSpacing = 300) : base(menu, owner)
+    public BTWAdditionalSettingsPage(global::Menu.Menu menu, MenuObject owner, Vector2 spacing, float textSpacing = 300) : base(menu, owner)
     {
         tabWrapper = new(menu, this);
         Vector2 positioner = new(360 + ((textSpacing - 300) / 2), 380);
