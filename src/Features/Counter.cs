@@ -4,8 +4,7 @@ namespace BeyondTheWest;
 
 public class Counter
 {
-    public Counter() {}
-    public Counter(uint max)
+    public Counter(int max)
     {
         this.max = max;
         this._count = 0;
@@ -15,7 +14,7 @@ public class Counter
     {
         this._count = 0;
     }
-    public void Reset(uint max)
+    public void Reset(int max)
     {
         this.max = max;
         Reset();
@@ -24,7 +23,7 @@ public class Counter
     {
         this._count = this._max;
     }
-    public void ResetUp(uint max)
+    public void ResetUp(int max)
     {
         this.max = max;
         ResetUp();
@@ -40,7 +39,7 @@ public class Counter
     {
         Tick();
     }
-    public void Add(uint num)
+    public void Add(int num)
     {
         this.value += num;
     }
@@ -51,18 +50,18 @@ public class Counter
             this._count--;
         }
     }
-    public void Substract(uint num)
+    public void Substract(int num)
     {
         if (this._count > 0)
         {
-            this._count -= (uint)Mathf.Min(this._count, num); // overflow my beloved
+            this._count -= (int)Mathf.Min(this._count, num); // overflow my beloved
         }
     }
     public void Up()
     {
         Add();
     }
-    public void Up(uint num)
+    public void Up(int num)
     {
         Add(num);
     }
@@ -71,13 +70,18 @@ public class Counter
         Substract();
     }
 
-    public void Down(uint num)
+    public void Down(int num)
     {
         Substract(num);
     }
 
-    private uint _max = BTWFunc.FrameRate;
-    private uint _count = 0;
+    public override string ToString()
+    {
+        return $"{_count}/{_max}";
+    }
+
+    private int _max = BTWFunc.FrameRate;
+    private int _count = 0;
 
     public float fractInv
     {
@@ -93,7 +97,7 @@ public class Counter
             return Mathf.Clamp01((float)this._count/this._max);
         }
     }
-    public uint max
+    public int max
     {
         get
         {
@@ -102,7 +106,7 @@ public class Counter
         set
         {
             this._max = value;
-            if (this._max == 0)
+            if (this._max <= 0)
             {
                 this._max = 1;
             }
@@ -133,7 +137,7 @@ public class Counter
             return this._count <= 0;
         }
     }
-    public uint value
+    public int value
     {
         get
         {
@@ -144,7 +148,7 @@ public class Counter
             this.valueUp = value;
         }
     }
-    public uint valueUp
+    public int valueUp
     {
         get
         {
@@ -152,10 +156,10 @@ public class Counter
         }
         set
         {
-            this._count = (uint)Mathf.Clamp(value, 0, this._max);
+            this._count = (int)Mathf.Clamp(value, 0, this._max);
         }
     }
-    public uint valueDown
+    public int valueDown
     {
         get
         {
@@ -163,7 +167,7 @@ public class Counter
         }
         set
         {
-            this._count = (uint)Mathf.Clamp(this._max - value, 0, this._max);
+            this._count = (int)Mathf.Clamp(this._max - value, 0, this._max);
         }
     }
 }

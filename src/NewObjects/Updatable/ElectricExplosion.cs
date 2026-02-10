@@ -8,36 +8,39 @@ using System.Collections.Generic;
 using BeyondTheWest.MSCCompat;
 
 namespace BeyondTheWest;
+
 public class ElectricExplosion : UpdatableAndDeletable
 {
+    public static void MakeSparks(Room room, float size, Vector2 position, byte sparks, Color color)
+    {
+        for (int i = sparks; i >= 0; i--)
+        {
+            room.AddObject(new MouseSpark(position, BTWFunc.RandomCircleVector(size / 5f), 25f, color));
+        }
+    }
     public static void MakeSparkExplosion(Room room, float size, Vector2 position, byte sparks, bool underwater, Color color)
     {
         if (underwater) { room.AddObject(new UnderwaterShock.Flash(position, size, 1f, 30, color)); }
 
         room.AddObject(new Explosion.ExplosionLight(position, size, 1f, 5, color));
         room.AddObject(new ShockWave(position, size, 0.001f, 50, false));
-        for (int i = sparks; i >= 0; i--)
-        {
-            room.AddObject(new MouseSpark(position, new Vector2(UnityEngine.Random.Range(-10f, 10f), UnityEngine.Random.Range(-10f, 10f)), 25f, color));
-        }
+        MakeSparks(room, size, position, sparks, color);
     }
     public static void ShockCreature(Creature target, BodyChunk closestBodyChunk, PhysicalObject sourceObject, 
         Creature killTagHolder, float killTagHolderDmgFactor, float damage, float stun, 
-        Color color, bool doSpams = false, bool notifyMeadow = false, bool hitPlayer = true, 
-        List<PhysicalObject> sparedObjects = null)
+        Color color, bool doSpams = false, bool notifyMeadow = false, bool hitPlayer = true)
     {
         if (target?.room == null) { return; }
         if (color == null) { color = Color.white; }
-        if (sparedObjects == null) { sparedObjects = new(); }
-
-        bool isMine = BTWFunc.IsLocal(target);
         
-        if (killTagHolder != null) { 
+        if (killTagHolder != null) 
+        { 
             target.SetKillTag(killTagHolder.abstractCreature); 
 
             if (target == killTagHolder)
             {
                 damage *= killTagHolderDmgFactor;
+                stun *= killTagHolderDmgFactor;
             }
 
             if (ModManager.MSC && closestBodyChunk != null)
@@ -45,29 +48,45 @@ public class ElectricExplosion : UpdatableAndDeletable
                 BodyChunk mainChunk = killTagHolder.mainBodyChunk ?? killTagHolder.firstChunk;
                 LightingArc lightingArc = new (
                     mainChunk, closestBodyChunk,
-                    0.5f + damage, damage > 1 ? 1f : 0.5f, (int)(stun / 10f + 5), color
+                    Mathf.Clamp(damage / 2f, 0.1f, 2f), damage > 1 ? 1f : 0.5f, (int)(stun / 10f + 5), color
                 );
                 target.room.AddObject(lightingArc);
             }
         }
 
-        if ((!hitPlayer && target is Player) || sparedObjects.Exists(x => x == target)) { damage = 0; }
+        if (!hitPlayer && target is Player) { damage = 0; }
         
-        if (isMine)
+        if (target.Local())
         {
             target.Violence(sourceObject?.firstChunk, null, closestBodyChunk, null, Creature.DamageType.Electric, damage, stun);
             
-            if (doSpams)
+            if (!(target.GetBTWData() is BTWCreatureData data && data.electricExplosionImmune))
             {
-                target.room.AddObject(new CreatureSpasmer(target, false, target.stun));
-            }
-            if (damage > 1f)
-            {
-                target.LoseAllGrasps();
+                if (doSpams)
+                {
+                    target.room.AddObject(new CreatureSpasmer(target, false, target.stun));
+                }
+                if (damage > 1f)
+                {
+                    target.LoseAllGrasps();
+                }
+                if (ModManager.MSC && target is Player targettedPlayer)
+                {
+                    if (damage > 1f && !targettedPlayer.dead)
+                    {
+                        MSCCalls.ExplodeArtificer(targettedPlayer);
+                    }
+                    if (Math.Max(0, targettedPlayer.playerState.permanentDamageTracking) + damage >= 1.0)
+                    {
+                        targettedPlayer.Die();
+                    }
+                    targettedPlayer.playerState.permanentDamageTracking += (damage / targettedPlayer.Template.baseDamageResistance) * 0.25f;
+                    BTWPlugin.Log($"Player Shocked <{targettedPlayer.Local()}> ! Took <{damage}> damage and has perma damage <{targettedPlayer.playerState.permanentDamageTracking}> (added +<{(damage / targettedPlayer.Template.baseDamageResistance) * 0.25f}>) !");
+                }
             }
         }
 
-        if (BTWPlugin.meadowEnabled && notifyMeadow && !BTWFunc.IsLocal(target))
+        if (BTWPlugin.meadowEnabled && notifyMeadow)
         {
             MeadowCalls.SparMeadow_ShockCreatureRPC(target, closestBodyChunk, sourceObject, 
                 killTagHolder, killTagHolderDmgFactor, damage, stun, color, doSpams);
@@ -117,7 +136,7 @@ public class ElectricExplosion : UpdatableAndDeletable
         {
             if (killTagHolderDmgFactor <= 0)
             {
-                this.objectsHit.Add(killTagHolder);
+                this.passThroughObjects.Add(killTagHolder);
             }
             if (killTagHolder.grasps != null)
             {
@@ -127,6 +146,21 @@ public class ElectricExplosion : UpdatableAndDeletable
                     {
                         this.passThroughObjects.Add(grasp.grabbed);
                     }
+                }
+            }
+            if (killTagHolder is Player player)
+            {
+                Player.SlugOnBack StackedPlayer = player.slugOnBack;
+                while (StackedPlayer != null && StackedPlayer.slugcat != null)
+                {
+                    this.passThroughObjects.Add(StackedPlayer.slugcat);
+                    StackedPlayer = StackedPlayer.slugcat.slugOnBack;
+                }
+                Player BottomPlayer = player.onBack;
+                while (BottomPlayer != null)
+                {
+                    this.passThroughObjects.Add(BottomPlayer);
+                    BottomPlayer = BottomPlayer.onBack;
                 }
             }
         }
@@ -141,7 +175,9 @@ public class ElectricExplosion : UpdatableAndDeletable
             this.chainReactionNotified = true;
             for (int i = 0; i < this.room.updateList.Count; i++)
             {
-                if (this.room.updateList[i] is IReactToElectricExplosion)
+                if (this.room.updateList[i] is IReactToElectricExplosion
+                    && !this.passThroughObjects.Exists(x => x == this.room.updateList[i])
+                    && !this.sparedObjects.Exists(x => x == this.room.updateList[i]))
                 {
                     (this.room.updateList[i] as IReactToElectricExplosion).Explosion(this);
                 }
@@ -200,22 +236,6 @@ public class ElectricExplosion : UpdatableAndDeletable
                         if (this.sparedObjects.Exists(x => x == obj)) { dmg = 0f; stun *= 2; force *= 0.1f; }
                         if (submerged) { stun += 1; force *= 0.25f; }
 
-                        bool targetLocal = BTWFunc.IsLocal(obj.abstractPhysicalObject);
-                        if (targetLocal)
-                        {
-                            foreach (BodyChunk b in result.bodyChunksHit)
-                            {
-                                BTWFunc.CustomKnockback(b, knockbackDir, force, notifyMeadow);
-                            }
-                        }
-
-                        if (ModManager.MSC)
-                        {
-                            if (targetLocal && dmg > 1.5f && obj is Player player && player != null)
-                            {
-                                MSCCalls.ExplodeArtificer(player);
-                            }
-                        }
                         if (obj is Creature creature)
                         {
                             BTWPlugin.Log("Ouch ! Creature ["+ creature +"] got shocked by ["+ this.killTagHolder 
@@ -223,9 +243,10 @@ public class ElectricExplosion : UpdatableAndDeletable
                             BTWPlugin.Log("Took <"+ dmg +"/"+ this.maxDamage +"> damage and <"
                                 + stun +"/"+ this.maxStun +"> stun (reach ratio is <"+ ratioDist +">).");
                             
+                            BTWFunc.CustomKnockback(result.closestBodyChunk, knockbackDir, force, notifyMeadow);
                             ShockCreature(creature, result.closestBodyChunk, this.sourceObject, this.killTagHolder,
                                 this.killTagHolderDmgFactor, dmg, stun, this.color, this.doSpams, this.notifyMeadow,
-                                this.hitPlayer, this.sparedObjects);
+                                this.hitPlayer);
                         }
                         this.objectsHit.Add(obj);
                     }
@@ -273,7 +294,7 @@ public class ElectricExplosion : UpdatableAndDeletable
     public float baseDamageFraction = 0.5f;
     public float baseStunFraction = 0.25f;
     public float volume = 0.5f;
-    public interface IReactToElectricExplosion // eh may be useful for later
+    public interface IReactToElectricExplosion
     {
         void Explosion(ElectricExplosion electricExplosion);
     }

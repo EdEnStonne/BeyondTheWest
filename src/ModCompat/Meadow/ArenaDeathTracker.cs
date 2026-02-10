@@ -71,11 +71,11 @@ public class ArenaDeathTracker
         customDeathMessagesEnum.Add( new(contextNum, deathMessagePre, deathMessagePost) );
     }
 
-    public static void SetDeathTrackerOfCreature(AbstractCreature target, int enumValue)
+    public static void SetDeathTrackerOfCreature(AbstractCreature target, int enumValue, bool forcedToStay = false, bool violenceSet = false)
     {
         if (TryGetTracker(target, out var deathTracker))
         {
-            deathTracker.SetDeathTrackerOfCreature(enumValue);
+            deathTracker.SetDeathTrackerOfCreature(enumValue, forcedToStay, violenceSet);
             if (target.realizedCreature != null)
             {
                 target.realizedCreature.killTagCounter = Mathf.Max(target.realizedCreature.killTagCounter, BTWFunc.FrameRate * 5);
@@ -174,7 +174,7 @@ public class ArenaDeathTracker
                     {
                         return 24;
                     }
-                    if (damage > 1.5f) { return 23; }
+                    if (damage > 1f) { return 23; }
                     return 22;
                 }
                 else if (type == Creature.DamageType.Explosion && CoreFunc.IsCore(player))
@@ -226,14 +226,21 @@ public class ArenaDeathTracker
     {
         this.creature = creature;
     }
-    public void SetDeathTrackerOfCreature(int enumValue)
+    public void SetDeathTrackerOfCreature(int enumValue, bool forcedToStay = false, bool violenceSet = false)
     {
-        this.deathMessageCustom = enumValue < 10 ? 0 : enumValue;
-        BTWPlugin.Log($"DeathTracker of [{creature}] set to <{this.deathMessageCustom}> !");
+        if (forcedToStay || !this.forcedToStay)
+        {
+            this.deathMessageCustom = enumValue < 10 ? 0 : enumValue;
+            this.forcedToStay = forcedToStay;
+            this.violenceSet = violenceSet;
+            BTWPlugin.Log($"DeathTracker of [{creature}] set to <{this.deathMessageCustom}><{this.forcedToStay}> !");
+        }
     }
 
     public AbstractCreature creature;
     public int deathMessageCustom = 0;
+    public bool forcedToStay = false;
+    public bool violenceSet = false;
 }
 
 public static class ArenaDeathTrackerHooks
@@ -293,6 +300,11 @@ public static class ArenaDeathTrackerHooks
         ArenaDeathTracker.AddDeathMessage(38, "clearly under-estimated", "'s ability to kill.");
 
         ArenaDeathTracker.AddDeathMessage(40, "was doomed to die by", ".");
+        ArenaDeathTracker.AddDeathMessage(41, "has their 5+ kill streak ended by", ".");
+        ArenaDeathTracker.AddDeathMessage(42, "saw their 10+ kill streak get anhilated by", ".");
+        ArenaDeathTracker.AddDeathMessage(43, "'s 15+ kill streak was reset to 0 by", ".");
+        ArenaDeathTracker.AddDeathMessage(44, "'s reign of 25+ kill streak was put to an end by", ".");
+        ArenaDeathTracker.AddDeathMessage(45, "was mercilessly killed by", ".");
 
         ArenaDeathTracker.AddDeathMessage(50, "was stabbed by", ".");
         ArenaDeathTracker.AddDeathMessage(51, "was crushed by", ".");
@@ -300,6 +312,7 @@ public static class ArenaDeathTrackerHooks
         ArenaDeathTracker.AddDeathMessage(53, "took water damage from", ".");
         ArenaDeathTracker.AddDeathMessage(54, "was exploded by", ".");
         ArenaDeathTracker.AddDeathMessage(55, "was zapped by", ".");
+        ArenaDeathTracker.AddDeathMessage(56, "was energized by", ".");
 
         LogAllDeathMessages();
 
@@ -323,6 +336,8 @@ public static class ArenaDeathTrackerHooks
             if (deathTracker.deathMessageCustom != 0 && self.killTagCounter <= 0)
             {
                 deathTracker.deathMessageCustom = 0;
+                deathTracker.forcedToStay = false;
+                deathTracker.violenceSet = false;
                 BTWPlugin.Log($"DeathTracker of [{self}] set back to 0.");
             }
         }
@@ -334,8 +349,15 @@ public static class ArenaDeathTrackerHooks
             && self.abstractCreature != null 
             && ArenaDeathTracker.TryGetTracker(self.abstractCreature, out var deathTracker))
         {
-            int newContext = ArenaDeathTracker.GetCustomDeathMessageOfViolence(self, deathTracker, source?.owner, type, damage, stunBonus);
-            deathTracker.SetDeathTrackerOfCreature(newContext);
+            if (deathTracker.violenceSet)
+            {
+                deathTracker.violenceSet = false;
+            }
+            else
+            {
+                int newContext = ArenaDeathTracker.GetCustomDeathMessageOfViolence(self, deathTracker, source?.owner, type, damage, stunBonus);
+                deathTracker.SetDeathTrackerOfCreature(newContext);
+            }
         }
     }
     private static void Lizard_ViolenceDeathTracker(On.Lizard.orig_Violence orig, Lizard self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos onAppendagePos, Creature.DamageType type, float damage, float stunBonus)

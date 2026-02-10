@@ -13,8 +13,8 @@ public class BTWSkins
     public static void ApplyHooks()
     {
         On.PlayerGraphics.DrawSprites += Player_Sprite;
-        IL.PlayerGraphics.InitiateSprites += Modify_Player_Sprite;
-        IL.Player.ctor += Player_ModifyPlayerHeight;
+        // IL.PlayerGraphics.InitiateSprites += Modify_Player_Sprite;
+        // IL.Player.ctor += Player_ModifyPlayerHeight;
         BTWPlugin.Log("BTWSkins ApplyHooks Done !");
     }
 
@@ -23,6 +23,7 @@ public class BTWSkins
     {
         Futile.atlasManager.ActuallyLoadAtlasOrImage("BodyASpark", "skin/Spark/body", "skin/Spark/body");
         Futile.atlasManager.ActuallyLoadAtlasOrImage("HipsASpark", "skin/Spark/hips", "skin/Spark/hips");
+        Futile.atlasManager.ActuallyLoadAtlasOrImage("HeadASpark", "skin/Spark/head", "skin/Spark/head");
 
         Futile.atlasManager.ActuallyLoadAtlasOrImage("HipsAWanderer", "skin/Wanderer/hips", "skin/Wanderer/hips");
         
@@ -90,19 +91,20 @@ public class BTWSkins
         {
             if (skinloaded)
             {
-                if (Futile.atlasManager.DoesContainAtlas("BodyASpark") && !sLeaser.sprites[0].element.name.Contains("BodyASpark"))
+                if (!sLeaser.sprites[3].element.name.Contains("HeadASpark"))
                 {
-                    sLeaser.sprites[0].SetElementByName("BodyASpark");
+                    // BTWPlugin.Log($"Changing Spark head [{sLeaser.sprites[3].element.name}] to [{headname}]<{Futile.atlasManager.DoesContainElementWithName(headname)}>");
+                    string headname = $"HeadASpark{sLeaser.sprites[3].element.name.Substring("HeadA".Length)}";
+                    sLeaser.sprites[3].element = Futile.atlasManager.GetElementWithName(headname);
                 }
-                if (Futile.atlasManager.DoesContainAtlas("HipsASpark") && !sLeaser.sprites[1].element.name.Contains("HipsASpark"))
+                if (!sLeaser.sprites[0].element.name.Contains("BodyASpark"))
                 {
-                    sLeaser.sprites[1].SetElementByName("HipsASpark");
+                    sLeaser.sprites[0].element = Futile.atlasManager.GetElementWithName("BodyASpark");
                 }
-            }
-
-            if (ModManager.MSC && !sLeaser.sprites[3].element.name.Contains("HeadB"))
-            {
-                sLeaser.sprites[3].SetElementByName($"HeadB{sLeaser.sprites[3].element.name.Substring("HeadA".Length)}");
+                if (!sLeaser.sprites[1].element.name.Contains("HipsASpark"))
+                {
+                    sLeaser.sprites[1].element = Futile.atlasManager.GetElementWithName("HipsASpark");
+                }
             }
 
             float bonusfluff = 1f;
@@ -120,9 +122,13 @@ public class BTWSkins
 
                     sLeaser.sprites[1].x += Mathf.Cos(SCM.crawlCharge * freqAnim + Mathf.PI) * Mathf.Max(0.25f, SCM.CrawlChargeRatio) * radxAnim;
                 }
+                if (SCM.endlessCharge > 0)
+                {
+                    bonusfluff = 2;
+                }
             }
-            sLeaser.sprites[0].scaleX += -0.1f + 0.15f * bonusfluff;
-            sLeaser.sprites[1].scaleX += -0.1f + 0.2f * bonusfluff;
+            sLeaser.sprites[0].scaleX += -0.15f + 0.2f * bonusfluff;
+            sLeaser.sprites[1].scaleX += -0.15f + 0.25f * bonusfluff;
 
         }
         else if (TrailseekerFunc.IsTrailseeker(self.player))
@@ -140,9 +146,10 @@ public class BTWSkins
 
     private static float ChangeSlugHeight(float orig, Player player)
     {
-        if (SparkFunc.IsSpark(player))
+        BTWPlugin.Log($"Ay player height is <{orig}>, is it Spark ? [{player.SlugCatClass}]<{player.IsSpark()}>");
+        if (player.IsSpark())
         {
-            return 15f;
+            return 35f;
         }
         return orig;
     }
@@ -169,20 +176,24 @@ public class BTWSkins
                 x => x.MatchCall(typeof(PhysicalObject).GetProperty(nameof(PhysicalObject.bodyChunks)).GetGetMethod()),
                 x => x.MatchLdcI4(1),
                 x => x.MatchLdelemRef(),
-                x => x.MatchLdcI4(17)
+                x => x.MatchLdcR4(17)
             ))
             {
                 cursor.Emit(OpCodes.Ldarg_0);
                 cursor.EmitDelegate(ChangeSlugHeight);
+            }
+            else
+            {
+                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
             }
             BTWPlugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
             BTWPlugin.logger.LogError(ex);
-            BTWPlugin.Log(il);
         }
         BTWPlugin.Log("BTWSkins IL 2 ends");
+        // BTWPlugin.Log(il);
     }
     private static void Modify_Player_Sprite(ILContext il) // blatandly copied from MagicaJaphet : Extended Slugbase Features. Sorry I really don't get IL atm...
     {
@@ -230,6 +241,10 @@ public class BTWSkins
                     }
                 }
                 cursor.EmitDelegate(InitiateSprites);
+            }
+            else
+            {
+                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
             }
             BTWPlugin.Log("IL hook ended");
         }

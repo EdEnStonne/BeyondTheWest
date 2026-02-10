@@ -46,7 +46,7 @@ public static class CompetitiveAddition
             }
             else if (Input.GetKey(KeyCode.LeftAlt) && self.room.world.game.IsArenaSession)
             {
-                ArenaItemSpawn arenaItemSpawn = new(self.mainBodyChunk.pos, ArenaItemSpawn.GetRandomTestList());
+                ArenaItemSpawn arenaItemSpawn = new(self.mainBodyChunk.pos, ArenaItemSpawn.GetRandomTestList(), true);
                 self.room.AddObject( arenaItemSpawn );
             }
             else

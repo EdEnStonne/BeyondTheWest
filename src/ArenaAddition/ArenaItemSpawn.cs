@@ -11,6 +11,7 @@ using BeyondTheWest.MeadowCompat;
 using ObjectType = AbstractPhysicalObject.AbstractObjectType;
 using MItemData = PlacedObject.MultiplayerItemData;
 using BepInEx;
+using BeyondTheWest.Items;
 
 namespace BeyondTheWest.ArenaAddition;
 public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
@@ -23,6 +24,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
         public bool diversity;
         public bool randomItem;
         public bool newSystem;
+        public bool noSpears;
         public ArenaItemSpawnSetting()
         {
             this.newSystem = BTWRemix.NewItemSpawningSystem.Value;
@@ -31,17 +33,12 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
             this.doScalePerPlayer = BTWRemix.DoItemSpawnScalePerPlayers.Value;
             this.randomItem = BTWRemix.ItemSpawnRandom.Value;
             this.diversity = BTWRemix.ItemSpawnDiversity.Value;
+            this.noSpears = BTWRemix.ArenaNoSpears.Value;
 
             if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
             {
                 MeadowFunc.SetArenaItemSpawnSettings(ref this);
-                // BTWPlugin.Log($"Getting arena setting from meadow !");
             }
-            else
-            {
-                // BTWPlugin.Log($"Getting arena setting from remix options !");
-            }
-            // BTWPlugin.Log($"Settings : \nnewSystem : <{newSystem}> \nmultiplier : <{multiplier}> \nmultiplierPerPlayer : <{multiplierPerPlayer}> \ndoScalePerPlayer : <{doScalePerPlayer}> \nrandomItem : <{randomItem}> \ndiversity : <{diversity}>");
         }
     }
     public static List<List<ObjectData>> testObjectLists = new()
@@ -50,29 +47,24 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
             new(ObjectType.Rock, 0)
         },
         new(){
-            new(ObjectType.Spear, 0)
-        },
-        new(){
-            new(ObjectType.ScavengerBomb, 0)
-        },
-        new(){
-            new(ObjectType.SporePlant, 0)
-        },
-        new(){
-            new(ObjectType.Rock, 0),
-            new(ObjectType.Rock, 0),
-            new(ObjectType.Rock, 0),
-        },
-        new(){
-            new(ObjectType.Spear, 1),
-            new(ObjectType.Spear, 2),
-            new(ObjectType.Spear, 3),
-            new(ObjectType.Spear, 4),
+            new(ObjectType.Spear, 4)
         },
     };
     public static List<ObjectData> GetRandomTestList()
     {
-        return testObjectLists[(int)Mathf.Clamp(BTWFunc.Random(testObjectLists.Count), 0, testObjectLists.Count - 1)];
+        return testObjectLists[BTWFunc.RandInt(testObjectLists.Count - 1)];
+    }
+    public static void LogAllPools(string cause = "[???]")
+    {
+        BTWPlugin.Log($"Printing pools after {cause}");
+        BTWPlugin.Log("- Spear pool : ");
+        spearPool.LogPool();
+        BTWPlugin.Log("- Rock pool : ");
+        rockPool.LogPool();
+        BTWPlugin.Log("- Others pool : ");
+        othersPool.LogPool();
+        BTWPlugin.Log("- All pool : ");
+        allPool.LogPool();
     }
     
     public static ObjectDataPool spearPool = new();
@@ -107,7 +99,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
         {
             if (BTWPlugin.meadowEnabled && this.notifyMeadow && !this.isFake)
             {
-                MeadowCalls.BTWArena_RPCAddItemSpawnerToAll(this);
+                MeadowCalls.BTWArena_RPCAddItemSpawnerToAllInRoom(this);
             }
             this.isInit = true;
         }
@@ -125,7 +117,25 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
 
                 try
                 {
-                    if (this.objectList[j].objectType == ObjectType.Rock)
+                    if (this.objectList[j].objectType == AbstractTristor.TristorType)
+                    {
+                        AbstractTristor item = new(
+                            world, null, coords, newID
+                        );
+
+                        this.room.abstractRoom.AddEntity(item);
+                        item.RealizeInRoom();
+                    }
+                    else if (this.objectList[j].objectType == AbstractVoidCrystal.VoidCrystalType)
+                    {
+                        AbstractVoidCrystal item = new(
+                            world, null, coords, newID
+                        );
+
+                        this.room.abstractRoom.AddEntity(item);
+                        item.RealizeInRoom();
+                    }
+                    else if (this.objectList[j].objectType == ObjectType.Rock)
                     {
                         AbstractPhysicalObject item = new(
                             world, ObjectType.Rock, null, coords, newID
@@ -156,6 +166,10 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
                             item.poison = 1 + BTWFunc.random;
                             item.poisonHue = BTWFunc.random;
                         }
+                        else if (this.objectList[j].intData == 5)
+                        {
+                            item = new AbstractCrystalSpear(world, null, coords, newID);
+                        }
 
                         this.room.abstractRoom.AddEntity(item);
                         item.RealizeInRoom();
@@ -174,6 +188,23 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
                         SporePlant.AbstractSporePlant item = new(
                             world, null, coords, newID, -2, -2, null, false, true
                         );
+
+                        this.room.abstractRoom.AddEntity(item);
+                        item.RealizeInRoom();
+                    }
+                    else if (this.objectList[j].objectType == ObjectType.BubbleGrass)
+                    {
+                        BubbleGrass.AbstractBubbleGrass item = new BubbleGrass.AbstractBubbleGrass(
+                            world, null, coords, newID, 1f, -1, -1, null);
+
+                        this.room.abstractRoom.AddEntity(item);
+                        item.RealizeInRoom();
+                    }
+                    else if (this.objectList[j].objectType == ObjectType.EggBugEgg)
+                    {
+                        EggBugEgg.AbstractBugEgg item = new(
+                            world, null, coords, newID, 
+                            Mathf.Lerp(-0.15f, 0.1f, Custom.ClampedRandomVariation(0.5f, 0.5f, 2f)));
 
                         this.room.abstractRoom.AddEntity(item);
                         item.RealizeInRoom();
@@ -311,6 +342,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
         }
         for (int j = 0; j < this.objectList.Count; j++)
         {
+            // BTWPlugin.Log($"Initiating item sprite [{this.objectList[j].objectType}] with data <{this.objectList[j].intData}>");
             sLeaser.sprites[j + 1 + this.circlesAmount] = new FSprite(
                 ItemSymbol.SpriteNameForItem(this.objectList[j].objectType, this.objectList[j].intData), true)
             {
@@ -318,11 +350,11 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
                 alpha = 0.5f,
                 scale = 0.75f
             };
-            if (ModManager.Watcher && this.objectList[j].objectType == ObjectType.Spear && this.objectList[j].intData == 4)
-            {
-                sLeaser.sprites[j + 1 + this.circlesAmount].color = new Color(0.35f, 0.15f, 0.85f);
-            }
-            BTWPlugin.Log($"Initiating item sprite [{this.objectList[j].objectType}] with data <{this.objectList[j].intData}> : sprite name is <{sLeaser.sprites[j + 1 + this.circlesAmount].element.name}> and color is [{sLeaser.sprites[j + 1 + this.circlesAmount].color}]");
+            // if (ModManager.Watcher && this.objectList[j].objectType == ObjectType.Spear && this.objectList[j].intData == 4)
+            // {
+            //     sLeaser.sprites[j + 1 + this.circlesAmount].color = new Color(0.35f, 0.15f, 0.85f);
+            // }
+            // BTWPlugin.Log($"Sprite name is <{sLeaser.sprites[j + 1 + this.circlesAmount].element.name}> and color is [{sLeaser.sprites[j + 1 + this.circlesAmount].color}]");
         }
 
         this.AddToContainer(sLeaser, rCam, null);
@@ -425,13 +457,19 @@ public static class ArenaItemSpawnHooks
     {
         ArenaItemSpawn.rockPool.AddToPool(ObjectType.Rock, 125);
         ArenaItemSpawn.rockPool.AddToPool(ObjectType.ScavengerBomb, 7);
+        ArenaItemSpawn.rockPool.AddToPool(AbstractTristor.TristorType, 7);
+        ArenaItemSpawn.rockPool.AddToPool(AbstractVoidCrystal.VoidCrystalType, 7);
 
         ArenaItemSpawn.spearPool.AddToPool(ObjectType.Spear, 200);
         ArenaItemSpawn.spearPool.AddToPool(ObjectType.Spear, 1, 15);
+        ArenaItemSpawn.spearPool.AddToPool(ObjectType.Spear, 5, 7);
 
         ArenaItemSpawn.othersPool.AddToPool(ObjectType.SporePlant, 12);
+        ArenaItemSpawn.othersPool.AddToPool(ObjectType.FlareBomb, 5);
+        ArenaItemSpawn.othersPool.AddToPool(ObjectType.PuffBall, 5);
         ArenaItemSpawn.othersPool.AddToPool(ObjectType.KarmaFlower, 1);
         ArenaItemSpawn.othersPool.AddToPool(ObjectType.FirecrackerPlant, 5);
+        ArenaItemSpawn.othersPool.AddToPool(ObjectType.BubbleGrass, 3);
         ArenaItemSpawn.othersPool.AddToPool(ObjectType.JellyFish, 7);
         ArenaItemSpawn.othersPool.AddToPool(ObjectType.EggBugEgg, 5);
 
@@ -447,6 +485,30 @@ public static class ArenaItemSpawnHooks
         {
             ArenaItemSpawn.allPool.AddToPool(poolitem);
         }
+
+        ArenaItemSpawn.testObjectLists.Add(
+            new(){
+                new(AbstractTristor.TristorType, 0),
+                new(AbstractTristor.TristorType, 0),
+                new(AbstractTristor.TristorType, 0)
+            }
+        );
+        ArenaItemSpawn.testObjectLists.Add(
+            new(){
+                new(AbstractVoidCrystal.VoidCrystalType, 0),
+                new(AbstractVoidCrystal.VoidCrystalType, 0),
+                new(AbstractVoidCrystal.VoidCrystalType, 0)
+            }
+        );
+        ArenaItemSpawn.testObjectLists.Add(
+            new(){
+                new(ObjectType.Spear, 5),
+                new(ObjectType.Spear, 5),
+                new(ObjectType.Spear, 5)
+            }
+        );
+
+        ArenaItemSpawn.LogAllPools("Vanilla");
     }
 
     private static int GenerateItemCount(float chance, ArenaGameSession arena)
@@ -486,7 +548,8 @@ public static class ArenaItemSpawnHooks
         ArenaItemSpawn.ArenaItemSpawnSetting settings = new();
         if (arena is CompetitiveGameSession && settings.newSystem)
         {
-            ArenaItemSpawnManager.AddItemSpawnerFromPlacedObject(arena, room, objectType, placedObject, count);
+            ArenaItemSpawnManager.AddItemSpawnerFromPlacedObject(arena, room, objectType, placedObject, 
+                count, settings.noSpears ? ArenaItemSpawn.spearPool.AllItemsTypes().ToArray() : null);
             return true;
         }
         return false;

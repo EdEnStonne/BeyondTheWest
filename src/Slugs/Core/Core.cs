@@ -63,13 +63,11 @@ public class CoreFunc
                 else
                 {
                     BTWPlugin.logger.LogError("Couldn't find IL hook 2 :<");
-                    BTWPlugin.Log(il);
                 }
             }
             else
             {
                 BTWPlugin.logger.LogError("Couldn't find IL hook 1 :<");
-                BTWPlugin.Log(il);
             }
             BTWPlugin.Log("IL hook ended");
         }

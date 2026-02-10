@@ -26,13 +26,15 @@ public static class SpawnMSCPool
 
         ArenaItemSpawn.spearPool.AddToPool(DLCObjectType.LillyPuck, 7);
         ArenaItemSpawn.allPool.AddToPool(DLCObjectType.LillyPuck, 7);
-        ArenaItemSpawn.spearPool.AddToPool(ObjectType.Spear, 2, 7);
-        ArenaItemSpawn.allPool.AddToPool(ObjectType.Spear, 2, 7);
-        ArenaItemSpawn.spearPool.AddToPool(ObjectType.Spear, 3, 2);
-        ArenaItemSpawn.allPool.AddToPool(ObjectType.Spear, 3, 2);
+        ArenaItemSpawn.spearPool.AddToPool(ObjectType.Spear, 2, 9);
+        ArenaItemSpawn.allPool.AddToPool(ObjectType.Spear, 2, 9);
+        ArenaItemSpawn.spearPool.AddToPool(ObjectType.Spear, 3, 4);
+        ArenaItemSpawn.allPool.AddToPool(ObjectType.Spear, 3, 4);
         
         ArenaItemSpawn.othersPool.AddToPool(MSCObjectType.FireEgg, 3);
         ArenaItemSpawn.allPool.AddToPool(MSCObjectType.FireEgg, 3);
+
+        ArenaItemSpawn.LogAllPools("MSC");
     }
 
     //----------- Hooks

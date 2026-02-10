@@ -157,6 +157,8 @@ public class BTWEssentialSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         BTWRemix.MeadowSparkDoDischargeDamage.Value = this.Spark_DoDischargeDamage_CheckBox.Checked;
         BTWRemix.MeadowSparkRiskyOvercharge.Value = this.Spark_RiskyOvercharge_CheckBox.Checked;
         BTWRemix.MeadowSparkDeadlyOvercharge.Value = this.Spark_DeadlyOvercharge_CheckBox.Checked;
+        
+        BTWRemix.instance._SaveConfigFile();
     }
     public override void CallForSync()
     {

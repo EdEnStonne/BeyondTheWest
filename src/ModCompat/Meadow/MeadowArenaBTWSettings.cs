@@ -9,6 +9,7 @@ using RainMeadow.UI.Components;
 using RainMeadow.UI;
 using System.Reflection;
 using BeyondTheWest.ArenaAddition;
+using BeyondTheWest.MeadowCompat.Gamemodes;
 
 namespace BeyondTheWest.MeadowCompat;
 
@@ -30,46 +31,43 @@ public class BTWMeadowArenaSettings
         TryGetSettings(out BTWMeadowArenaSettings arenaSettings);
         return arenaSettings;
     }
-    public static void AddSettings(ArenaMode arena)
+    public static BTWMeadowArenaSettings AddSettings(ArenaMode arena)
     {
         if (meadowArenaBTWData.TryGetValue(arena, out _))
         {
             meadowArenaBTWData.Remove(arena);
         }
-        meadowArenaBTWData.Add(arena, new(arena));
+        BTWMeadowArenaSettings bTWMeadowArenaSettings = new(arena);
+        meadowArenaBTWData.Add(arena, bTWMeadowArenaSettings);
+        return bTWMeadowArenaSettings;
     }
 
     public BTWMeadowArenaSettings(ArenaMode arena) { this.arena = arena; }
     public ArenaMode arena;
+    public ArenaStockClientSettings arenaStockClientSettings;
+
     // TrailSeeker
     public bool Trailseeker_EveryoneCanPoleTech = BTWRemix.MeadowEveryoneCanPoleTech.Value;
-    public int Trailseeker_PoleClimbBonus = BTWRemix.MeadowTrailseekerPoleClimbBonus.Value;
-    public int Trailseeker_MaxWallClimb = BTWRemix.MeadowTrailseekerMaxWallClimb.Value;
+    // public int Trailseeker_PoleClimbBonus = BTWRemix.MeadowTrailseekerPoleClimbBonus.Value;
+    // public int Trailseeker_MaxWallClimb = BTWRemix.MeadowTrailseekerMaxWallClimb.Value;
     public int Trailseeker_WallGripTimer = BTWRemix.MeadowTrailseekerWallGripTimer.Value;
 
     // Core
-    public int Core_RegenEnergy = BTWRemix.MeadowCoreRegenEnergy.Value;
-    public int Core_MaxEnergy = BTWRemix.MeadowCoreMaxEnergy.Value;
+    // public int Core_RegenEnergy = BTWRemix.MeadowCoreRegenEnergy.Value;
+    // public int Core_MaxEnergy = BTWRemix.MeadowCoreMaxEnergy.Value;
     public int Core_MaxLeap = BTWRemix.MeadowCoreMaxLeap.Value;
-    public int Core_AntiGravityCent = BTWRemix.MeadowCoreAntiGravityCent.Value;
-    public int Core_OxygenEnergyUsage = BTWRemix.MeadowCoreOxygenEnergyUsage.Value;
+    // public int Core_AntiGravityCent = BTWRemix.MeadowCoreAntiGravityCent.Value;
+    // public int Core_OxygenEnergyUsage = BTWRemix.MeadowCoreOxygenEnergyUsage.Value;
     public bool Core_Shockwave = BTWRemix.MeadowCoreShockwave.Value;
     
     // Spark
-    public int Spark_MaxCharge = BTWRemix.MeadowSparkMaxCharge.Value;
-    public int Spark_AdditionnalOvercharge = BTWRemix.MeadowSparkAdditionnalOvercharge.Value;
-    public int Spark_ChargeRegenerationMult = BTWRemix.MeadowSparkChargeRegenerationMult.Value;
+    // public int Spark_MaxCharge = BTWRemix.MeadowSparkMaxCharge.Value;
+    // public int Spark_AdditionnalOvercharge = BTWRemix.MeadowSparkAdditionnalOvercharge.Value;
+    // public int Spark_ChargeRegenerationMult = BTWRemix.MeadowSparkChargeRegenerationMult.Value;
     public int Spark_MaxElectricBounce = BTWRemix.MeadowSparkMaxElectricBounce.Value;
     public bool Spark_DoDischargeDamage = BTWRemix.MeadowSparkDoDischargeDamage.Value;
     public bool Spark_RiskyOvercharge = BTWRemix.MeadowSparkRiskyOvercharge.Value;
     public bool Spark_DeadlyOvercharge = BTWRemix.MeadowSparkDeadlyOvercharge.Value;
-    
-    // Arena Lives
-    public int ArenaLives_AdditionalReviveTime = BTWRemix.MeadowArenaLivesAdditionalReviveTime.Value;
-    public int ArenaLives_Amount = BTWRemix.MeadowArenaLivesAmount.Value;
-    public int ArenaLives_ReviveTime = BTWRemix.MeadowArenaLivesReviveTime.Value;
-    public bool ArenaLives_BlockWin = BTWRemix.MeadowArenaLivesBlockWin.Value;
-    public int ArenaLives_RespawnShieldDuration = BTWRemix.MeadowArenaLivesRespawnShieldDuration.Value;
     
     // Arena Item Spawn 
     public bool ArenaItems_NewItemSpawningSystem = BTWRemix.MeadowNewItemSpawningSystem.Value;
@@ -78,6 +76,15 @@ public class BTWMeadowArenaSettings
     public bool ArenaItems_ItemSpawnDiversity = BTWRemix.MeadowItemSpawnDiversity.Value;
     public bool ArenaItems_ItemSpawnRandom = BTWRemix.MeadowItemSpawnRandom.Value;
     public bool ArenaItems_ItemRespawn = BTWRemix.MeadowItemRespawn.Value;
+    public int ArenaItems_ItemRespawnTimer = BTWRemix.MeadowItemRespawnTimer.Value;
+    public bool ArenaItems_CheckSpearCount = BTWRemix.MeadowItemCheckSpearCount.Value;
+    public bool ArenaItems_CheckThrowableCount = BTWRemix.MeadowItemCheckThrowableCount.Value;
+    public bool ArenaItems_CheckMiscellaneousCount = BTWRemix.MeadowItemCheckMiscellaneousCount.Value;
+    public bool ArenaItems_NoSpear = BTWRemix.MeadowItemNoSpear.Value;
+    
+    // Arena Bonus
+    public bool ArenaBonus_InstantDeath = BTWRemix.MeadowArenaInstantDeath.Value;
+    public bool ArenaBonus_ExtraItemUses = BTWRemix.MeadowArenaExtraItemUses.Value;
 }
 public static class BTWMeadowArenaSettingsHooks
 {
@@ -88,15 +95,31 @@ public static class BTWMeadowArenaSettingsHooks
             ArenaDataHook();
             new Hook(typeof(OnlineSlugcatAbilitiesInterface).GetMethod(nameof(OnlineSlugcatAbilitiesInterface.AddAllSettings)), OnlineSlugcatAbilitiesInterface_AddAllSettings);
             new Hook(typeof(ArenaMode).GetConstructor(new[] { typeof(Lobby) }), ArenaMode_AddData);
+            new Hook(typeof(ArenaMode).GetMethod(nameof(ArenaMode.AddClientData)), ArenaMode_AddClientData);
             new Hook(typeof(RainMeadow.UI.Pages.ArenaMainLobbyPage).GetMethod("ShouldOpenSlugcatAbilitiesTab"), ArenaMainLobbyPage_ShouldOpenSlugcatAbilitiesTab);
-            On.Player.ctor += Player_AddArenaLivesFromSettings;
             new Hook(typeof(ArenaOnlineLobbyMenu).GetMethod(nameof(ArenaOnlineLobbyMenu.ShutDownProcess)), ArenaMode_SaveData);
+            On.Creature.Violence += Player_InstantDeath;
         }
         catch (Exception e)
         {
             BTWPlugin.logger.LogError(e);
         }
         BTWPlugin.Log("BTWMeadowArenaSettingsHooks ApplyHooks Done !");
+    }
+
+    private static void Player_InstantDeath(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
+    {
+        orig(self, source, directionAndMomentum, hitChunk, hitAppendage, type, damage, stunBonus);
+        if (self is Player player
+            && !player.dead
+            && BTWMeadowArenaSettings.TryGetSettings(out var settings)
+            && settings.ArenaBonus_InstantDeath
+            && !(ArenaShield.TryGetShield(player, out var shield) && shield.Shielding)
+            && !player.room.updateList.Exists(x => x is ArenaForcedDeath death && death.target == player))
+        {
+            ArenaForcedDeath arenaForcedDeath = new(self.abstractCreature, 10, true, player.killTag);
+            self.room.AddObject( arenaForcedDeath );
+        }
     }
 
     private static void ArenaDataHook()
@@ -125,38 +148,28 @@ public static class BTWMeadowArenaSettingsHooks
         orig(self, painCatName);
         BTWMenu.BTWEssentialSettingsPage essentialSettingsPage = new(self.menu, self, new Vector2(0f, 30f), 300f);
         self.AddSettingsTab(essentialSettingsPage, "BTWESSSETTINGS");
-        BTWMenu.BTWAdditionalSettingsPage additionalSettingsPage = new(self.menu, self, new Vector2(0f, 28.5f), 300f);
-        self.AddSettingsTab(additionalSettingsPage, "BTWADDSETTINGS");
-        BTWMenu.BTWArenaSettingsPage arenaSettingsPage = new(self.menu, self, new Vector2(0f, 28.5f), 300f);
+        // BTWMenu.BTWAdditionalSettingsPage additionalSettingsPage = new(self.menu, self, new Vector2(0f, 28.5f), 300f);
+        // self.AddSettingsTab(additionalSettingsPage, "BTWADDSETTINGS");
+        BTWMenu.BTWArenaSettingsPage arenaSettingsPage = new(self.menu, self, new Vector2(0f, 27f), 300f);
         self.AddSettingsTab(arenaSettingsPage, "BTWARESETTINGS");
     }
     private static void ArenaMode_AddData(Action<ArenaMode, Lobby> orig, ArenaMode self, Lobby lobby)
     {
         orig(self, lobby);
-        BTWMeadowArenaSettings.AddSettings(self);
+        BTWMeadowArenaSettings settings = BTWMeadowArenaSettings.AddSettings(self);
+        settings.arenaStockClientSettings = new();
+    }
+    private static void ArenaMode_AddClientData(Action<ArenaMode> orig, ArenaMode self)
+    {
+        orig(self);
+        if (BTWMeadowArenaSettings.TryGetSettings(out var settings))
+        {
+            self.clientSettings.AddData(settings.arenaStockClientSettings);
+        }
     }
     private static bool ArenaMainLobbyPage_ShouldOpenSlugcatAbilitiesTab(Func<RainMeadow.UI.Pages.ArenaMainLobbyPage, bool> orig, RainMeadow.UI.Pages.ArenaMainLobbyPage self)
     {
         return true;
-    }
-    private static void Player_AddArenaLivesFromSettings(On.Player.orig_ctor orig, Player self, AbstractCreature abstractCreature, World world)
-    {
-        orig(self, abstractCreature, world);
-        if (BTWMeadowArenaSettings.TryGetSettings(out var meadowArenaSettings))
-        {
-            if (meadowArenaSettings.ArenaLives_Amount > 0 
-                && self.room != null 
-                && !ArenaLives.TryGetLives(abstractCreature, out _))
-            {
-                ArenaLives arenaLives = new(
-                    abstractCreature, 
-                    meadowArenaSettings.ArenaLives_Amount,
-                    meadowArenaSettings.ArenaLives_ReviveTime * BTWFunc.FrameRate,
-                    meadowArenaSettings.ArenaLives_AdditionalReviveTime * BTWFunc.FrameRate,
-                    meadowArenaSettings.ArenaLives_BlockWin, !abstractCreature.IsLocal());
-                self.room.AddObject( arenaLives );
-            }
-        }
     }
     private static void ArenaMode_SaveData(Action<ArenaOnlineLobbyMenu> orig, ArenaOnlineLobbyMenu self)
     {

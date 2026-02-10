@@ -93,33 +93,38 @@ public class BTWRemix : OptionInterface
 
     // Arena items
     public static Configurable<bool> NewItemSpawningSystem = instance.config.Bind("NewItemSpawningSystem", true, 
-        new ConfigurableInfo("Check if the new spawning system is on, disable if you get incompatibility issues.  Default true.")
+        new ConfigurableInfo("Check if the new spawning system is on, disable if you get incompatibility issues. Default true.")
     );
     public static Configurable<float> ItemSpawnMultiplier = instance.config.Bind("ItemSpawnMultiplier", 1f,
         new ConfigurableInfo(
-            "How much times the arena will attempt to spawn items in Competitive.  Default 1x.",
+            "How much times the arena will attempt to spawn items in Competitive. Default 1x.",
             new ConfigAcceptableRange<float>(0f, 50.0f)
         )
     );
     public static Configurable<bool> DoItemSpawnScalePerPlayers = instance.config.Bind("DoItemSpawnScalePerPlayers", true, 
-        new ConfigurableInfo("If the amount of items scales with the amount of players.  Default true.")
+        new ConfigurableInfo("If the amount of items scales with the amount of players. Default true.")
     );
     public static Configurable<float> ItemSpawnMultiplierPerPlayers = instance.config.Bind("ItemSpawnMultiplierPerPlayers", 0.5f, 
         new ConfigurableInfo(
-            "The added bonus per players to the item spawning multiplier in Competitive.  Default +0.5x.",
+            "The added bonus per players to the item spawning multiplier in Competitive. Default +0.5x.",
             new ConfigAcceptableRange<float>(0f, 50.0f)
         )
     );
     public static Configurable<bool> ItemSpawnDiversity = instance.config.Bind("ItemSpawnDiversity", true, 
-        new ConfigurableInfo("If the items spawned in arena are more diverse, adding some new items from time to time.  Default true.")
+        new ConfigurableInfo("If the items spawned in arena are more diverse, adding some new items from time to time. Default true.")
     );
     public static Configurable<bool> ItemSpawnRandom = instance.config.Bind("ItemSpawnRandom", false, 
-        new ConfigurableInfo("If the items spawned in arena are random from an arbitrary pool.  Default false.")
+        new ConfigurableInfo("If the items spawned in arena are random from an arbitrary pool. Default false.")
+    );
+
+    // Arena bonus
+    public static Configurable<bool> ArenaNoSpears = instance.config.Bind("ArenaNoSpears", false, 
+        new ConfigurableInfo("You hate spears ? You wished combat was more original ? There, have this checkbox. Default false.")
     );
     
     // Trailseeker
     public static Configurable<bool> TrailseekerIgnorePoleToggle = instance.config.Bind("TrailseekerIgnorePoleToggle", true, 
-        new ConfigurableInfo("If the \"ignore poles\" feature of Trailseeker (special) is toggle. False makes it hold to active.  Default true.")
+        new ConfigurableInfo("If the \"ignore poles\" feature of Trailseeker (special) is toggle. False makes it hold to active. Default true.")
     );
     public static Configurable<bool> TrailseekerIgnorePoleInvert = instance.config.Bind("TrailseekerIgnorePoleInvert", false, 
         new ConfigurableInfo("If the \"ignore poles\" feature of Trailseeker (special) is inverted. False makes it hold to deactivate when toggle is on.  Default false.")
@@ -130,7 +135,7 @@ public class BTWRemix : OptionInterface
 
     // Spark
     public static Configurable<bool> DoSparkShockSlugs = instance.config.Bind("DoSparkShockSlugs", false, 
-        new ConfigurableInfo("If the Spark can damage other players using his electric abilities in story mode.  Default false.")
+        new ConfigurableInfo("If the Spark can damage other players using his electric abilities in story mode. Default false.")
     );
     public static Configurable<bool> DoDisplaySparkBattery = instance.config.Bind("DoDisplaySparkBattery", true, 
         new ConfigurableInfo("If the Spark displays a battery UI to indicate his charge. Useful if you can't tell if your slug has enough charge for an action.  Default true.")
@@ -172,35 +177,35 @@ public class BTWRemix : OptionInterface
     public static Configurable<bool> MeadowEveryoneCanPoleTech = instance.config.Bind("MeadowEveryoneCanPoleTech", true, 
         new ConfigurableInfo("If the new tech with poles can be done by every slugcat. Default true.")
     );
-    public static Configurable<int> MeadowTrailseekerPoleClimbBonus = instance.config.Bind("MeadowTrailseekerPoleClimbBonus", 4, 
-        new ConfigurableInfo("How much bonus frame the Trailseeker will slide up a pole. Default: 4 frames.",
-        new ConfigAcceptableRange<int>(0, 40))
-    );
-    public static Configurable<int> MeadowTrailseekerMaxWallClimb = instance.config.Bind("MeadowTrailseekerMaxWallClimb", 3, 
-        new ConfigurableInfo("How much times the Trailseeker can use Wall Climbing (not in a row !) without landing. Default: 3 times.",
-        new ConfigAcceptableRange<int>(1, int.MaxValue))
-    );
+    // public static Configurable<int> MeadowTrailseekerPoleClimbBonus = instance.config.Bind("MeadowTrailseekerPoleClimbBonus", 4, 
+    //     new ConfigurableInfo("How much bonus frame the Trailseeker will slide up a pole. Default: 4 frames.",
+    //     new ConfigAcceptableRange<int>(0, 40))
+    // );
+    // public static Configurable<int> MeadowTrailseekerMaxWallClimb = instance.config.Bind("MeadowTrailseekerMaxWallClimb", 3, 
+    //     new ConfigurableInfo("How much times the Trailseeker can use Wall Climbing (not in a row !) without landing. Default: 3 times.",
+    //     new ConfigAcceptableRange<int>(1, int.MaxValue))
+    // );
     public static Configurable<int> MeadowTrailseekerWallGripTimer = instance.config.Bind("MeadowTrailseekerWallGripTimer", 15,
         new ConfigurableInfo("How long (in seconds) the Trailseeker can hold its grip to a wall. Default: 15s.",
         new ConfigAcceptableRange<int>(1, int.MaxValue))
     );
     
-    public static Configurable<int> MeadowCoreMaxEnergy = instance.config.Bind("MeadowCoreMaxEnergy", 1200, 
-        new ConfigurableInfo("The maximum energy capacity of the Core.  Default: 1200e.",
-        new ConfigAcceptableRange<int>(1, int.MaxValue))
-    );
-    public static Configurable<int> MeadowCoreRegenEnergy = instance.config.Bind("MeadowCoreRegenEnergy", 40, 
-        new ConfigurableInfo("The natural energy regeneration of the Core, in energy unit per second.  Default: 40e/s.",
-        new ConfigAcceptableRange<int>(0, int.MaxValue))
-    );
-    public static Configurable<int> MeadowCoreOxygenEnergyUsage = instance.config.Bind("MeadowCoreOxygenEnergyUsage", 100, 
-        new ConfigurableInfo("The energy convertion per cent of oxygen when going underwater.  Default: 250e.",
-        new ConfigAcceptableRange<int>(0, int.MaxValue))
-    );
-    public static Configurable<int> MeadowCoreAntiGravityCent = instance.config.Bind("MeadowCoreAntiGravityCent", 85, 
-        new ConfigurableInfo("How much the gravity is reduced (in pourcent) when activating the anti-gravity ability. Default: 85(%).",
-        new ConfigAcceptableRange<int>(0, 100))
-    );
+    // public static Configurable<int> MeadowCoreMaxEnergy = instance.config.Bind("MeadowCoreMaxEnergy", 1200, 
+    //     new ConfigurableInfo("The maximum energy capacity of the Core.  Default: 1200e.",
+    //     new ConfigAcceptableRange<int>(1, int.MaxValue))
+    // );
+    // public static Configurable<int> MeadowCoreRegenEnergy = instance.config.Bind("MeadowCoreRegenEnergy", 40, 
+    //     new ConfigurableInfo("The natural energy regeneration of the Core, in energy unit per second.  Default: 40e/s.",
+    //     new ConfigAcceptableRange<int>(0, int.MaxValue))
+    // );
+    // public static Configurable<int> MeadowCoreOxygenEnergyUsage = instance.config.Bind("MeadowCoreOxygenEnergyUsage", 100, 
+    //     new ConfigurableInfo("The energy convertion per cent of oxygen when going underwater.  Default: 250e.",
+    //     new ConfigAcceptableRange<int>(0, int.MaxValue))
+    // );
+    // public static Configurable<int> MeadowCoreAntiGravityCent = instance.config.Bind("MeadowCoreAntiGravityCent", 85, 
+    //     new ConfigurableInfo("How much the gravity is reduced (in pourcent) when activating the anti-gravity ability. Default: 85(%).",
+    //     new ConfigAcceptableRange<int>(0, 100))
+    // );
     public static Configurable<int> MeadowCoreMaxLeap = instance.config.Bind("MeadowCoreMaxLeap", 2, 
         new ConfigurableInfo("How many leaps The Core can do mid-air before landing. Putting it to 0 will only allow leaps on the ground. Default: 2 leaps.",
         new ConfigAcceptableRange<int>(0, int.MaxValue))
@@ -209,20 +214,20 @@ public class BTWRemix : OptionInterface
         new ConfigurableInfo("Change if the Core will do a shockwave when charging a leap for too long. Default: true.")
     );
     
-    public static Configurable<int> MeadowSparkMaxCharge = instance.config.Bind("MeadowSparkMaxCharge", 100, 
-        new ConfigurableInfo("The \"maximum\" charge of the Spark. Going above it will Overcharge the Spark. Default: 100c.",
-        new ConfigAcceptableRange<int>(0, int.MaxValue))
-    );
-    public static Configurable<int> MeadowSparkAdditionnalOvercharge = instance.config.Bind("MeadowSparkAdditionnalOvercharge", 100, 
-        new ConfigurableInfo("The additional overcharge of the Spark. Going above it will kill The Spark. Putting it to 0 disable overcharge. Default: +100c.",
-        new ConfigAcceptableRange<int>(0, int.MaxValue))
-    );
-    public static Configurable<int> MeadowSparkChargeRegenerationMult = instance.config.Bind("MeadowSparkChargeRegenerationMult", 4, 
-        new ConfigurableInfo("An arbitrary multiplier of The Spark charge regeneration. Default: 4.",
-        new ConfigAcceptableRange<int>(0, int.MaxValue))
-    );
-    public static Configurable<int> MeadowSparkMaxElectricBounce = instance.config.Bind("MeadowSparkElectricBounce", 1, 
-        new ConfigurableInfo("How many electric bounce The Spark can do before landing. Putting it to 0 disables it. Default: 1 bounce.",
+    // public static Configurable<int> MeadowSparkMaxCharge = instance.config.Bind("MeadowSparkMaxCharge", 100, 
+    //     new ConfigurableInfo("The \"maximum\" charge of the Spark. Going above it will Overcharge the Spark. Default: 100c.",
+    //     new ConfigAcceptableRange<int>(0, int.MaxValue))
+    // );
+    // public static Configurable<int> MeadowSparkAdditionnalOvercharge = instance.config.Bind("MeadowSparkAdditionnalOvercharge", 100, 
+    //     new ConfigurableInfo("The additional overcharge of the Spark. Going above it will kill The Spark. Putting it to 0 disable overcharge. Default: +100c.",
+    //     new ConfigAcceptableRange<int>(0, int.MaxValue))
+    // );
+    // public static Configurable<int> MeadowSparkChargeRegenerationMult = instance.config.Bind("MeadowSparkChargeRegenerationMult", 4, 
+    //     new ConfigurableInfo("An arbitrary multiplier of The Spark charge regeneration. Default: 4.",
+    //     new ConfigAcceptableRange<int>(0, int.MaxValue))
+    // );
+    public static Configurable<int> MeadowSparkMaxElectricBounce = instance.config.Bind("MeadowSparkElectricBounce", 3, 
+        new ConfigurableInfo("How many electric bounce The Spark can do before landing. Putting it to 0 disables it. Default: 3 bounce.",
         new ConfigAcceptableRange<int>(0, int.MaxValue))
     );
     public static Configurable<bool> MeadowSparkDoDischargeDamage = instance.config.Bind("MeadowSparkDoDischargeDamage", true, 
@@ -235,9 +240,12 @@ public class BTWRemix : OptionInterface
         new ConfigurableInfo("Change if going above overcharge will kill The Spark. If false, it'll stun the spark instead. Default: true.")
     );
     
-    public static Configurable<int> MeadowArenaLivesAmount = instance.config.Bind("MeadowArenaLivesAmount", 1, 
-        new ConfigurableInfo("How many lives player have. Putting it to 0 disables it. Default: 1 life.",
-        new ConfigAcceptableRange<int>(0, int.MaxValue))
+    public static Configurable<int> MeadowArenaLivesAmount = instance.config.Bind("MeadowArenaLivesAmount", 3, 
+        new ConfigurableInfo("How many lives player have. Default: 3 life.",
+        new ConfigAcceptableRange<int>(1, int.MaxValue))
+    );
+    public static Configurable<bool> MeadowArenaLivesEveryoneCanSet = instance.config.Bind("MeadowArenaLivesEveryoneCanSet", false, 
+        new ConfigurableInfo("Makes everyone responsible of their life count. You can modify the life count of anyone by clicking on their karma icon. Default: false.")
     );
     public static Configurable<int> MeadowArenaLivesReviveTime = instance.config.Bind("MeadowArenaLivesReviveTime", 15, 
         new ConfigurableInfo("The time in seconds to revive a player after they die. Default : 15s",
@@ -248,15 +256,43 @@ public class BTWRemix : OptionInterface
         new ConfigAcceptableRange<int>(int.MinValue, int.MaxValue))
     );
     public static Configurable<bool> MeadowArenaLivesBlockWin = instance.config.Bind("MeadowArenaLivesBlockWin", true, 
-        new ConfigurableInfo("Change if the Arena Lives system will wait for everyone to revive before closing the arena session. Default: true.")
+        new ConfigurableInfo("If the Arena Lives system will wait for everyone to revive before closing the arena session. Default: true.")
     );
-    public static Configurable<bool> MeadowArenaLivesReviveFromAbyss = instance.config.Bind("MeadowArenaLivesReviveFromAbyss", true, 
-        new ConfigurableInfo("Change if the Arena Lives system will try reviving destroyed bodies. Default: true.")
+    public static Configurable<bool> MeadowArenaLivesStrict = instance.config.Bind("MeadowArenaLivesStrict", true, 
+        new ConfigurableInfo("If the Arena Lives system will stop player from reviving by external means after reaching 0 lives. Default: true.")
+    );
+    public static Configurable<bool> MeadowArenaLivesRespawnShield = instance.config.Bind("MeadowArenaLivesRespawnShield", true, 
+        new ConfigurableInfo("If the Player will be given a shield on respawn. Default: true.")
     );
     public static Configurable<int> MeadowArenaLivesRespawnShieldDuration = instance.config.Bind("MeadowArenaLivesRespawnShieldDuration", 10, 
-        new ConfigurableInfo("How long in second a player will have respawn protection. Putting it to 0 disables it. Default: 10s.",
-        new ConfigAcceptableRange<int>(0, int.MaxValue))
+        new ConfigurableInfo("How long in second a player will have respawn protection. Default: 10s.",
+        new ConfigAcceptableRange<int>(1, int.MaxValue))
     );
+    public static Configurable<bool> MeadowArenaLivesKarmaFlowerProtection = instance.config.Bind("MeadowArenaLivesKarmaFlowerProtection", true, 
+        new ConfigurableInfo("If eating a karma flower gives you karmic protection, allowing you to not lose your current life count. Default: true.")
+    );
+    public static Configurable<bool> MeadowArenaLivesKarmaFlower1UP = instance.config.Bind("MeadowArenaLivesKarmaFlower1UP", false, 
+        new ConfigurableInfo("If eating a karma flower gives you a bonus life. Default: false.")
+    );
+    public static Configurable<bool> MeadowArenaLivesKillKarmaProtection = instance.config.Bind("MeadowArenaLivesKillKarmaProtection", false, 
+        new ConfigurableInfo("If doing a certain amount of kill gives you karmic protection (quite the irony). Default: false.")
+    );
+    public static Configurable<int> MeadowArenaLivesKillKarmaProtectionAmount = instance.config.Bind("MeadowArenaLivesKillKarmaProtectionAmount", 3, 
+        new ConfigurableInfo("The amount of cummulative kill needed to get karmic protection. Default: 3 kills.",
+        new ConfigAcceptableRange<int>(1, int.MaxValue))
+    );
+    public static Configurable<bool> MeadowArenaLivesKill1UP = instance.config.Bind("MeadowArenaLivesKill1UP", false, 
+        new ConfigurableInfo("If doing a certain amount of kill gives you a bonus life. Default: false.")
+    );
+    public static Configurable<int> MeadowArenaLivesKill1UPAmount = instance.config.Bind("MeadowArenaLivesKill1UPAmount", 10, 
+        new ConfigurableInfo("The amount of cummulative kill needed to get a bonus life. Default: 10 kills.",
+        new ConfigAcceptableRange<int>(1, int.MaxValue))
+    );
+    public static Configurable<int> MeadowArenaLivesRainTimerToSuddentDeath = instance.config.Bind("MeadowArenaLivesRainTimerToSuddentDeath", 100, 
+        new ConfigurableInfo("Time left before rain when all players are set to 1 lives. Default: 100 ticks.",
+        new ConfigAcceptableRange<int>(100, int.MaxValue))
+    );
+
     
     public static Configurable<bool> MeadowNewItemSpawningSystem = instance.config.Bind("MeadowNewItemSpawningSystem", true, 
         new ConfigurableInfo("Check if the new spawning system is on, disable if you get incompatibility issues.  Default true.")
@@ -280,6 +316,31 @@ public class BTWRemix : OptionInterface
         new ConfigurableInfo("If the items spawned in arena are random from an arbitrary pool.  Default false.")
     );
     public static Configurable<bool> MeadowItemRespawn = instance.config.Bind("MeadowItemRespawn", true, 
-        new ConfigurableInfo("If the item manager will spawn some more items under certain conditions (spear missing, 1 minute passed, etc..).  Default true.")
+        new ConfigurableInfo("If the item manager will spawn some more items after a certain amount of time passed.  Default true.")
+    );
+    public static Configurable<int> MeadowItemRespawnTimer = instance.config.Bind("MeadowItemRespawnTimer", 60, 
+        new ConfigurableInfo(
+            "The time between item respawn. Default 60s.",
+            new ConfigAcceptableRange<int>(10, int.MaxValue)
+        )
+    );
+    public static Configurable<bool> MeadowItemCheckSpearCount = instance.config.Bind("MeadowItemCheckSpearCount", true, 
+        new ConfigurableInfo("If the item manager will respawn spears if there isn't enough.  Default true.")
+    );
+    public static Configurable<bool> MeadowItemCheckThrowableCount = instance.config.Bind("MeadowItemCheckThrowableCount", true, 
+        new ConfigurableInfo("If the item manager will respawn throwables if there isn't enough.  Default true.")
+    );
+    public static Configurable<bool> MeadowItemCheckMiscellaneousCount = instance.config.Bind("MeadowItemCheckMiscellaneousCount", true, 
+        new ConfigurableInfo("If the item manager will respawn some... odd items if there isn't enough. Default true.")
+    );
+    public static Configurable<bool> MeadowItemNoSpear = instance.config.Bind("MeadowItemNoSpear", false, 
+        new ConfigurableInfo("You hate spears ? You wished combat was more original ? There, have this checkbox. Default false.")
+    );
+    
+    public static Configurable<bool> MeadowArenaInstantDeath = instance.config.Bind("MeadowItemInstantDeath", false, 
+        new ConfigurableInfo("Makes any slugcat DIE if they take ANY damage. A brutal way to fight. Default false.")
+    );
+    public static Configurable<bool> MeadowArenaExtraItemUses = instance.config.Bind("MeadowArenaExtraItemUses", false, 
+        new ConfigurableInfo("Adds some effect to existing items that wouldn't work in local. Default false.")
     );
 }

@@ -24,4 +24,8 @@ public static class MSCFunc
     {
         return player != null && player.SlugCatClass == MoreSlugcatsEnums.SlugcatStatsName.Rivulet;
     }
+    public static bool IsSaint(Player player)
+    {
+        return player != null && player.SlugCatClass == MoreSlugcatsEnums.SlugcatStatsName.Saint;
+    }
 }

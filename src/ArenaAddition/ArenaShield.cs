@@ -458,6 +458,7 @@ public static class ArenaShieldHooks
                 return;
             }
             shield.Dismiss();
+            BTWPlugin.Log("REMOVED SHIELD OF PLAYER ["+ player +"]. Reason : out of bounds.");
         }
         orig(self);
     }
@@ -533,7 +534,6 @@ public static class ArenaShieldHooks
             && shield.Shielding)
         {
             BTWPlugin.Log("REMOVED SHIELD OF PLAYER ["+ player +"]. Reason : violence.");
-
             shield.Dismiss();
             Vector2 dir = (source.lastPos - (hitChunk ?? self.firstChunk).lastPos).normalized * 3f + BTWFunc.RandomCircleVector() + Vector2.up;
             BTWFunc.CustomKnockback(player, dir.normalized, 20f, true);

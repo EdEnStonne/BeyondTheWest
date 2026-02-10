@@ -136,7 +136,7 @@ public class StaticChargeManager
             )
             {
                 this.eBounceLeft--;
-                this.BounceUp(IsOvercharged);
+                this.BounceUp();
             }
             else if (
                 (
@@ -147,8 +147,48 @@ public class StaticChargeManager
             )
             {
                 this.eBounceLeft--;
-                BTWPlugin.Log("Spark Jump Tech");
-                this.BounceBack(IsOvercharged);
+                // BTWPlugin.Log("Spark Jump Tech");
+                this.BounceBack();
+            }
+        }
+    }
+    private void QuickStartUpdate()
+    {
+        Player player = this.Player;
+        if (player != null)
+        {
+            Player.InputPackage inputs = player.input[0];
+            Player.InputPackage lastInputs = player.input[1];
+            Vector2 intInput = this.IntDirectionalInput;
+
+            if ((player.standing
+                    || player.bodyMode == Player.BodyModeIndex.Crawl
+                    || player.bodyMode == Player.BodyModeIndex.Stand
+                    || player.animation == Player.AnimationIndex.DownOnFours
+                    || player.animation == Player.AnimationIndex.Roll
+                    || (!this.rollquickStartbuffer.ended
+                        && player.bodyMode == Player.BodyModeIndex.Default
+                        && player.animation == Player.AnimationIndex.None))
+                && player.animation != Player.AnimationIndex.ZeroGSwim
+                && player.animation != Player.AnimationIndex.BellySlide
+                && player.animation != Player.AnimationIndex.ZeroGPoleGrab
+                && (player.bodyChunks[1].ContactPoint.y < 0 
+                    || player.animation == Player.AnimationIndex.Roll) 
+                && intInput.x != 0
+                && player.input[0].y == -1
+                && inputs.spec 
+                && !lastInputs.spec)
+            {
+                QuickStart();
+            }
+
+            if (player.animation == Player.AnimationIndex.Roll)
+            {
+                this.rollquickStartbuffer.ResetUp();
+            }
+            else
+            {
+                this.rollquickStartbuffer.Tick();
             }
         }
     }
@@ -165,15 +205,26 @@ public class StaticChargeManager
         {
             this.rocketJumpFromBounceJump = false;
         }
-        if (inputs.spec && this.dischargeCooldown <= 0)
+        if (player.dangerGrasp != null)
         {
-            if (player.animation == Player.AnimationIndex.ClimbOnBeam)
+            if (player.dangerGraspTime < 30
+                && BTWPlayerData.TryGetManager(player.abstractCreature, out var bTWPlayerData)
+                && !bTWPlayerData.dangerGraspLastSpecButton
+                && RWInput.PlayerInput(BTWFunc.GetPlayerNumber(player)).spec)
+            {
+                ZapToGetFreeTrueCombo();
+            }
+        }
+        else if (inputs.spec && this.dischargeCooldown <= 0)
+        {
+            if (player.bodyMode == Player.BodyModeIndex.ClimbingOnBeam)
             {
                 bool success = Discharge(
-                    overcharged ? 125f : 75f,
-                    overcharged ? 0.35f : 0.25f,
-                    overcharged ? 80f : 50.0f,
-                    pos
+                    overcharged ? 135f : 95f,
+                    overcharged ? 0.25f : 0.2f,
+                    overcharged ? 70f : 50.0f,
+                    pos,
+                    overcharged ? 0.8f : 0.6f
                 );
                 if (overcharged && success && !this.isMeadowFakePlayer)
                 {
@@ -188,30 +239,32 @@ public class StaticChargeManager
             {
                 if (player.animation == Player.AnimationIndex.BellySlide 
                     && intInput.x == -player.rollDirection 
-                    && intInput.y == -1
-                    && this.boostSlideBuffer < -20)
+                    && intInput.y == -1)
                 {
-                    SlideBoost(overcharged);
+                    RollBack();
                 }
                 else
                 {
-                    BounceJump(overcharged);
+                    BounceJump();
                     this.rocketJumpFromBounceJump = true;
                 }
             }
             else
             {
-                Vector2 lookPos = intInput != Vector2.zero ? dirInput : new Vector2(player.ThrowDirection, 0);
-                Vector2 dischargePos = pos + (player.bodyMode == Player.BodyModeIndex.WallClimb ? lookPos * -15f : lookPos * 25f);
+                Vector2 lookPos = intInput != Vector2.zero ? dirInput.normalized : new Vector2(player.ThrowDirection, 0);
+                float range = overcharged ? 40f : 30f;
+                Vector2 dischargePos = pos + (player.bodyMode == Player.BodyModeIndex.WallClimb ? lookPos * -0.5f * range : lookPos * range * 0.5f);
                 bool success = Discharge(
-                    overcharged ? 45f : 30f,
-                    overcharged ? 1.75f : 1.15f,
-                    overcharged ? 50f : 30f,
-                    dischargePos
+                    range,
+                    overcharged ? 1.15f : 0.8f,
+                    overcharged ? 50f : 35f,
+                    dischargePos,
+                    overcharged ? 0.9f : 0.75f
                 );
 
                 if (success && !this.isMeadowFakePlayer)
                 {
+                    player.Blink(this.MaxDischargeCooldown/2);
                     if (player.bodyMode != Player.BodyModeIndex.WallClimb)
                     {
                         foreach (BodyChunk b in player.bodyChunks)
@@ -236,33 +289,8 @@ public class StaticChargeManager
         Room room = this.Room;
         Vector2 pos = player.mainBodyChunk.pos;
         Color color = player.ShortCutColor();
-        bool forceDischarge = false;
+        bool forceDischarge = false; // I'll be removing this soon, will see if it still have a use
 
-        if (this.Charge >= this.MaxECharge)
-        {
-            if (this.DeathOvercharge && this.CrawlChargeRatio <= 0)
-            {
-                for (int i = (int)UnityEngine.Random.Range(15f, 25f); i >= 0; i--)
-                {
-                    room.AddObject(new MouseSpark(pos, new Vector2(UnityEngine.Random.Range(-10f, 10f), UnityEngine.Random.Range(-10f, 10f)), 50f, color));
-                }
-
-                room.ScreenMovement(pos, default, 1.1f);
-                room.PlaySound(SoundID.Bomb_Explode, pos);
-                room.PlaySound(SoundID.Death_Lightning_Spark_Spontaneous, pos);
-                room.InGameNoise(new Noise.InGameNoise(pos, 900f, player, 1f));
-                Discharge(this.FullECharge * 1.5f, 1.0f, 0, pos, 1.5f);
-                this.Charge = 0;
-                BTWPlugin.Log("Seems like Spark "+ player.ToString() +" couldn't handle the charge...");
-                player.Die();
-                return;
-            }
-            else
-            {
-                this.Charge = this.MaxECharge;
-                forceDischarge = true;
-            }
-        }
         if (this.RiskyOvercharge)
         {
             bool isSwimming = player.bodyMode == Player.BodyModeIndex.Swimming;
@@ -281,11 +309,12 @@ public class StaticChargeManager
     }
     private void RechargeUpdate()
     {
-        if (this.Player != null && !this.Player.dead && (this.dischargeCooldown <= 0 || this.CrawlChargeConditionMet || this.isMeadowArenaTimerCountdown))
+        Player player = this.Player;
+        if (player != null && !player.dead)
         {
-            if (this.isMeadowArenaTimerCountdown && this.IsOvercharged)
+            if (this.stopConsecutiveDischarge && !player.input[0].spec)
             {
-                return;
+                this.stopConsecutiveDischarge = false;
             }
             this.Charge += this.ChargePerSecond / 40f;
         }
@@ -295,8 +324,8 @@ public class StaticChargeManager
         if (this.Player != null && this.Player.rollCounter > 8 && this.Player.animation == Player.AnimationIndex.BellySlide)
         {
             bool overcharged = this.IsOvercharged;
-            BodyChunk bodyChunk = this.Player.bodyChunks[0];
             Player player = this.Player;
+            BodyChunk bodyChunk = player.bodyChunks[0];
 
             player.rollCounter = 12;
             bodyChunk.vel.x = this.CurrentSlideMomentum * player.rollDirection;
@@ -304,22 +333,11 @@ public class StaticChargeManager
             if (this.slideSpeedframes < this.SlideAccelerationFrames) { this.slideSpeedframes++; }
             if (this.slideSpearBounceFrames > 0) { this.slideSpearBounceFrames--; }
             if (this.slideSpeedMult > 1f) 
-                { this.slideSpeedMult = Mathf.Clamp(Mathf.Lerp(this.slideSpeedMult, 1f, 0.05f), 1f, 5f); }
-
-            if (overcharged && this.active)
-            {
-                float amountOvercharge = this.Charge - this.FullECharge;
-                float fractOvercharge = amountOvercharge / (this.MaxECharge - this.FullECharge);
-                const float criticAmount = 0.25f;
-
-                this.slideSpeedMult = Math.Max(this.slideSpeedMult, 1f + fractOvercharge / 2f);
-                if (fractOvercharge >= criticAmount)
-                {
-                    this.Charge -= amountOvercharge * Mathf.Pow((fractOvercharge - criticAmount) / (1 - criticAmount), 4);
-                }
+            { 
+                this.slideSpeedMult = Mathf.Clamp(Mathf.Lerp(this.slideSpeedMult, 1f, 0.01f), 1f, 5f); 
             }
 
-            if (this.boostSlideBuffer > 0)
+            if (this.slideStun > 0)
             {
                 player.exitBellySlideCounter = 0;
             }
@@ -337,7 +355,15 @@ public class StaticChargeManager
                 }
             }
             else if (this.whiplashJumpBuffer > 0) { this.whiplashJumpBuffer = 0; }
-            if (this.boostSlideBuffer > -100) { this.boostSlideBuffer--; }
+            if (this.slideStun > 0) { this.slideStun--; }
+
+            if (player.bodyChunks[0].ContactPoint.x == player.rollDirection)
+            {
+                player.bodyChunks[0].vel.x *= -0.5f;
+                player.bodyChunks[1].vel.x *= -0.25f;
+                player.animation = Player.AnimationIndex.None;
+                player.stun = (int)Mathf.Max(0, this.CurrentSlideMomentum - 20);
+            }
         }
         else
         {
@@ -346,7 +372,7 @@ public class StaticChargeManager
             this.slideSpeedMult = 1f;
             this.slideSpearBounceFrames = 0;
             this.whiplashJumpBuffer = 0;
-            this.boostSlideBuffer = -100;
+            this.slideStun = 0;
         }
     }
     private void MovementUpdate()
@@ -499,20 +525,21 @@ public class StaticChargeManager
                 if (this.Room.game.devToolsActive) { DebugUpdate(); }
                 if (BTWPlugin.meadowEnabled && this.isMeadowArenaTimerCountdown && BTWFunc.OnlineArenaTimerOn())
                 {
-                    this.dischargeCooldown = 3;
+                    this.overchargeImmunity = Mathf.Max(this.overchargeImmunity, 5);
                 }
                 else
                 {
-                    if (this.dischargeCooldown > 0) { this.dischargeCooldown--; }
                     if (this.isMeadowArenaTimerCountdown) { this.isMeadowArenaTimerCountdown = false; }
                 }
-                if (this.MaxEBounce > 0 && !this.isMeadowArenaTimerCountdown) { BounceUpdate(); }
-                if (!this.isMeadowArenaTimerCountdown) { DischargeUpdate(); }
+
+                if (this.dischargeCooldown > 0) { this.dischargeCooldown--; }
+                if (this.MaxEBounce > 0) { BounceUpdate(); }
+                QuickStartUpdate();
+                DischargeUpdate();
                 if (this.RechargeMult > 0 && !this.isMeadowFakePlayer) { MovementUpdate(); RechargeUpdate(); }
                 if (!this.isMeadowFakePlayer) { SlideUpdate(); }
                 if (this.IsOvercharged 
                     && !this.isMeadowFakePlayer 
-                    && !this.isMeadowArenaTimerCountdown 
                     && this.overchargeImmunity <= 0
                     && this.endlessCharge <= 0) { OverchargeUpdate(); }
                 if (!this.isMeadowFakePlayer)
@@ -560,7 +587,7 @@ public class StaticChargeManager
     }
     public bool Discharge(float reach, float damage, float chargeNeeded, Vector2 position)
     {
-        return Discharge(reach, damage, chargeNeeded, position, reach * damage / 150f);
+        return Discharge(reach, damage, chargeNeeded, position, reach * damage / 50f);
     }
     public bool Discharge(float reach, float damage, float chargeNeeded, Vector2 position, float volume)
     {
@@ -570,7 +597,7 @@ public class StaticChargeManager
         Room room = this.Room;
         Color color = pl.ShortCutColor();
 
-        if (this.Charge >= chargeNeeded && this.dischargeCooldown <= 0)
+        if (!this.stopConsecutiveDischarge && this.Charge >= chargeNeeded && this.dischargeCooldown <= 0)
         {
             this.dischargeCooldown = this.MaxDischargeCooldown;
             this.Charge -= chargeNeeded;
@@ -582,18 +609,35 @@ public class StaticChargeManager
                 damage *= 0.75f;
                 underwater = true;
             }
-            int stun = (int)(((damage + 1) * 0.5f + reach * 0.01f + (underwater ? 1 : 0)) * BTWFunc.FrameRate);
 
-            ElectricExplosion electricExplosion = new(room, pl, position, 1, reach, 7.5f * damage,
-                damage, stun, pl, 0, 0.7f, underwater, false, this.isMeadow && this.active)
+            if (this.isMeadowArenaTimerCountdown)
             {
-                color = color,
-                forcedKnockbackDirection = new Vector2(pl.ThrowDirection, damage),
-                hitNonSubmerged = !underwater,
-                hitPlayer = this.DoDischargeDamagePlayers,
-                volume = volume
-            };
-            room.AddObject( electricExplosion );
+                byte sparks = (byte)(UnityEngine.Random.Range(5f, 10f) * (1 + damage));
+                ElectricExplosion.MakeSparkExplosion(room, reach, position, sparks, underwater, color);
+                room.PlaySound(SoundID.Death_Lightning_Spark_Spontaneous, position, 0.5f + Math.Min(1f, volume), UnityEngine.Random.Range(1.1f, 1.5f));
+                room.PlaySound(SoundID.Bomb_Explode, position, volume / 2f, UnityEngine.Random.Range(1.75f, 2.25f));
+                
+                if (this.isMeadow)
+                {
+                    MeadowCalls.ElectricExplosion_SparkExplosionRPC(room, reach, position, sparks, volume, underwater, color);
+                }
+            }
+            else
+            {
+                int stun = (int)((Mathf.Pow(damage, 2) + reach * 0.01f + (underwater ? 2f : 0.5f)) * BTWFunc.FrameRate);
+                Vector2 knockbackdir = position - pl.mainBodyChunk.pos;
+
+                ElectricExplosion electricExplosion = new(room, pl, position, 1, reach, 22f * damage,
+                    damage, stun, pl, 0, 0.7f, underwater, false, this.isMeadow && this.active)
+                {
+                    color = color,
+                    forcedKnockbackDirection = knockbackdir.magnitude > 10f ? knockbackdir.normalized : Vector2.zero,
+                    hitNonSubmerged = !underwater,
+                    hitPlayer = this.DoDischargeDamagePlayers,
+                    volume = volume
+                };
+                room.AddObject( electricExplosion );
+            }
 
             return true;
         }
@@ -604,142 +648,328 @@ public class StaticChargeManager
         return false;
     }
 
-    public void BounceUp(bool overcharged)
+    public void BounceUp()
     {
         if (this.Room != null)
         {
+            bool overcharged = this.IsOvercharged;
+
+            Player player = this.Player;
+            float reach = overcharged ? 40f : 30f;
+            // Vector2 intInput = this.IntDirectionalInput;
+            int bounceDir = 1; //(int)(intInput.y == 0 ? 1 : intInput.y);
+
             bool success = Discharge(
-                overcharged ? 25f : 20f,
-                overcharged ? 0.70f : 0.25f,
+                reach,
+                overcharged ? 0.35f : 0.15f,
                 overcharged ? 25f : 15f,
-                this.Player.firstChunk.pos + Vector2.down * 25f
-            );
-
-            if (success && !this.isMeadowFakePlayer)
-            {
-                this.dischargeCooldown /= 2;
-                float yBounce = overcharged ? 17.5f : 13.5f;
-                if (overcharged) { this.Player.flipFromSlide = true; }
-                foreach (BodyChunk bodyChunk in this.Player.bodyChunks)
-                {
-                    bodyChunk.vel.x *= overcharged ? 1.25f : 1.1f;
-                    bodyChunk.vel.y = Math.Max(yBounce + bodyChunk.vel.y, yBounce);
-                }
-            }
-        }
-    }
-    public void BounceBack(bool overcharged)
-    {
-        if (this.Room != null)
-        {
-            Player player = this.Player;
-            int direction = (int)Mathf.Sign(player.mainBodyChunk.vel.x);
-            bool success = Discharge(
-                overcharged ? 35f : 25f,
-                overcharged ? 1.25f : 0.5f,
-                overcharged ? 30f : 20f,
-                player.firstChunk.pos + new Vector2(direction, -0.1f) * 30f
-            );
-
-            if (success && !this.isMeadowFakePlayer)
-            {
-                this.dischargeCooldown /= 2;
-                float yboost = overcharged ? 15f : 12.5f;
-
-                this.Room.PlaySound(SoundID.Slugcat_Sectret_Super_Wall_Jump, player.mainBodyChunk, false, 1f, 1.25f);
-                player.bodyChunks[1].pos = player.bodyChunks[0].pos;
-                player.bodyChunks[0].pos += new Vector2(direction * -10f, 10f);
-                
-                player.rollDirection = -direction;
-                player.animation = Player.AnimationIndex.RocketJump;
-
-                foreach (BodyChunk bodyChunk in player.bodyChunks)
-                {
-                    bodyChunk.vel.x = (overcharged ? 17.5f : 10f) * -direction;
-                    bodyChunk.vel.y = Math.Max(yboost + bodyChunk.vel.y, yboost);
-                }
-                player.jumpStun = 20;
-            }
-        }
-    }
-    public void BounceJump(bool overcharged)
-    {
-        if (this.Room != null)
-        {
-            bool success = Discharge(
-                overcharged ? 70f : 50f,
-                overcharged ? 1.25f : 0.75f,
-                overcharged ? 50f : 35f,
-                this.Player.firstChunk.pos
-            );
-
-            if (success && !this.isMeadowFakePlayer)
-            {
-                this.dischargeCooldown /= 2;
-                this.Player.Jump();
-                if (overcharged)
-                {
-                    if (this.Player.animation != Player.AnimationIndex.Flip)
-                    { this.Player.animation = Player.AnimationIndex.Flip; }
-                    else
-                    { this.Player.flipFromSlide = true; }
-                }
-
-                foreach (BodyChunk bodyChunk in this.Player.bodyChunks)
-                {
-                    bodyChunk.vel.x *= overcharged ? 1.5f : 1.35f;
-                    bodyChunk.vel.y *= overcharged ? 1.85f : 1.5f;
-                }
-            }
-        }
-    }
-    public void SlideBoost(bool overcharged)
-    {
-        if (this.Room != null)
-        {
-            BodyChunk bodyChunk = this.Player.bodyChunks[0];
-            Player player = this.Player;
-            bool success = Discharge(
-                overcharged ? 50f : 40f,
-                overcharged ? 0.2f : 0.05f,
-                overcharged ? 35f : 10f,
-                bodyChunk.pos + new Vector2(40f * -player.slideDirection, 0),
-                0.5f
+                player.mainBodyChunk.pos + new Vector2(0, -bounceDir) * reach * 0.8f,
+                overcharged ? 0.075f : 0.04f
             );
 
             if (success && !this.isMeadowFakePlayer)
             {
                 this.dischargeCooldown = 10;
-                this.slideSpearBounceFrames = overcharged ? 60 : 20;
-                this.boostSlideBuffer = 20;
+                this.stopConsecutiveDischarge = true;
 
-                this.slideSpeedframes = Math.Min(this.slideSpeedframes + (overcharged ? 100 : 25), this.SlideAccelerationFrames);
-                this.slideSpeedMult *= overcharged ? this.SlideOverchargeBoostMult : this.SlideBoostMult;
+                player.room.PlaySound(SoundID.Slugcat_Flip_Jump, player.mainBodyChunk, false, 1.25f, BTWFunc.Random(1.2f, 1.35f));
+                player.animation = Player.AnimationIndex.Flip;
+                if (overcharged && ! player.flipFromSlide) { player.flipFromSlide = true; }
+                float yboost = overcharged ? 13f : 9f;
+                
+                foreach (BodyChunk bodyChunk in player.bodyChunks)
+                {
+                    bodyChunk.vel.x *= overcharged ? 1.2f : 1.1f;
+                    bodyChunk.vel.y = Math.Max(yboost + bounceDir * bodyChunk.vel.y, yboost) * bounceDir;
+                }
             }
         }
     }
-    
+    public void BounceBack()
+    {
+        if (this.Room != null)
+        {
+            bool overcharged = this.IsOvercharged;
+            
+            Player player = this.Player;
+            int direction = (int)Mathf.Sign(player.mainBodyChunk.vel.x);
+            float reach = overcharged ? 60f : 35f;
+
+            bool success = Discharge(
+                reach,
+                overcharged ? 0.65f : 0.3f,
+                overcharged ? 40f : 20f,
+                player.firstChunk.pos + new Vector2(direction, -0.1f) * reach * 0.85f,
+                overcharged ? 0.1f : 0.055f
+            );
+
+            if (success && !this.isMeadowFakePlayer)
+            {
+                this.dischargeCooldown = 10;
+                this.stopConsecutiveDischarge = true;
+
+                player.room.PlaySound(SoundID.Slugcat_Sectret_Super_Wall_Jump, player.mainBodyChunk, false, 1.5f, BTWFunc.Random(1.3f, 1.4f));
+                player.bodyChunks[1].pos = player.bodyChunks[0].pos;
+                player.bodyChunks[0].pos += new Vector2(direction * -10f, 10f);
+
+
+                float yboost;
+                float xboost;
+                if (player.input[0].y == 1)
+                {
+                    player.rollDirection = -direction;
+                    player.animation = Player.AnimationIndex.Flip;
+                    player.flipFromSlide = true;
+                    yboost = overcharged ? 16.5f : 13f;
+                    xboost = -5f;
+                }
+                else
+                {
+                    player.jumpStun = -direction * 10;
+                    player.animation = Player.AnimationIndex.RocketJump;
+                    yboost = overcharged ? 12.5f : 11f;
+                    xboost = overcharged ? 16f : 12f;
+                }
+
+                foreach (BodyChunk bodyChunk in player.bodyChunks)
+                {
+                    bodyChunk.vel.x = xboost * -direction;
+                    bodyChunk.vel.y = Math.Max(yboost + bodyChunk.vel.y, yboost);
+                }
+            }
+        }
+    }
+    public void BounceJump()
+    {
+        if (this.Room != null)
+        {
+            bool overcharged = this.IsOvercharged;
+            
+            Player player = this.Player;
+            float reach = overcharged ? 70f : 50f;
+            bool success = Discharge(
+                reach,
+                overcharged ? 0.85f : 0.55f,
+                overcharged ? 55f : 35f,
+                player.firstChunk.pos + new Vector2(-this.IntDirectionalInput.x, 0) * reach * 0.75f,
+                overcharged ? 0.85f : 0.65f
+            );
+
+            if (success && !this.isMeadowFakePlayer)
+            {
+                this.dischargeCooldown = 20;
+                this.stopConsecutiveDischarge = true;
+                player.Jump();
+                if (overcharged)
+                {
+                    if (player.animation != Player.AnimationIndex.Flip)
+                    { 
+                        player.animation = Player.AnimationIndex.Flip; 
+                    }
+                    else
+                    { 
+                        player.flipFromSlide = true; 
+                    }
+                }
+
+                foreach (BodyChunk bodyChunk in player.bodyChunks)
+                {
+                    bodyChunk.vel.x *= 0.35f;
+                    bodyChunk.vel.y *= overcharged ? 2.05f : 1.55f;
+                }
+            }
+        }
+    }
+    public void RollBack()
+    {
+        if (this.Room != null)
+        {
+            bool overcharged = this.IsOvercharged;
+            
+            Player player = this.Player;
+            BodyChunk bodyChunk = player.bodyChunks[0];
+            float reach = overcharged ? 60f : 40f;
+            int rollDir = -player.rollDirection;
+
+            bool success = Discharge(
+                reach, 
+                overcharged ? 0.4f : 0.2f,
+                overcharged ? 45f : 35f,
+                bodyChunk.pos + new Vector2(-rollDir, 0) * reach * 0.65f,
+                overcharged ? 0.25f : 0.2f
+            );
+
+            if (success && !this.isMeadowFakePlayer)
+            {
+                this.dischargeCooldown = 5;
+                this.stopConsecutiveDischarge = true;
+                player.animation = Player.AnimationIndex.Roll;
+                player.bodyMode = Player.BodyModeIndex.Default;
+                player.rollDirection = rollDir;
+                player.rollCounter = 0;
+                player.bodyChunks[0].vel.x = Mathf.Lerp(player.bodyChunks[0].vel.x, 9f * rollDir, 0.7f);
+                player.bodyChunks[1].vel.x = Mathf.Lerp(player.bodyChunks[1].vel.x, 9f * rollDir, 0.7f);
+                player.standing = false;
+                player.input[0].downDiagonal = rollDir;
+                player.room.PlaySound(SoundID.Slugcat_Roll_Init, player.mainBodyChunk, false, 1f, 1f);
+            }
+        }
+    }
+    public void QuickStart()
+    {
+        Room room = this.Room;
+        if (room != null)
+        {
+            Player player = this.Player;
+            bool overcharged = this.IsOvercharged;
+            float reach = overcharged ? 40f : 30f;
+            Vector2 intInput = this.IntDirectionalInput;
+            int slideDir = (int)(intInput.x == 0 ? player.ThrowDirection : intInput.x);
+
+            bool success = Discharge(
+                reach,
+                overcharged ? 0.15f : 0.05f,
+                overcharged ? 35f : 15f,
+                player.mainBodyChunk.pos + new Vector2(-slideDir, 0) * reach * 0.8f,
+                overcharged ? 0.35f : 0.25f
+            );
+
+            if (success && !this.isMeadowFakePlayer)
+            {
+                this.dischargeCooldown = 5;
+                this.stopConsecutiveDischarge = true;
+                this.slideSpearBounceFrames = 100;
+                player.animation = Player.AnimationIndex.BellySlide;
+                player.bodyMode = Player.BodyModeIndex.Default;
+                player.flipDirection = slideDir;
+                player.rollDirection = slideDir;
+                player.rollCounter = 12;
+                player.standing = false;
+                player.room.PlaySound(SoundID.Slugcat_Belly_Slide_Init, player.mainBodyChunk, false, 1f, 1f);
+                
+                this.slideSpeedframes = 10;
+                this.slideSpeedMult = overcharged ? 1.55f : 1.20f;
+
+                BodyChunk mainChuck = player.bodyChunks[0];
+                BodyChunk lowerChuck = player.bodyChunks[1];
+                if (lowerChuck.ContactPoint.y >= 0)
+                {
+                    IntVector2 chuckTilePos = room.GetTilePosition(player.bodyChunks[1].pos);
+                    if (lowerChuck.SolidFloor(chuckTilePos.x, chuckTilePos.y - 1))
+                    {
+                        lowerChuck.pos.y = chuckTilePos.y * 20f + lowerChuck.TerrainRad;
+                        this.slideStun = 10;
+                    }
+                    else if (lowerChuck.SolidFloor(chuckTilePos.x, chuckTilePos.y - 2))
+                    {
+                        lowerChuck.pos.y = (chuckTilePos.y - 1) * 20f + lowerChuck.TerrainRad;
+                        this.slideStun = 10;
+                    }
+                    
+                    mainChuck.pos = lowerChuck.pos + new Vector2(slideDir * 10f, 0);
+                    lowerChuck.vel.y = -0.5f;
+                    lowerChuck.vel.x = CurrentSlideMomentum * slideDir;
+                    mainChuck.vel = lowerChuck.vel;
+                }
+            }
+        }
+    }
+    public void ZapToGetFreeTrueCombo()
+    {
+        if (this.Room != null)
+        {
+            Player player = this.Player;
+            Creature.Grasp danger = player.dangerGrasp;
+            // bool overcharged = this.IsOvercharged;
+
+            if (danger != null)
+            {
+                BodyChunk dangerChunk = null;
+                float dst = float.MaxValue;
+                for (int l = 0; l < danger.grabber.bodyChunks.Length; l++)
+                {
+                    if (Custom.DistLess(player.mainBodyChunk.pos, danger.grabber.bodyChunks[l].pos, dst))
+                    {
+                        dangerChunk = danger.grabber.bodyChunks[l];
+                        dst = Vector2.Distance(player.mainBodyChunk.pos, danger.grabber.bodyChunks[l].pos);
+                    }
+                }
+                if (dangerChunk != null)
+                {
+                    bool success = Discharge(
+                        70f,
+                        0.1f,
+                        100f,
+                        dangerChunk.pos,
+                        1f
+                    );
+
+                    if (success && !this.isMeadowFakePlayer)
+                    {
+                        this.dischargeCooldown = BTWFunc.FrameRate * 2;
+                        this.Charge = 0;
+                        player.room.PlaySound(SoundID.Rock_Hit_Creature, player.mainBodyChunk, false, 1f, UnityEngine.Random.Range(1.85f, 1.9f));
+                        Vector2 flingVector = (player.mainBodyChunk.pos - dangerChunk.pos).normalized;
+                        foreach (BodyChunk bodyChunk in player.bodyChunks)
+                        {
+                            bodyChunk.vel += flingVector * 15f;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     public void RechargeFromExternalSource(Vector2 sourcePos, float chargeAdded)
     {
+        float oldCharge = this.Charge;
         this.Charge += chargeAdded;
+        if (oldCharge + chargeAdded >= this.MaximumCharge && this.Player != null && !this.Player.dead)
+        {
+            if (this.DeathOvercharge)
+            {
+                OverchargeDeath();
+                this.Charge = oldCharge + chargeAdded - this.MaximumCharge;
+            }
+            else if (this.RiskyOvercharge)
+            {
+                DischargeStun();
+            }
+        }
+
         Player player = this.Player;
         if (ModManager.MSC && player != null && player.room != null) 
         {
             LightingArc lightingArc = new LightingArc(
                 sourcePos, player.mainBodyChunk, 
-                Mathf.Clamp(chargeAdded / 10f, 1, 20), Mathf.Clamp01(chargeAdded / 50f), 10, player.ShortCutColor());
+                Mathf.Clamp(chargeAdded / this.MaximumCharge, 0.1f, 1f), Mathf.Clamp01(chargeAdded / 50f), 10, player.ShortCutColor());
             player.room.AddObject(lightingArc);
         }
     }
     public void RechargeFromExternalSource(BodyChunk sourceChunk, float chargeAdded)
     {
+        float oldCharge = this.Charge;
         this.Charge += chargeAdded;
+        if (oldCharge + chargeAdded >= this.MaximumCharge && this.Player != null && !this.Player.dead)
+        {
+            if (this.DeathOvercharge)
+            {
+                OverchargeDeath();
+                this.Charge = oldCharge + chargeAdded - this.MaximumCharge;
+                BTWPlugin.Log($"Spark [{this.Player}] took <{chargeAdded}> charge at <{oldCharge}> charge and <{this.MaximumCharge}> max charge. Dead is inevitable. Spark has now <{this.Charge}> charge.");
+            }
+            else if (this.RiskyOvercharge)
+            {
+                DischargeStun();
+            }
+        }
+
         Player player = this.Player;
         if (ModManager.MSC && player != null && player.room != null) 
         {
             LightingArc lightingArc = new LightingArc(
                 sourceChunk, player.mainBodyChunk, 
-                Mathf.Clamp(chargeAdded / 10f, 1, 20), Mathf.Clamp01(chargeAdded / 50f), 10, player.ShortCutColor());
+                Mathf.Clamp(chargeAdded / this.MaximumCharge, 0.1f, 1f), Mathf.Clamp01(chargeAdded / 50f), 10, player.ShortCutColor());
             player.room.AddObject(lightingArc);
         }
     }
@@ -774,6 +1004,30 @@ public class StaticChargeManager
             player.LoseAllGrasps();
         }
     }
+    public void OverchargeDeath()
+    {
+        Player player = this.Player;
+        Room room = this.Room;
+        if (player != null && room != null)
+        {
+            Vector2 pos = player.mainBodyChunk.pos;
+            Color color = player.ShortCutColor();
+            
+            for (int i = (int)UnityEngine.Random.Range(15f, 25f); i >= 0; i--)
+            {
+                room.AddObject(new MouseSpark(pos, new Vector2(UnityEngine.Random.Range(-10f, 10f), UnityEngine.Random.Range(-10f, 10f)), 50f, color));
+            }
+
+            room.ScreenMovement(pos, default, 1.1f);
+            room.PlaySound(SoundID.Bomb_Explode, pos);
+            room.PlaySound(SoundID.Death_Lightning_Spark_Spontaneous, pos);
+            room.InGameNoise(new Noise.InGameNoise(pos, 900f, player, 1f));
+            Discharge(this.FullECharge * 1.5f, 1.0f, 0, pos, 1.5f);
+            this.Charge = 0;
+            BTWPlugin.Log("Seems like Spark "+ player.ToString() +" couldn't handle the charge...");
+            player.Die();
+        }
+    }
     
     //-------------- Variables
 
@@ -793,7 +1047,7 @@ public class StaticChargeManager
     public int endlessCharge = 0;
     public int crawlCharge = 0;
     public int whiplashJumpBuffer = 0;
-    public int boostSlideBuffer = 0;
+    public int slideStun = 0;
     
     public float MaxECharge = 200.0f;
     public float FullECharge = 100.0f;
@@ -803,11 +1057,12 @@ public class StaticChargeManager
     public int SlideAccelerationFrames = 200;
     public float SlideBoostMult = 1.35f;
     public float SlideOverchargeBoostMult = 1.65f;
-    public int MaxDischargeCooldown = 40;
-    public int MaxEBounce = 1;
+    public int MaxDischargeCooldown = 60;
+    public int MaxEBounce = 3;
     public int MaxWhiplashJumpBuffer = 5;
 
     public bool rocketJumpFromBounceJump = false;
+    public bool stopConsecutiveDischarge = true;
     // public bool slideOverchargedBoost = false;
     public bool displayBattery = false;
     public bool particles = false;
@@ -823,6 +1078,7 @@ public class StaticChargeManager
     public bool consideredAlive = false;
     public Vector2 oldpos = Vector2.zero;
     public Vector2 newpos = Vector2.zero;
+    public Counter rollquickStartbuffer = new(5);
 
     // Get Set Variables
     public Player Player
@@ -851,17 +1107,16 @@ public class StaticChargeManager
     {
         get
         {
-            if ((this.dischargeCooldown > 0 && !this.CrawlChargeConditionMet && !this.isMeadowArenaTimerCountdown) || !active || this.endlessCharge > 0) { return 0f; }
+            if (!active || this.endlessCharge > 0) { return 0f; } // if ((this.dischargeCooldown > 0 && !this.CrawlChargeConditionMet && !this.isMeadowArenaTimerCountdown) || !active || this.endlessCharge > 0) { return 0f; }
             Player player = this.Player;
             if (player != null)
             {
-                float ActionFriction = 0.5f;
-                float BodyFriction = 0.5f;
+                float ActionFriction = 1f;
+                float BodyFriction = 1f;
                 float ContactFriction = 0f;
                 Vector2 intDir = this.IntDirectionalInput;
 
-                if (intDir == Vector2.zero || Mathf.Abs(oldpos.magnitude - newpos.magnitude) < 0.2f)
-                    { ContactFriction = 0f; }
+                if (intDir == Vector2.zero || Mathf.Abs(oldpos.magnitude - newpos.magnitude) < 0.2f) { ContactFriction = 0f; }
                 else
                 {
                     ContactFriction += Mathf.Pow(
@@ -869,14 +1124,19 @@ public class StaticChargeManager
                         / 50f;
                     ContactFriction = Mathf.Clamp(ContactFriction, 0, 10);
                 }
-                if (this.CrawlChargeRatio > 0)
+                if (this.CrawlChargeRatio > 0 && this.CrawlChargeConditionMet)
                 {
-                    ContactFriction = Mathf.Max(ContactFriction, this.CrawlChargeRatio * 0.2f);
+                    ContactFriction = Mathf.Max(ContactFriction, this.CrawlChargeRatio);
                 }
 
-                if (this.IsCrawlingOnFloor)
+
+                if (this.CrawlChargeRatio > 0 && this.CrawlChargeConditionMet)
                 {
-                    BodyFriction = 120f;
+                    BodyFriction = 5f;
+                }
+                else if (this.IsCrawlingOnFloor)
+                {
+                    BodyFriction = 50f;
                 }
                 else if (player.bodyMode == Player.BodyModeIndex.ClimbingOnBeam)
                 {
@@ -900,42 +1160,48 @@ public class StaticChargeManager
                 }
                 else if (player.bodyMode == Player.BodyModeIndex.WallClimb)
                 {
-                    BodyFriction = 50f;
+                    BodyFriction = 30f;
                 }
                 else if (player.bodyMode == Player.BodyModeIndex.ZeroG)
                 {
                     BodyFriction = 0.5f;
                 }
 
+
                 if (!this.Landed)
                 {
                     ActionFriction = 0.5f;
                 }
-
                 if (player.inShortcut)
                 {
                     ActionFriction = 0.05f;
                 }
-                if (this.IsOvercharged)
-                {
-                    ActionFriction *= 0.5f;
-                }
 
-                if (player.animation == Player.AnimationIndex.Roll)
+                if (this.CrawlChargeRatio > 0 && this.CrawlChargeConditionMet)
+                {
+                    ActionFriction = 5f;
+                }
+                else if (player.animation == Player.AnimationIndex.Roll)
                 {
                     ActionFriction = 20f;
                 }
                 else if (player.animation == Player.AnimationIndex.BellySlide)
                 {
-                    ActionFriction = 4f;
+                    ActionFriction = 7.5f;
                 }
                 else if (player.animation == Player.AnimationIndex.RocketJump)
                 {
-                    ActionFriction = 0.1f;
+                    ActionFriction = 0.25f;
                 }
                 else if (BTWPlayerData.TryGetManager(this.AbstractPlayer, out var BTWData) && BTWData.isSuperLaunchJump)
                 {
                     ActionFriction = 0.15f;
+                }
+
+                if (this.IsOvercharged)
+                {
+                    float fractOvercharge = (this.Charge - this.FullECharge) / (this.MaxECharge - this.FullECharge);
+                    ActionFriction *= 1 - BTWFunc.EaseInOut(fractOvercharge, 3);
                 }
 
                 return this.RechargeMult * ActionFriction * BodyFriction * ContactFriction;
@@ -1002,7 +1268,8 @@ public class StaticChargeManager
             if (player == null) { return false; }
             return player.canJump > 0 
                 || player.bodyMode == Player.BodyModeIndex.CorridorClimb 
-                || player.bodyMode == Player.BodyModeIndex.Swimming;
+                || player.bodyMode == Player.BodyModeIndex.Swimming
+                || player.bodyMode == Player.BodyModeIndex.Crawl;
         }
     }
     public float CurrentSlideMomentum
@@ -1023,9 +1290,8 @@ public class StaticChargeManager
             Player player = this.Player;
             if (player != null)
             {
-                return player.bodyMode == Player.BodyModeIndex.Crawl 
-                    && player.bodyChunks[0].ContactPoint.y < 0 
-                    && player.bodyChunks[1].ContactPoint.y < 0;
+                return player.bodyMode == Player.BodyModeIndex.Crawl
+                    && player.animation == Player.AnimationIndex.None;
             }
             return false;
         }
@@ -1132,7 +1398,7 @@ public static class StaticChargeHooks
                 {
                     if (StaticChargeManager.TryGetManager(player.abstractCreature, out var SCM))
                     {
-                        return (SCM.slideSpearBounceFrames > 0 || SCM.slideSpeedframes > SCM.SlideAccelerationFrames / 2 || SCM.slideSpeedMult > 1.5f) ? 1 : 0;
+                        return (SCM.slideSpearBounceFrames > 0 || SCM.slideSpeedframes > BTWFunc.FrameRate * 1.5f || SCM.slideSpeedMult > 1.5f) ? 1 : 0;
                     }
                     return orig;
                 }
@@ -1261,9 +1527,12 @@ public static class StaticChargeHooks
     }
     private static void Player_Electric_Absorb(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
     {
-        if (self != null && self is Player player && player != null && type == Creature.DamageType.Electric && StaticChargeManager.TryGetManager(player.abstractCreature, out var SCM))
+        if (self is Player player 
+            && type == Creature.DamageType.Electric 
+            && StaticChargeManager.TryGetManager(player.abstractCreature, out var SCM))
         {
-            SCM.RechargeFromExternalSource(source, 40f * damage);
+            BTWPlugin.Log($"Spark [{self}] absorbed <{damage}> damage into <{50f * damage}> charge !");
+            SCM.RechargeFromExternalSource(source, 80f * damage);
             orig(self, source, directionAndMomentum, hitChunk, hitAppendage, type, 0f, stunBonus / 4);
         }
         else
@@ -1318,13 +1587,11 @@ public static class StaticChargeHooks
                 else
                 {
                     BTWPlugin.logger.LogError("Couldn't find IL hook :<");
-                    BTWPlugin.Log(il);
                 }
             }
             else
             {
                 BTWPlugin.logger.LogError("Couldn't find IL hook main :<");
-                BTWPlugin.Log(il);
             }
             
             BTWPlugin.Log("IL hook ended");

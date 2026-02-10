@@ -8,32 +8,9 @@ using Mono.Cecil.Cil;
 
 namespace BeyondTheWest;
 
-public abstract class AdditionnalTechManager<TSelf> where TSelf : AdditionnalTechManager<TSelf>
+public abstract class AdditionnalTechManager<TSelf> : BTWManager<TSelf> where TSelf : AdditionnalTechManager<TSelf>
 {
-    public static ConditionalWeakTable<AbstractCreature, TSelf> managers = new();
-    public static bool TryGetManager(AbstractCreature creature, out TSelf manager)
-    {
-        return managers.TryGetValue(creature, out manager);
-    }
-    public static TSelf GetManager(AbstractCreature creature)
-    {
-        TryGetManager(creature, out TSelf manager);
-        return manager;
-    }
-    public static void AddNewManager(AbstractCreature creature, TSelf manager)
-    {
-        RemoveManager(creature);
-        managers.Add(creature, manager);
-    }
-    public static void RemoveManager(AbstractCreature creature)
-    {
-        if (TryGetManager(creature, out _))
-        {
-            managers.Remove(creature);
-        }
-    }
-    
-    public AdditionnalTechManager(AbstractCreature abstractCreature)
+    public AdditionnalTechManager(AbstractCreature abstractCreature) : base(abstractCreature)
     {
         this.abstractPlayer = abstractCreature;
     }
@@ -51,8 +28,9 @@ public abstract class AdditionnalTechManager<TSelf> where TSelf : AdditionnalTec
         return BTWFunc.GetIntDirInput(player, index);
     }
 
-    public virtual void Update()
+    public override void Update()
     {
+        base.Update();
         Player player = this.RealizedPlayer;
         Room room = player.room;
         if (BTWPlugin.meadowEnabled)
@@ -113,6 +91,7 @@ public abstract class AdditionnalTechManager<TSelf> where TSelf : AdditionnalTec
                 PKM.isPolePounce = false;
                 PKM.bodyInFrontOfPole = false;
                 PKM.kickKaizo.Reset();
+                PKM.kickPole.Reset();
                 PKM.CancelPoolLoop();
             }
             if (this is not BTWPlayerData && BTWPlayerData.TryGetManager(player.abstractCreature, out var BTWPD))
@@ -152,14 +131,6 @@ public abstract class AdditionnalTechManager<TSelf> where TSelf : AdditionnalTec
                 return player;
             }
             return this.RealizedPlayer;
-        }
-    }
-    public Room RealizedRoom
-    {
-        get
-        {
-            Player player = RealizedPlayer;
-            return player?.room;
         }
     }
     public Vector2 DirectionalInput

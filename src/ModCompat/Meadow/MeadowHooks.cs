@@ -10,6 +10,8 @@ using Menu;
 using ArenaBehaviors;
 using RainMeadow.Arena.ArenaOnlineGameModes.TeamBattle;
 using BeyondTheWest.ArenaAddition;
+using BeyondTheWest.MeadowCompat.Gamemodes;
+using BeyondTheWest.MeadowCompat.BTWMenu;
 
 namespace BeyondTheWest.MeadowCompat;
 public static class MeadowHookHelper
@@ -20,14 +22,61 @@ public static class MeadowHookHelper
         MeadowDeniedSync.ApplyHooks();
         BTWMeadowArenaSettingsHooks.ApplyHooks();
         BTWVersionChecker.ApplyHooks();
+        StockArenaModeHook.ApplyHooks();
 
-        new ILHook(typeof(FFA).GetMethod(nameof(FFA.IsExitsOpen)), FFA_DontOpenExitIfPlayerIsReviving);
-        new ILHook(typeof(TeamBattleMode).GetMethod(nameof(TeamBattleMode.IsExitsOpen)), TeamBattleMode_DontOpenExitIfPlayerIsReviving);
+        // new ILHook(typeof(FFA).GetMethod(nameof(FFA.IsExitsOpen)), FFA_DontOpenExitIfPlayerIsReviving);
+        // new ILHook(typeof(TeamBattleMode).GetMethod(nameof(TeamBattleMode.IsExitsOpen)), TeamBattleMode_DontOpenExitIfPlayerIsReviving);
         
         new Hook(typeof(ArenaOnlineGameMode).GetConstructor(new[] { typeof(Lobby) }), SetUpArenaDescription);
         
         On.ArenaGameSession.Initiate += ArenaGameSession_RequestAllItemSpawner;
+        On.Creature.Blind += Player_GetBlindedInArena;
+        On.SporeCloud.Update += Player_GetSmokedInArena;
         BTWPlugin.Log("MeadowCompat ApplyHooks Done !");
+    }
+
+    private static void Player_GetSmokedInArena(On.SporeCloud.orig_Update orig, SporeCloud self, bool eu)
+    {
+        orig(self, eu);
+        int distortTime = (int)(self.lifeTime * self.life * 2);
+        if (!self.nonToxic
+            && distortTime > BTWFunc.FrameRate * 1 
+            && BTWMeadowArenaSettings.TryGetSettings(out var arenaSettings)
+            && arenaSettings.ArenaBonus_ExtraItemUses)
+        {
+            var playerInRange = BTWFunc.GetAllObjectsInRadius(self.room, self.pos, self.rad);
+            for (int i = 0; i < playerInRange.Count; i++)
+            {
+                if (playerInRange[i].physicalObject is Player player
+                    && player.Local()
+                    && player.GetBTWPlayerData() is BTWPlayerData bTWPlayerData
+                    && bTWPlayerData.onlineDizzy <= 0)
+                {
+                    BTWPlugin.Log($"Making player [{player}] dissy for <{distortTime}> ticks !");
+                    bTWPlayerData.onlineDizzy = distortTime + 10;
+                    ScreenDistord screenDistord = new(10, (int)(distortTime * 1/4f), (int)(distortTime * 3/4f - 10));
+                    self.room.AddObject( screenDistord );
+                }
+            }
+        }
+    }
+
+    private static void Player_GetBlindedInArena(On.Creature.orig_Blind orig, Creature self, int blnd)
+    {
+        orig(self, blnd);
+        if (blnd > BTWFunc.FrameRate * 1 
+            && self is Player player
+            && player.Local()
+            && player.GetBTWPlayerData() is BTWPlayerData bTWPlayerData
+            && bTWPlayerData.onlineBlind <= 0
+            && BTWMeadowArenaSettings.TryGetSettings(out var arenaSettings)
+            && arenaSettings.ArenaBonus_ExtraItemUses)
+        {
+            BTWPlugin.Log($"Blinding player [{self}] for <{blnd}> ticks !");
+            bTWPlayerData.onlineBlind = blnd / 2;
+            ScreenBlind screenBlind = new(5, (int)(blnd * 1/4f), (int)(blnd * 3/4f - 5), Color.white);
+            self.room.AddObject( screenBlind );;
+        }
     }
 
     private static void ArenaGameSession_RequestAllItemSpawner(On.ArenaGameSession.orig_Initiate orig, ArenaGameSession self)
@@ -62,7 +111,7 @@ public static class MeadowHookHelper
         self.slugcatSelectDescriptions.Remove("Core");
         self.slugcatSelectDescriptions.Add("Core", "A last threat between you and your mission.<LINE>Leap yourself to victory.");
         self.slugcatSelectDescriptions.Remove("Spark");
-        self.slugcatSelectDescriptions.Add("Spark", "Cornered, by not powerless.<LINE>Zap them with agility.");
+        self.slugcatSelectDescriptions.Add("Spark", "Cornered, but not powerless.<LINE>Zap them with agility.");
     }
     
     private static int ChangePlayerCount(int orig, ExitManager exitManager)
@@ -99,7 +148,6 @@ public static class MeadowHookHelper
             else
             {
                 BTWPlugin.logger.LogError("Couldn't find IL hook :<");
-                BTWPlugin.Log(il);
             }
 
             BTWPlugin.Log("IL hook ended");
@@ -141,7 +189,6 @@ public static class MeadowHookHelper
             else
             {
                 BTWPlugin.logger.LogError("Couldn't find IL hook 1 :<");
-                BTWPlugin.Log(il);
             }
 
             if (cursor.TryGotoNext(MoveType.After,
@@ -158,7 +205,6 @@ public static class MeadowHookHelper
             else
             {
                 BTWPlugin.logger.LogError("Couldn't find IL hook 2 :<");
-                BTWPlugin.Log(il);
             }
 
             BTWPlugin.Log("IL hook ended");

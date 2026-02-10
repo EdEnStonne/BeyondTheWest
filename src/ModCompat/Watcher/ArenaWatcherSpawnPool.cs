@@ -23,8 +23,10 @@ public static class SpawnWatcherPool
         ArenaItemSpawn.rockPool.AddToPool(WatcherObjectType.Boomerang, 45);
         ArenaItemSpawn.allPool.AddToPool(WatcherObjectType.Boomerang, 45);
 
-        ArenaItemSpawn.spearPool.AddToPool(ObjectType.Spear, 4, 4);
-        ArenaItemSpawn.allPool.AddToPool(ObjectType.Spear, 4, 4);
+        ArenaItemSpawn.spearPool.AddToPool(ObjectType.Spear, 4, 7);
+        ArenaItemSpawn.allPool.AddToPool(ObjectType.Spear, 4, 7);
+
+        ArenaItemSpawn.LogAllPools("Watcher");
     }
 
     //----------- Hooks

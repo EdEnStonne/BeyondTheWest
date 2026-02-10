@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using BeyondTheWest;
 using ObjectType = AbstractPhysicalObject.AbstractObjectType;
@@ -56,6 +57,23 @@ public class ObjectDataPool
         this.totalWeight += weight;
         this.pool.Add(new(new(objectType, intData), weight));
     }
+    public void RemoveFromPool(Predicate<ObjectDataPoolItem> match)
+    {
+        List<ObjectDataPoolItem> toRemove = this.pool.FindAll(match);
+        for (int i = 0; i < toRemove.Count; i++)
+        {
+            this.totalWeight -= toRemove[i].weight;
+            this.pool.Remove(toRemove[i]);
+        }
+    }
+    public void ReCalcutaleTotalWeight()
+    {
+        this.totalWeight = 0;
+        for (int i = 0; i < this.pool.Count; i++)
+        {
+            this.totalWeight += this.pool[i].weight;
+        }
+    }
     public ObjectData Pool()
     {
         if (this.totalWeight > 0)
@@ -73,4 +91,35 @@ public class ObjectDataPool
         }
         return new ObjectData();
     }
+    public ObjectData[] AllItemsData()
+    {
+        ObjectData[] list = new ObjectData[this.pool.Count];
+        for (int i = 0; i < this.pool.Count; i++)
+        {
+            list[i] = this.pool[i].objectData;
+        }
+        return list;
+    }
+    public List<ObjectType> AllItemsTypes()
+    {
+        List<ObjectType> list = new();
+        for (int i = 0; i < this.pool.Count; i++)
+        {
+            if (!list.Exists(x => x == this.pool[i].objectData.objectType))
+            {
+                list.Add(this.pool[i].objectData.objectType);
+            }
+        }
+        return list;
+    }
+    public void LogPool()
+    {
+        this.pool.Sort((x,y) => y.weight - x.weight);
+        foreach (var item in this.pool)
+        {
+            BTWPlugin.Log($"    > [{item.objectData.objectType}]<{item.objectData.intData}> : <{item.weight}>");
+        }
+        BTWPlugin.Log($"Total weight : <{this.totalWeight}>");
+    }
+    public bool IsEmpty => this.pool.Count == 0;
 }

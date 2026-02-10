@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using BeyondTheWest.MeadowCompat;
 using RWCustom;
+using System.Linq;
 
 namespace BeyondTheWest;
 public struct RadiusCheckResultObject
@@ -21,28 +22,14 @@ public struct RadiusCheckResultObject
 public static class BTWFunc
 {
     public const int FrameRate = 40;
+    public const int TileSize = 20;
     
     public static InGameTranslator Translator => Custom.rainWorld.inGameTranslator; // yoinked from Rain Meadow
     public static string Translate(string text)
     {
         return Translator.Translate(text);
     }
-
-    public static string[] GetVersionArray()
-    {
-        return BTWPlugin.MOD_VERSION.Split(new char[]{'.'}, 3);
-    }
-    public static int[] GetVersionIntArray()
-    {
-        int[] version = new int[3];
-        string[] strVersion = GetVersionArray();
-        for (int i = 0; i < 3; i++)
-        {
-            version[i] = int.Parse(strVersion[i]);
-        }
-        return version;
-    }
-
+    
     public static bool OutOfBounds(Creature creature)
     {
         float num6 = -creature.bodyChunks[0].restrictInRoomRange + 1f;
@@ -75,7 +62,7 @@ public static class BTWFunc
     {
         if (BTWPlugin.meadowEnabled && abstractPhysicalObject != null)
         {
-            return MeadowFunc.IsObjectMine(abstractPhysicalObject);
+            return MeadowFunc.IsMine(abstractPhysicalObject);
         }
         return true;
     }
@@ -118,6 +105,10 @@ public static class BTWFunc
         {
             return player.abstractCreature.ID.number;
         }
+    }
+    public static int GetPlayerNumber(Player player)
+    {
+        return player.room.game.IsArenaSession ? GetPlayerArenaNumber(player) : player.playerState.playerNumber;
     }
 
     public static bool InRoomBounds(PhysicalObject physicalObject)
@@ -357,12 +348,12 @@ public static class BTWFunc
     public static List<RadiusCheckResultObject> GetAllCreatureInRadius(Room room, Vector2 position, float radius)
     {
         List<RadiusCheckResultObject> creatureslist = new();
-        foreach (AbstractCreature Abcreature in room.abstractRoom.creatures)
+        foreach (Creature creature in GetAllObjects(room).FindAll(x => x is Creature).Cast<Creature>())
         {
-            if (Abcreature.realizedCreature != null 
-                && !Abcreature.realizedCreature.slatedForDeletetion 
-                && !Abcreature.realizedCreature.inShortcut
-                && IsObjectInRadius(Abcreature.realizedCreature, position, radius, out var resultCreature))
+            if (creature != null 
+                && !creature.slatedForDeletetion 
+                // && !Abcreature.realizedCreature.inShortcut
+                && IsObjectInRadius(creature, position, radius, out var resultCreature))
             {
                 creatureslist.Add(resultCreature);
             }
@@ -387,6 +378,18 @@ public static class BTWFunc
         }
         return objectlist;
     }
+    public static List<PhysicalObject> GetAllObjects(Room room)
+    {
+        List<PhysicalObject> objectlist = new();
+        for (int j = 0; j < room.physicalObjects.Length; j++)
+		{
+			for (int k = 0; k < room.physicalObjects[j].Count; k++)
+            {
+                objectlist.Add(room.physicalObjects[j][k]);
+            }
+        }
+        return objectlist;
+    }
 
     public static float Random(float minValue, float maxValue)
     {
@@ -399,6 +402,26 @@ public static class BTWFunc
     public static float Random()
     {
         return Random(0, 1);
+    }
+    public static int RandInt(int minValue, int maxValue)
+    {
+        int v = (int)Random(minValue, maxValue + 1);
+        if (v > maxValue) { v = maxValue; }
+        return v;
+    }
+    public static int RandInt(int maxValue)
+    {
+        int v = (int)Random(maxValue + 1);
+        if (v > maxValue) { v = maxValue; }
+        return v;
+    }
+    public static float RandomWeighted(float minValue, float maxValue, float weight)
+    {
+        return Mathf.Pow(random, weight) * (maxValue - minValue) + minValue;
+    }
+    public static bool Chance(float chance)
+    {
+        return random < Mathf.Clamp01(chance);
     }
     public static float random
     {
@@ -421,6 +444,27 @@ public static class BTWFunc
         return RandomCircleVector() * rad;
     }
     
+    public static Vector2 DirVec(Vector2 from, Vector2 to)
+    {
+        return (to - from).normalized;
+    }
+    public static Vector2 PerpendicularVector(Vector2 vector)
+    {
+        return new Vector2(vector.y, -vector.x);
+    }
+    public static float VectorProjectionNormSigned(Vector2 vector, Vector2 axis)
+    {
+        return (vector.x * axis.x + vector.y * axis.y) / axis.magnitude;
+    }
+    public static float VectorProjectionNorm(Vector2 vector, Vector2 axis)
+    {
+        return Mathf.Abs(VectorProjectionNorm(vector, axis));
+    }
+    public static Vector2 VectorProjection(Vector2 vector, Vector2 axis)
+    {
+        return VectorProjectionNormSigned(vector, axis) * axis.normalized;
+    }
+
     public static void CustomKnockback(BodyChunk bodyChunk, Vector2 force, bool notifyMeadow = false)
     {
         bodyChunk.vel += force;

@@ -91,7 +91,7 @@ public struct OnlineObjectDataList : ICustomSerializable // thanks invalidunits
         {
              serializer.Serialize(ref this.len);
              objectList = new ObjectData[this.len];
-             for (int i = 0; i < len; i++)
+             for (int i = 0; i < this.len; i++)
              {
                  ObjectData data = new();
                  serializer.SerializeExtEnum(ref data.objectType);
