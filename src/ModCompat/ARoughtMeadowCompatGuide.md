@@ -93,7 +93,7 @@ public static HashSet<AbstractPhysicalObject.AbstractObjectType> deniedSyncedObj
 ```
 
 
-2. **Create a hook funcitno for each Rain Meadow functions that checks for `OnlinePhysicalObject` (there's alot)**
+2. **Create a hook function for each Rain Meadow functions that checks for `OnlinePhysicalObject` (there's alot)**
 ```cs
 private static bool OnlineGameMode_DoNotRegister(Func<OnlineGameMode, OnlineResource, AbstractPhysicalObject, bool> orig, OnlineGameMode self, OnlineResource resource, AbstractPhysicalObject apo)
 {
