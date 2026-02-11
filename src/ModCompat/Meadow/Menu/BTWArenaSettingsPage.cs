@@ -25,6 +25,7 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
     public const string AI_NOSPEAR = "BTW_AI_NSR";
     public const string AB_INSTANTDEATH = "BTW_AB_DIE";
     public const string AB_EXTRAITEMUSES = "BTW_AB_EIU";
+    public const string RESETTODEFAULT = "BTW_RESETTODEFAULT";
 
     public MenuTabWrapper tabWrapper;
 
@@ -46,7 +47,7 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         ArenaBonus_InstantDeath_CheckBox, 
         ArenaBonus_ExtraItemsUses_CheckBox;
 
-    public SimpleButton backButton;
+    public SimpleButton backButton, resetButton;
 
     public override string Name => "BTW Arena Settings"; //this will appear on Select Settings Page
 
@@ -225,9 +226,39 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
             backButton = new(menu, this, menu.Translate("BACK"), BACKTOSELECT, new(15, 15), new(80, 30));
             AddObjects(backButton);
             menu.MutualVerticalButtonBind(backButton, ArenaItems_NewItemSpawningSystem_CheckBox);
-            menu.MutualVerticalButtonBind(ArenaBonus_InstantDeath_CheckBox, backButton); //loop
         }
         if (forceSelectedObject) menu.selectedObject = ArenaBonus_InstantDeath_CheckBox;
+        if (resetButton == null)
+        {
+            resetButton = new(menu, this, menu.Translate("RESET"), RESETTODEFAULT, new(355, 15), new(80, 30));
+            AddObjects(resetButton);
+            menu.MutualVerticalButtonBind(resetButton, backButton); 
+            menu.MutualVerticalButtonBind(ArenaBonus_InstantDeath_CheckBox, resetButton); //loop
+        }
+    }
+    public override void Singal(MenuObject sender, string message)
+    {
+        base.Singal(sender, message);
+        if (message == RESETTODEFAULT)
+        {
+            (RWCustom.Custom.rainWorld.processManager.currentMainLoop as Menu.Menu)?.PlaySound(SoundID.MENU_Button_Successfully_Assigned); 
+            
+            this.ArenaItems_ItemSpawnMultiplierCent_TextBox.valueInt = ValueConverter.ConvertToValue<int>(BTWRemix.MeadowItemSpawnMultiplierCent.defaultValue);
+            this.ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox.valueInt = ValueConverter.ConvertToValue<int>(BTWRemix.MeadowItemSpawnMultiplierPerPlayersCent.defaultValue);
+            this.ArenaItems_ItemRespawnTimer_TextBox.valueInt = ValueConverter.ConvertToValue<int>(BTWRemix.MeadowItemRespawnTimer.defaultValue);
+            
+            this.ArenaItems_NewItemSpawningSystem_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowNewItemSpawningSystem.defaultValue);
+            this.ArenaItems_ItemSpawnDiversity_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowItemSpawnDiversity.defaultValue);
+            this.ArenaItems_ItemSpawnRandom_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowItemSpawnRandom.defaultValue);
+            this.ArenaItems_ItemRespawn_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowItemRespawn.defaultValue);
+
+            this.ArenaItems_CheckSpearCount_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowItemCheckSpearCount.defaultValue);
+            this.ArenaItems_CheckThrowableCount_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowItemCheckThrowableCount.defaultValue);
+            this.ArenaItems_CheckMiscellaneousCount_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowItemCheckMiscellaneousCount.defaultValue);
+            this.ArenaItems_NoSpear_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowItemNoSpear.defaultValue);
+            this.ArenaBonus_InstantDeath_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowArenaInstantDeath.defaultValue);
+            this.ArenaBonus_ExtraItemsUses_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowArenaExtraItemUses.defaultValue);
+        }
     }
     public override void Update()
     {

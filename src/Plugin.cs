@@ -11,7 +11,7 @@ namespace BeyondTheWest
     class BTWPlugin : BaseUnityPlugin
     {
         private const string MOD_ID = "edenstonne.beyondthewest";
-        public const string MOD_VERSION = "1.4.2";
+        public const string MOD_VERSION = "1.4.3";
         private static bool isInit = false;
         private static bool ressourceInit = false;
         public static bool ressourceFullyEnded = false;
@@ -22,6 +22,9 @@ namespace BeyondTheWest
         static readonly bool debug = true;
         public static ManualLogSource logger; // Logger from glebi574
         public static bool meadowEnabled = false;
+        public static bool oldInputConfigEnabled = false;
+        public static bool inputConfigEnabled = false;
+        public static bool pushToMeowEnabled = false;
 
         public static void Log(object data)
         {
@@ -150,12 +153,30 @@ namespace BeyondTheWest
         {
             Log("Checking Mods starts !");
 
-            foreach (ModManager.Mod mod in ModManager.ActiveMods)
+            foreach (ModManager.Mod mod in ModManager.ActiveMods.FindAll(x => x.enabled))
             {
-                if (mod.id == "henpemaz_rainmeadow" && mod.enabled)
+                if (mod.id == "henpemaz_rainmeadow")
                 {
                     Log("Found meadow !");
                     meadowEnabled = true;
+                }
+                else if (mod.id == "improved-input-config")
+                {
+                    if (mod.name == "Improved Input Config")
+                    {
+                        Log("Found old improved input config !");
+                        oldInputConfigEnabled = true;
+                    }
+                    else
+                    {
+                        Log("Found forked improved input config !");
+                        inputConfigEnabled = true;
+                    }
+                }
+                else if (mod.id == "pushtomeow")
+                {
+                    Log("Found push to meow !");
+                    pushToMeowEnabled = true;
                 }
             }
 
@@ -175,6 +196,10 @@ namespace BeyondTheWest
             if (ModManager.Watcher)
             {
                 ApplyWatcherHooks();
+            }
+            if (pushToMeowEnabled)
+            {
+                ApplyPushToMeowHooks();
             }
             logger.LogInfo("Soft Hooks initialized !");
         }
@@ -196,6 +221,12 @@ namespace BeyondTheWest
             Log("Watcher Hooks start !");
             WatcherCompat.SpawnWatcherPool.ApplyHooks();
             Log("Watcher Hooks initialized !");
+        }  
+        public static void ApplyPushToMeowHooks()
+        {
+            Log("PushToMeow Hooks start !");
+            PushToMeowCompat.BTWMeow.ApplyHooks();
+            Log("PushToMeow Hooks initialized !");
         }  
 
         private void PostModsLoad(On.RainWorld.orig_PostModsInit orig, RainWorld self)

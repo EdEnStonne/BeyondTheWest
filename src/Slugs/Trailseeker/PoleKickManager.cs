@@ -27,7 +27,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
         {
             MeadowCalls.PoleKickManager_Init(this);
         }
-        // this.debugEnabled = true;
+        this.debugEnabled = false;
     }
     
     // ------ Local Functions
@@ -93,6 +93,8 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
         if (player != null && room != null)
         {
             this.isPolePounce = true;
+            this.kickWhiff.Reset();
+            this.kickActive.Reset();
             player.wantToJump = 0;
             ResetPlayerCustomStates();
             // Plugin.Log("Pole Pounce Init !");
@@ -149,6 +151,8 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
             this.isPolePounce = true;
             player.wantToJump = 0;
             this.kickPole.Reset();
+            this.kickWhiff.Reset();
+            this.kickActive.Reset();
             ResetPlayerCustomStates();
             // Plugin.Log("Pole Hop Init !");
 
@@ -221,6 +225,8 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
         {
             player.wantToJump = 0;
             this.kickKaizo.Reset();
+            this.kickActive.Reset();
+            this.kickWhiff.Reset();
             ResetPlayerCustomStates();
 
             Vector2 kickdir = (chunkUsed.pos - chuckHit.pos).normalized;
@@ -300,6 +306,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
         Room room = target.room;
         if (room != null && target != null)
         {
+            Color playerColor = kicker.ShortCutColor();
             bool exhausted = kicker.exhausted || (PoleKickManager.TryGetManager(kicker.abstractCreature, out var PKM) && PKM.kickExhausted);
             if (BTWFunc.IsLocal(target.abstractCreature) && !(BTWPlugin.meadowEnabled && MeadowFunc.ShouldHoldFireFromOnlineArenaTimer()))
             {
@@ -364,10 +371,52 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
                 new ExplosionSpikes(
                     room, 
                     chuckHit.pos + (kicker.bodyChunks[1].pos - chuckHit.pos).normalized * chuckHit.rad,
-                    5, 10f, 20f, 7.5f, 50f, new Color(1f, 1f, 1f, 0.5f)));
+                    5, 10f, 20f, 7.5f, 50f, Color.Lerp(playerColor, new Color(1f, 1f, 1f, 0.25f), 0.5f)));
         }
     }
-    
+    public static void WhiffKick(Player kicker, Vector2 position)
+    {
+        if (kicker?.room is Room room)
+        {
+            Color playerColor = kicker.ShortCutColor();
+            bool exhausted = kicker.exhausted || (PoleKickManager.TryGetManager(kicker.abstractCreature, out var PKM) && PKM.kickExhausted);
+
+            if (BTWPlugin.meadowEnabled && BTWFunc.IsLocal(kicker.abstractCreature) && MeadowFunc.IsMeadowLobby())
+            {
+                MeadowCalls.PoleKickManager_RPCKickWhiff(kicker, position);
+            }
+
+            room.PlaySound(SoundID.Slugcat_Throw_Spear, kicker.mainBodyChunk, false, exhausted? 0.25f : 0.45f, exhausted? 1.2f : BTWFunc.Random(1.4f, 1.6f));
+            // room.PlaySound(SoundID.Slugcat_Throw_Rock, kicker.mainBodyChunk, false, exhausted? 0.45f : 0.75f, exhausted? 1.1f : BTWFunc.Random(1.3f, 1.4f));
+            room.AddObject(
+                new ExplosionSpikes(
+                    room, 
+                    position,
+                    5, 5f, 5f, 5f, 25f, Color.Lerp(playerColor, new Color(1f, 1f, 1f, 0.5f), 0.5f)));
+        }
+    }
+    public Vector2 GetKickCenter()
+    {
+        if (this.RealizedPlayer is Player player && this.kickingChuck is not null)
+        {
+            Vector2 centerCheck;
+            float radius = this.kickingRadius;
+            Vector2 bodydir = (player.bodyChunks[0].pos - player.bodyChunks[1].pos).normalized;
+            if (this.kickingChuck == player.bodyChunks[0])
+            {
+                centerCheck = player.bodyChunks[0].pos;
+                centerCheck += bodydir * radius * 0.65f;
+            }
+            else
+            {
+                centerCheck = player.bodyChunks[1].pos;
+                centerCheck -= bodydir * radius * 0.45f;
+            }
+            return centerCheck;
+        }
+        return new Vector2();
+    }
+
     private void InitPoleLoop(int poleLoopTileX)
     {
         Player player = this.RealizedPlayer;
@@ -375,6 +424,8 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
         if (player != null && room != null)
         {
             ResetPlayerCustomStates();
+            this.kickWhiff.Reset();
+            this.kickActive.Reset();
             if (this.lastPoleLoopTileX == poleLoopTileX)
             {
                 if (this.poleLoopCount.reachedMax) { BTWPlugin.Log("Maxuimum Pole Loop reached !"); return; }
@@ -726,6 +777,8 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
             {
                 this.kickExhaustCount.Down();
                 this.kickKaizo.Reset();
+                this.kickActive.Reset();
+                this.kickWhiff.Reset();
                 this.kickPole.Reset();
                 if (this.isPolePounce && player.jumpStun != 0)
                 {
@@ -740,6 +793,21 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
             {
                 this.kickPole.Down();
             }
+
+            if (this.kickActive.atZero)
+            {
+                if (this.kickWhiff.reachedMax)
+                {
+                    Vector2 bodydir = (player.bodyChunks[0].pos - player.bodyChunks[1].pos).normalized;
+                    kickExhaustCount.Add(BTWFunc.FrameRate * 2);
+                    WhiffKick(player, GetKickCenter() + this.kickingRadius/2 * bodydir * (this.kickingChuck == player.bodyChunks[0] ? 1 : -1));
+                }
+                this.kickWhiff.Down();
+            }
+            else
+            {
+                this.kickActive.Down();
+            }
         }
         else
         {
@@ -748,6 +816,8 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
             this.bodyInFrontOfPole = false;
             this.kickKaizo.Reset();
             this.kickPole.Reset();
+            this.kickActive.Reset();
+            this.kickWhiff.Reset();
             CancelPoolLoop();
         }
     }
@@ -786,82 +856,84 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
                 && dir != 0
                 && this.poleTechCooldown.ended)
             {
-                if (this.kickEnabled
-                    && ((leaping || superJump) && intinput.x == dir
-                        || (flipping || isKickKaizo) && (intinput.x != 0 || intinput.y != 0))
-                    && player.wantToJump > 0
-                    && (speed > 5f || isKickKaizo)
-                )
+                if (this.kickEnabled)
                 {
-                    Vector2 centerCheck;
-                    float radius = 20f;
-                    BodyChunk chunkUsed = player.mainBodyChunk;
-                    Vector2 bodydir = (player.bodyChunks[0].pos - player.bodyChunks[1].pos).normalized;
-
-                    if (leaping || superJump || (isKickKaizo && this.KaizoLeap))
+                    if (this.kickWhiff.atZero
+                        && (((leaping || superJump) && intinput.x == dir) || flipping || isKickKaizo) // && (intinput.x != 0 || intinput.y != 0)
+                        && jumpPressed
+                        && (speed > 5f || isKickKaizo))
                     {
-                        chunkUsed = player.bodyChunks[0];
-                        radius = Mathf.Sqrt(Mathf.Abs(player.bodyChunks[0].vel.x)) * 9f;
-                        centerCheck = player.bodyChunks[0].pos;
-                        centerCheck += bodydir * radius * 0.65f;
+                        this.kickWhiff.ResetUp();
+                        this.kickActive.ResetUp();
+                        player.Blink(this.kickActive.value + this.kickWhiff.value/2);
+                        if (leaping || superJump || (isKickKaizo && this.KaizoLeap))
+                        {
+                            this.kickingChuck = player.bodyChunks[0];
+                            this.kickingRadius = Mathf.Sqrt(Mathf.Abs(player.bodyChunks[0].vel.x)) * 9f;
+                        }
+                        else
+                        {
+                            this.kickingChuck = player.bodyChunks[1];
+                            this.kickingRadius = Mathf.Sqrt(player.bodyChunks[1].vel.magnitude) * 8f;
+                        }
+                        this.kickingRadius = Mathf.Clamp(this.kickingRadius, 15f, 100f);
                     }
-                    else
-                    {
-                        chunkUsed = player.bodyChunks[0];
-                        radius = Mathf.Sqrt(player.bodyChunks[1].vel.magnitude) * 7f;
-                        centerCheck = player.bodyChunks[1].pos;
-                        centerCheck -= bodydir * radius * 0.30f;
-                    }
-                    radius = Mathf.Clamp(radius, 15f, 100f);
 
-                    this.debugCircleVisible = true;
-                    if (this.debugCircle != null)
+                    if (!this.kickActive.atZero)
                     {
-                        this.debugCircle.pos = centerCheck;
-                        this.debugCircle.radius = radius;
-                        this.debugCircle.innerRatio = 0.05f;
-                    }
-                        
-                    var KickRadiusCheck = BTWFunc.GetAllCreatureInRadius(room, centerCheck, radius);
-                    if (KickRadiusCheck.Count > 0)
-                    {
-                        if (this.debugCircle != null) { this.debugCircle.innerRatio = 0.10f; }
+                        float radius = this.kickingRadius;
+                        BodyChunk chunkUsed = this.kickingChuck;
+                        Vector2 centerCheck = GetKickCenter();
 
-                        KickRadiusCheck.RemoveAll(x => x.physicalObject == player 
-                            || (!this.DoDamagePlayers && x.physicalObject is Player)
-                            || player.TotalMass / (x.physicalObject as Creature).TotalMass > 8
-                            || x.physicalObject.grabbedBy.Exists(x => x.grabber == player)
-                            || !player.room.VisualContact(chunkUsed.pos, x.closestBodyChunk.pos)
-                            || !BTWFunc.CanTwoObjectsInteract(player, x.physicalObject)
-                            || x.physicalObject == player.onBack
-                            || x.physicalObject == player.slugOnBack?.slugcat
-                            || x.physicalObject == player.slugOnBack?.slugcat?.slugOnBack?.slugcat);
-                        
+                        this.debugCircleVisible = true;
+                        if (this.debugCircle != null)
+                        {
+                            this.debugCircle.pos = centerCheck;
+                            this.debugCircle.radius = radius;
+                            this.debugCircle.innerRatio = 0.05f;
+                        }
+                            
+                        var KickRadiusCheck = BTWFunc.GetAllCreatureInRadius(room, centerCheck, radius);
                         if (KickRadiusCheck.Count > 0)
                         {
-                            if (this.debugCircle != null) { this.debugCircle.innerRatio = 0.25f; }
-                            int indexCreature = 0;
-                            bool deadCreature = (KickRadiusCheck[0].physicalObject as Creature).dead;
-                            for (int i = 1; i < KickRadiusCheck.Count; i++)
+                            if (this.debugCircle != null) { this.debugCircle.innerRatio = 0.10f; }
+
+                            KickRadiusCheck.RemoveAll(x => x.physicalObject == player 
+                                || (!this.DoDamagePlayers && x.physicalObject is Player)
+                                || player.TotalMass / (x.physicalObject as Creature).TotalMass > 8
+                                || x.physicalObject.grabbedBy.Exists(x => x.grabber == player)
+                                || !player.room.VisualContact(chunkUsed.pos, x.closestBodyChunk.pos)
+                                || !BTWFunc.CanTwoObjectsInteract(player, x.physicalObject)
+                                || x.physicalObject == player.onBack
+                                || x.physicalObject == player.slugOnBack?.slugcat
+                                || x.physicalObject == player.slugOnBack?.slugcat?.slugOnBack?.slugcat);
+                            
+                            if (KickRadiusCheck.Count > 0)
                             {
-                                bool isdead = (KickRadiusCheck[i].physicalObject as Creature).dead;
-                                if (!isdead || (isdead && deadCreature))
+                                if (this.debugCircle != null) { this.debugCircle.innerRatio = 0.25f; }
+                                int indexCreature = 0;
+                                bool deadCreature = (KickRadiusCheck[0].physicalObject as Creature).dead;
+                                for (int i = 1; i < KickRadiusCheck.Count; i++)
                                 {
-                                    if (deadCreature && !isdead)
+                                    bool isdead = (KickRadiusCheck[i].physicalObject as Creature).dead;
+                                    if (!isdead || (isdead && deadCreature))
                                     {
-                                        indexCreature = i;
-                                        deadCreature = isdead;
-                                    }
-                                    else if (KickRadiusCheck[i].distance < KickRadiusCheck[indexCreature].distance)
-                                    {
-                                        indexCreature = i;
-                                        deadCreature = isdead;
+                                        if (deadCreature && !isdead)
+                                        {
+                                            indexCreature = i;
+                                            deadCreature = isdead;
+                                        }
+                                        else if (KickRadiusCheck[i].distance < KickRadiusCheck[indexCreature].distance)
+                                        {
+                                            indexCreature = i;
+                                            deadCreature = isdead;
+                                        }
                                     }
                                 }
-                            }
-                            InitKick(KickRadiusCheck[indexCreature].closestBodyChunk, chunkUsed);
-                            return;
+                                InitKick(KickRadiusCheck[indexCreature].closestBodyChunk, chunkUsed);
+                                return;
 
+                            }
                         }
                     }
                 }
@@ -947,8 +1019,12 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
     public bool kickExhausted = false;
     public Counter kickExhaustCount = new(BTWFunc.FrameRate * 10);
     public Counter kickKaizo = new(10);
+    public Counter kickActive = new(3);
+    public Counter kickWhiff = new(15);
     public bool KaizoLeap = false;
     public Counter kickPole = new(7);
+    public BodyChunk kickingChuck;
+    public float kickingRadius;
 
     public bool poleLoop = false;
     public int lastPoleLoopTileX = -1;

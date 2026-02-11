@@ -31,43 +31,44 @@ public abstract class AdditionnalTechManager<TSelf> : BTWManager<TSelf> where TS
     public override void Update()
     {
         base.Update();
-        Player player = this.RealizedPlayer;
-        Room room = player.room;
-        if (BTWPlugin.meadowEnabled)
+        if (this.RealizedPlayer is Player player && player.room is Room room)
         {
-            if (player != null
-                && MeadowFunc.TryGetBottomPlayer(player, out Player pupeter))
+            if (BTWPlugin.meadowEnabled)
             {
-                abstractPlayerInControl = pupeter.abstractCreature;
+                if (player != null
+                    && MeadowFunc.TryGetBottomPlayer(player, out Player pupeter))
+                {
+                    abstractPlayerInControl = pupeter.abstractCreature;
+                }
+                else
+                {
+                    abstractPlayerInControl = null;
+                }
             }
-            else
+            if (this.debugEnabled)
             {
-                abstractPlayerInControl = null;
+                if (this.debugCircle != null && (room == null || this.debugCircle.room != room))
+                {
+                    this.debugCircle.room?.RemoveObject( this.debugCircle );
+                    this.debugCircle.Destroy();
+                    this.debugCircle = null;
+                }
+                else if (room != null)
+                {
+                    if (this.debugCircle == null)
+                    {
+                        this.debugCircle = new();
+                        room.AddObject( this.debugCircle );
+                    }
+                    this.debugCircle.visible = this.debugCircleVisible;
+                }
             }
-        }
-        if (this.debugEnabled)
-        {
-            if (this.debugCircle != null && (room == null || this.debugCircle.room != room))
+            else if (this.debugCircle != null)
             {
-                this.debugCircle.room?.RemoveObject( this.debugCircle );
+                room?.RemoveObject( this.debugCircle );
                 this.debugCircle.Destroy();
                 this.debugCircle = null;
             }
-            else if (room != null)
-            {
-                if (this.debugCircle == null)
-                {
-                    this.debugCircle = new();
-                    room.AddObject( this.debugCircle );
-                }
-                this.debugCircle.visible = this.debugCircleVisible;
-            }
-        }
-        else if (this.debugCircle != null)
-        {
-            room?.RemoveObject( this.debugCircle );
-            this.debugCircle.Destroy();
-            this.debugCircle = null;
         }
     }
     public virtual void ResetPlayerCustomStates()
@@ -90,6 +91,8 @@ public abstract class AdditionnalTechManager<TSelf> : BTWManager<TSelf> where TS
                 PKM.poleTechCooldown.Reset(10);
                 PKM.isPolePounce = false;
                 PKM.bodyInFrontOfPole = false;
+                PKM.kickWhiff.Reset();
+                PKM.kickActive.Reset();
                 PKM.kickKaizo.Reset();
                 PKM.kickPole.Reset();
                 PKM.CancelPoolLoop();

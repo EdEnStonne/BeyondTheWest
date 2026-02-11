@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using BeyondTheWest.MeadowCompat;
 using BeyondTheWest.MSCCompat;
 using RWCustom;
 using UnityEngine;
@@ -516,9 +517,13 @@ public class Tristor : Weapon, ElectricExplosion.IReactToElectricExplosion
 					if (ModManager.MSC)
 					{
 						LightingArc lightingArc = new(
-							this.firstChunk, originalPos, skid ? 0.25f : 0.5f, skid ? 0.5f : 0.75f, BTWFunc.RandInt(5, 15), this.coreColor
+							this.firstChunk, originalPos, skid ? 0.25f : 0.5f, skid ? 0.5f : 0.75f, BTWFunc.RandInt(3, 7), this.coreColor
 						);
 						this.room.AddObject(lightingArc);
+						if (BTWPlugin.meadowEnabled)
+						{
+							MeadowCalls.MSCCompat_RPCSyncLightnightArc(lightingArc);
+						}
 					}
 					
 					// BTWPlugin.Log($"Tristor [{this}] bounced !");
@@ -788,6 +793,10 @@ public class Tristor : Weapon, ElectricExplosion.IReactToElectricExplosion
 										this.coreColor
 									);
 									this.room.AddObject(lightingArc);
+									if (BTWPlugin.meadowEnabled)
+									{
+										MeadowCalls.MSCCompat_RPCSyncLightnightArc(lightingArc);
+									}
 								}
 								room.PlaySound(SoundID.Death_Lightning_Spark_Spontaneous, 
 									this.firstChunk.pos, 

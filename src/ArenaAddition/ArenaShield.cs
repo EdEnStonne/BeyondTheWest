@@ -41,7 +41,7 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
     
     public void Init()
     {
-        if (this.target != null)
+        if (this.target != null && this.room != null)
         {
             this.isInit = true;
             this.baseColor = this.target.ShortCutColor();
@@ -111,16 +111,13 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
     public override void Update(bool eu)
     {
         base.Update(eu);
+        if (!this.isInit)
+        {
+            Init();
+        }
         if (this.target == null) 
         {  
-            if (this.isInit)
-            {
-                this.Destroy(); 
-            }
-            else
-            {
-                Init();
-            }
+            this.Destroy(); 
             return; 
         }
         if (this.blockAnim > 0) { this.blockAnim--; }

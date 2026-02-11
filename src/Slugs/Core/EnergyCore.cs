@@ -108,13 +108,20 @@ public class EnergyCore : PhysicalObject, IDrawable
             {
                 case 1: // Idle
                     {
-                        if (energy <= this.AEC.CoreMaxEnergy)
+                        if (this.meowBlink > 0)
                         {
-                            this.color = new(0.5f * eRatio, 0.25f + 0.75f * eRatio, 0.5f * eRatio);
+                            this.color = new(1f, 0.6f, 0.8f);
                         }
                         else
                         {
-                            this.color = new(0.5f, 1f, 0.8f);
+                            if (energy <= this.AEC.CoreMaxEnergy)
+                            {
+                                this.color = new(0.5f * eRatio, 0.25f + 0.75f * eRatio, 0.5f * eRatio);
+                            }
+                            else
+                            {
+                                this.color = new(0.5f, 1f, 0.8f);
+                            }
                         }
                         break;
                     }
@@ -944,6 +951,10 @@ public class EnergyCore : PhysicalObject, IDrawable
 
                 if (!this.player.dead)
                 {
+                    if (this.meowBlink > 0)
+                    {
+                        this.meowBlink--;
+                    }
                     if (this.AEC.IsBetaBoost ? cinput.jmp : cinput.spec)
                     {
                         if (this.ShouldZeroG && this.AEC.boostingCount < 5)
@@ -1052,6 +1063,7 @@ public class EnergyCore : PhysicalObject, IDrawable
     public bool consideredDead = false;
     public bool allowJumpException = false;
     public int disableCooldown = 0;
+    public int meowBlink = 0;
 
     // Get - Set
     public Vector2 DirectionalInput

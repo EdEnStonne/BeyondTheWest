@@ -18,7 +18,7 @@ public static class BTWVersionChecker
     public static string errorMessageText = null;
     public static bool leaveOnError = true;
     public static LobbyBTWVersionData lobbyBTWVersionData;
-    public static LobbyBTWVersionData myLobbyBTWVersionData;
+    public static LobbyBTWVersionData myBTWVersionData;
     public static void ApplyHooks()
     {
         MatchmakingManager.OnLobbyJoined += MatchmakingManager_BTWVersionChecker_OnLobbyJoined;
@@ -57,60 +57,66 @@ public static class BTWVersionChecker
             RWCustom.Custom.rainWorld.processManager.RequestMainProcessSwitch(RainMeadow.RainMeadow.Ext_ProcessID.LobbySelectMenu);
         }
     }
-    public static void CompareVersion(ref LobbyBTWVersionData hostlobbyBTWVersionData)
+    public static void CompareVersion(ref LobbyBTWVersionData hostBTWVersionData)
     {
         BTWPlugin.Log($"Owner responded ! Here is their lobby version : ");
-        hostlobbyBTWVersionData.Log();
-        lobbyBTWVersionData = hostlobbyBTWVersionData;
+        hostBTWVersionData.Log();
+        lobbyBTWVersionData = hostBTWVersionData;
 
         try
         {
-            for (int i = 0; i < hostlobbyBTWVersionData.BTWVersion.Length; i++)
+            for (int i = 0; i < hostBTWVersionData.BTWVersion.Length; i++)
             {
-                if (hostlobbyBTWVersionData.BTWVersion[i] != lobbyBTWVersionData.BTWVersion[i])
+                if (hostBTWVersionData.BTWVersion[i] != myBTWVersionData.BTWVersion[i])
                 {
+                    BTWPlugin.logger.LogWarning($"version of BTW doesn't match ! <{myBTWVersionData.BTWVersionString}> instead of <{hostBTWVersionData.BTWVersionString}>");
                     errorMessageText = "Version mismatch for Beyond the West !" 
-                    + Environment.NewLine + $"Your version is {lobbyBTWVersionData.BTWVersionString} while the host is {hostlobbyBTWVersionData.BTWVersionString}"
+                    + Environment.NewLine + $"Your version is {myBTWVersionData.BTWVersionString} while the host is {hostBTWVersionData.BTWVersionString}"
                     + Environment.NewLine + "To avoid desync issues, you are being send back to the main menu.";
                     leaveOnError = true;
                     return;
                 }
             }
-            List<int>[] enumMisplaced = new List<int>[3]{new(), new(), new()};
-            for (int i = 0; i < hostlobbyBTWVersionData.SlugcatNameEnum.Length; i++)
+
+            int[] enumMisplaced = new int[3]{0, 0, 0};
+            for (int i = 0; i < hostBTWVersionData.SlugcatNameEnum.Length; i++)
             {
-                if (hostlobbyBTWVersionData.SlugcatNameEnum[i] != lobbyBTWVersionData.SlugcatNameEnum[i])
+                if (hostBTWVersionData.SlugcatNameEnum[i] != myBTWVersionData.SlugcatNameEnum[i])
                 {
-                    enumMisplaced[0].Add(i);
+                    BTWPlugin.logger.LogWarning($"id <{i}> of slugcat names doesn't match ! [{myBTWVersionData.SlugcatNameEnum[i]}] instead of [{hostBTWVersionData.SlugcatNameEnum[i]}]");
+                    enumMisplaced[0]++;
                 }
             }
-            for (int i = 0; i < hostlobbyBTWVersionData.ItemsTypeEnum.Length; i++)
+            for (int i = 0; i < hostBTWVersionData.ItemsTypeEnum.Length; i++)
             {
-                if (hostlobbyBTWVersionData.ItemsTypeEnum[i] != lobbyBTWVersionData.ItemsTypeEnum[i])
+                if (hostBTWVersionData.ItemsTypeEnum[i] != myBTWVersionData.ItemsTypeEnum[i])
                 {
-                    enumMisplaced[1].Add(i);
+                    BTWPlugin.logger.LogWarning($"id <{i}> of object types doesn't match ! [{myBTWVersionData.ItemsTypeEnum[i]}] instead of [{hostBTWVersionData.ItemsTypeEnum[i]}]");
+                    enumMisplaced[1]++;
                 }
             }
-            for (int i = 0; i < hostlobbyBTWVersionData.CreatureTypeEnum.Length; i++)
+            for (int i = 0; i < hostBTWVersionData.CreatureTypeEnum.Length; i++)
             {
-                if (hostlobbyBTWVersionData.CreatureTypeEnum[i] != lobbyBTWVersionData.CreatureTypeEnum[i])
+                if (hostBTWVersionData.CreatureTypeEnum[i] != myBTWVersionData.CreatureTypeEnum[i])
                 {
-                    enumMisplaced[2].Add(i);
+                    BTWPlugin.logger.LogWarning($"id <{i}> of creature types doesn't match ! [{myBTWVersionData.CreatureTypeEnum[i]}] instead of [{hostBTWVersionData.CreatureTypeEnum[i]}]");
+                    enumMisplaced[2]++;
                 }
             }
 
-            if (!(enumMisplaced[0].Count == 0 && enumMisplaced[1].Count == 0 && enumMisplaced[2].Count == 0))
+            if (!(enumMisplaced[0] == 0 && enumMisplaced[1] == 0 && enumMisplaced[2] == 0))
             {
-                hostlobbyBTWVersionData.ReorganizeEnum();
+                hostBTWVersionData.ReorganizeEnum();
                 errorMessageText = "Some enum have ben found misplaced !" 
-                    + Environment.NewLine + $"Slugcat enum misplaced : {enumMisplaced[0].Count}"
-                    + Environment.NewLine + $"Items enum misplaced : {enumMisplaced[1].Count}"
-                    + Environment.NewLine + $"Creature enum misplaced : {enumMisplaced[2].Count}"
+                    + Environment.NewLine + $"Slugcat enum misplaced : {enumMisplaced[0]}"
+                    + Environment.NewLine + $"Items enum misplaced : {enumMisplaced[1]}"
+                    + Environment.NewLine + $"Creature enum misplaced : {enumMisplaced[2]}"
                     + Environment.NewLine + "To avoid desync issues, your enum order has been modified to the host's (WIP)."
                     + Environment.NewLine + "Please restart your game if you encounter any issues.";
                 leaveOnError = false;
                 return;
             }
+            BTWPlugin.Log($"Version verified ! Everything matches !");
         }
         catch (Exception ex)
         {
@@ -128,18 +134,18 @@ public static class BTWVersionChecker
                 BTWPlugin.Log($"Is there a lobby there ? [{OnlineManager.lobby != null}], [{OnlineManager.lobby?.owner}], [{OnlineManager.lobby?.isOwner}], [{OnlineManager.lobby?.configurableInts.Count}]");
                 if (OnlineManager.lobby != null)
                 {
-                    myLobbyBTWVersionData = new();
+                    myBTWVersionData = new();
                     errorMessageText = null;
                     if (OnlineManager.lobby.isOwner)
                     {
-                        lobbyBTWVersionData = myLobbyBTWVersionData;
+                        lobbyBTWVersionData = myBTWVersionData;
                         BTWPlugin.Log($"I'm the owner ! Here's the lobby version : ");
                         lobbyBTWVersionData.Log();
                     }
                     else
                     {
                         BTWPlugin.Log($"Lobby BTW version has to be checked ! Current version is :");
-                        myLobbyBTWVersionData.Log();
+                        myBTWVersionData.Log();
                         OnlineManager.lobby.owner.InvokeRPC(MeadowRPCs.BTWVersionChecker_RequestVersionInfo);
                     }
                 }

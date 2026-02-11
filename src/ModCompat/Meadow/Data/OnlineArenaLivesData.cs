@@ -97,27 +97,7 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
             }
             if (lives.countedAlive == false && this.countedAlive == true)
             {
-                if (abstractCreature.creatureTemplate.TopAncestor().type == CreatureTemplate.Type.Slugcat)
-                {
-                    MeadowFunc.ResetDeathMessage(abstractCreature);
-                    MeadowFunc.ResetSlugcatIcon(abstractCreature);
-                }
-                if (lives.target?.room is Room room)
-                {
-                    lives.abstractTarget.LoseAllStuckObjects();
-                    Spear[] stuckSpears = BTWFunc.GetAllObjects(room).FindAll(
-                        x => x is Spear spear && spear.stuckInObject == lives.target)
-                        .Cast<Spear>().ToArray();
-                    for (int i = 0; i < stuckSpears.Length; i++)
-                    {
-                        stuckSpears[i].PulledOutOfStuckObject();
-                        stuckSpears[i].ChangeMode(Weapon.Mode.Free);
-                    }
-                    foreach (ArenaForcedDeath forcedDeath in room.updateList.FindAll(x => x is ArenaForcedDeath death && death.target == lives.target).Cast<ArenaForcedDeath>())
-                    {
-                        forcedDeath.Destroy();
-                    }
-                }
+                lives.ResetVariablesOnRevival();
             }
             if (lives.wasAbstractCreatureDestroyed && this.lifesleft <= 0 && lives.lifesleft > 0)
             {

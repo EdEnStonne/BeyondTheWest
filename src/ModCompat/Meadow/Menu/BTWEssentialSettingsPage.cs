@@ -19,6 +19,7 @@ public class BTWEssentialSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
     public const string SP_DODISCHARGEDAMAGE = "BTW_SP_DDD";
     public const string SP_RISKYOVERCHARGE = "BTW_SP_ROC";
     public const string SP_DEADLYOVERCHARGE = "BTW_SP_DOC";
+    public const string RESETTODEFAULT = "BTW_RESETTODEFAULT";
     public MenuTabWrapper tabWrapper;
 
     public MenuLabel TrailSeeker_Title, Core_Title, Spark_Title;
@@ -32,7 +33,7 @@ public class BTWEssentialSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         Core_Shockwave_CheckBox, 
         Spark_DoDischargeDamage_CheckBox, Spark_RiskyOvercharge_CheckBox, Spark_DeadlyOvercharge_CheckBox;
 
-    public SimpleButton backButton;
+    public SimpleButton backButton, resetButton;
 
     public override string Name => "BTW Essential Settings"; //this will appear on Select Settings Page
 
@@ -175,13 +176,37 @@ public class BTWEssentialSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
     public override void SelectAndCreateBackButtons(SettingsPage previousSettingPage, bool forceSelectedObject)
     {
         if (backButton == null)
-            {
-                backButton = new(menu, this, menu.Translate("BACK"), BACKTOSELECT, new(15, 15), new(80, 30));
-                AddObjects(backButton);
-                menu.MutualVerticalButtonBind(backButton, Spark_DeadlyOvercharge_CheckBox);
-                menu.MutualVerticalButtonBind(TrailSeeker_EveryoneCanPoleTech_CheckBox, backButton); //loop
-            }
-            if (forceSelectedObject) menu.selectedObject = TrailSeeker_EveryoneCanPoleTech_CheckBox;
+        {
+            backButton = new(menu, this, menu.Translate("BACK"), BACKTOSELECT, new(15, 15), new(80, 30));
+            AddObjects(backButton);
+            menu.MutualVerticalButtonBind(backButton, Spark_DeadlyOvercharge_CheckBox);
+        }
+        if (forceSelectedObject) menu.selectedObject = TrailSeeker_EveryoneCanPoleTech_CheckBox;
+        if (resetButton == null)
+        {
+            resetButton = new(menu, this, menu.Translate("RESET"), RESETTODEFAULT, new(355, 15), new(80, 30));
+            AddObjects(resetButton);
+            menu.MutualVerticalButtonBind(resetButton, backButton); 
+            menu.MutualVerticalButtonBind(TrailSeeker_EveryoneCanPoleTech_CheckBox, resetButton); //loop
+        }
+    }
+    public override void Singal(MenuObject sender, string message)
+    {
+        base.Singal(sender, message);
+        if (message == RESETTODEFAULT)
+        {
+            (RWCustom.Custom.rainWorld.processManager.currentMainLoop as Menu.Menu)?.PlaySound(SoundID.MENU_Button_Successfully_Assigned); 
+            this.TrailSeeker_EveryoneCanPoleTech_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowEveryoneCanPoleTech.defaultValue);
+            this.Trailseeker_WallGripTimer_TextBox.valueInt = ValueConverter.ConvertToValue<int>(BTWRemix.MeadowTrailseekerWallGripTimer.defaultValue);
+            
+            this.Core_MaxLeap_TextBox.valueInt = ValueConverter.ConvertToValue<int>(BTWRemix.MeadowCoreMaxLeap.defaultValue);
+            this.Core_Shockwave_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowCoreShockwave.defaultValue);
+            
+            this.Spark_MaxElectricBounce_TextBox.valueInt = ValueConverter.ConvertToValue<int>(BTWRemix.MeadowSparkMaxElectricBounce.defaultValue);
+            this.Spark_DoDischargeDamage_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowSparkDoDischargeDamage.defaultValue);
+            this.Spark_RiskyOvercharge_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowSparkRiskyOvercharge.defaultValue);
+            this.Spark_DeadlyOvercharge_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowSparkDeadlyOvercharge.defaultValue);
+        }
     }
     public override void Update()
     {

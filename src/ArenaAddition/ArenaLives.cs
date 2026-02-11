@@ -88,10 +88,6 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
             arenaLives.Destroy();
         }
         arenaLivesList.Add(abstractCreature, this);
-        if (BTWPlugin.meadowEnabled)
-        {
-            MeadowCalls.BTWArena_ArenaLivesInit(this);
-        }
         if (lifes > 1)
         {
             DisplayLives();
@@ -104,13 +100,21 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
     public ArenaLives(AbstractCreature abstractCreature, bool fake = false)
         : this(abstractCreature, 3, fake) { }
     
-    private void ResetVariablesOnRevival()
+    public void ResetVariablesOnRevival()
     {
         wasAbstractCreatureDestroyed = false;
         if (this.target is Player player) 
         {
-            BTWFunc.ResetCore(player);
-            BTWFunc.ResetSpark(player);
+            if (player.Local())
+            {
+                BTWFunc.ResetCore(player);
+                BTWFunc.ResetSpark(player);
+
+                if (this.shieldTime > 0)
+                {
+                    player.room?.AddObject( new ArenaShield(player, this.shieldTime) );
+                }
+            }
             if (player.room.game.session is ArenaGameSession arenaGameSession) {
                 // Thanks to Alex for pointing this out, check also his SimpleRespawn Mod for Meadow !
                 arenaGameSession.arenaSitting.players[BTWFunc.GetPlayerArenaNumber(player)].alive = true; 
@@ -123,11 +127,6 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
                 MeadowFunc.ResetSlugcatIcon(this.abstractTarget);
             }
 
-            if (this.shieldTime > 0)
-            {
-                player.room?.AddObject( new ArenaShield(player, this.shieldTime) );
-            }
-
             foreach (ArenaForcedDeath forcedDeath in room.updateList.FindAll(x => x is ArenaForcedDeath death && death.target == player).Cast<ArenaForcedDeath>())
             {
                 forcedDeath.Destroy();
@@ -135,9 +134,22 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
 
             if (this.target != null)
             {
-                foreach (var chunk in this.target.bodyChunks)
+                if (this.target.Local())
                 {
-                    chunk.pos = this.respawnPos;
+                    foreach (var chunk in this.target.bodyChunks)
+                    {
+                        chunk.pos = this.respawnPos;
+                    }
+                    this.abstractTarget.LoseAllStuckObjects();
+                }
+
+                Spear[] stuckSpears = BTWFunc.GetAllObjects(room).FindAll(
+                    x => x is Spear spear && spear.stuckInObject == this.target)
+                    .Cast<Spear>().ToArray();
+                for (int i = 0; i < stuckSpears.Length; i++)
+                {
+                    stuckSpears[i].PulledOutOfStuckObject();
+                    stuckSpears[i].ChangeMode(Weapon.Mode.Free);
                 }
             }
 
@@ -372,6 +384,14 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
     {
         base.Update(eu);
         if (this.abstractTarget == null) { this.Destroy(); return; }
+
+        if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowLobby() && !this.meadowInit)
+        {
+            if (BTWPlugin.meadowEnabled)
+            {
+                MeadowCalls.BTWArena_ArenaLivesInit(this);
+            }
+        }
         
         if (this.livesDisplayCounter > 0) { this.livesDisplayCounter--; }
 
@@ -630,6 +650,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
     public bool canRespawn = false;
     public bool IsMeadowLobby = false;
     public bool wasAbstractCreatureDestroyed = false;
+    public bool meadowInit = false;
     // public int respawnPlayerID = -1;
     public Vector2 pos;
     public Vector2 respawnPos;

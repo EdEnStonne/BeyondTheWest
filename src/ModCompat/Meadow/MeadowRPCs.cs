@@ -57,6 +57,14 @@ public static class MeadowRPCs
         BTWPlugin.Log($"Player [{player}] did a kick on [{target}] with <{knockback}> and <{kBonusCent / 100f}> knockback bonus !");
     }
     [RPCMethod]
+    public static void PoleKickManager_WhiffKick(RPCEvent rpc, OnlineCreature playerOpo, Vector2 position)
+    {
+        if (playerOpo?.abstractCreature?.realizedCreature is not Player player) { return; }
+
+        PoleKickManager.WhiffKick(player, position);
+        BTWPlugin.Log($"Player [{player}] did a kick at [{position}] but missed !");
+    }
+    [RPCMethod]
     public static void Spark_SparkExplosion(RPCEvent rpc, RoomSession onlineRoom, short size, 
         Vector2 position, byte sparks, byte volumeCent, bool underwater, Color color)
     {
@@ -193,43 +201,25 @@ public static class MeadowRPCs
         }
     }
     [RPCMethod]
-    public static void MSCCompat_Lightning(RPCEvent rpc, OnlineCreature fromOc, OnlineCreature targetOc, byte widthCent, byte intensityCent, byte lifeTime, Color color)
+    public static void MSCCompat_Lightning(RPCEvent rpc, RoomSession roomSession, OnlineCreature fromOc, OnlineCreature targetOc, 
+        Vector2 fromPos, Vector2 targetPos, byte widthCent, byte intensityCent, byte lifeTime, Color color)
     {
         if (!ModManager.MSC) { return; }
+        if (roomSession?.absroom?.realizedRoom is not Room room) { return; }
 
-        AbstractCreature abstractFrom = fromOc.abstractCreature;
-        AbstractCreature abstractTarget = targetOc.abstractCreature;
-        if (abstractFrom == null || abstractTarget == null) { return; }
-        
-        Creature from = abstractFrom.realizedCreature;
-        Creature target = abstractTarget.realizedCreature;
-        if (from == null || target == null || from.room == null || target.room == null) { return; }
+        Creature from = fromOc?.abstractCreature?.realizedCreature;
+        Creature target = targetOc?.abstractCreature?.realizedCreature;
 
-        LightingArc lightingArc = new (
-            from.mainBodyChunk, target.mainBodyChunk,
-            widthCent * 100f, intensityCent * 100f, lifeTime, color
-        );
-        from.room.AddObject(lightingArc);
-
-        BTWPlugin.Log("Added lightning arc from "+ from.ToString() +" to "+ target.ToString() +" !");
-    }
-    [RPCMethod]
-    public static void MSCCompat_LightningPos(RPCEvent rpc, RoomSession roomSession, Vector2 from, Vector2 target, byte widthCent, byte intensityCent, byte lifeTime, Color color)
-    {
-        if (!ModManager.MSC) { return; }
-        if (roomSession == null) { return; }
-        AbstractRoom abstractRoom = roomSession.absroom;
-        if (abstractRoom == null || abstractRoom.realizedRoom == null) { return; }
-
-        Room room = abstractRoom.realizedRoom;
-
-        LightingArc lightingArc = new (
-            from, target,
-            widthCent * 100f, intensityCent * 100f, lifeTime, color
-        );
+        LightingArc lightingArc = new (widthCent * 100f, intensityCent * 100f, lifeTime, color)
+        {
+            from = from?.mainBodyChunk,
+            target = target?.mainBodyChunk,
+            fromOffset = fromPos,
+            targetOffset = targetPos
+        };
         room.AddObject(lightingArc);
 
-        BTWPlugin.Log("Added lightning arc from "+ from.ToString() +" to "+ target.ToString() +" !");
+        BTWPlugin.Log($"Added lightning arc from [{from}] to [{target}] !");
     }
     [RPCMethod]
     public static void BTWArenaAddition_AreneForcedDeathEffect(RPCEvent rpc, OnlineCreature targetOc)

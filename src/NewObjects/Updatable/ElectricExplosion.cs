@@ -42,16 +42,14 @@ public class ElectricExplosion : UpdatableAndDeletable
                 damage *= killTagHolderDmgFactor;
                 stun *= killTagHolderDmgFactor;
             }
-
-            if (ModManager.MSC && closestBodyChunk != null)
-            {
-                BodyChunk mainChunk = killTagHolder.mainBodyChunk ?? killTagHolder.firstChunk;
-                LightingArc lightingArc = new (
-                    mainChunk, closestBodyChunk,
-                    Mathf.Clamp(damage / 2f, 0.1f, 2f), damage > 1 ? 1f : 0.5f, (int)(stun / 10f + 5), color
-                );
-                target.room.AddObject(lightingArc);
-            }
+        }
+        if (ModManager.MSC && closestBodyChunk != null)
+        {
+            LightingArc lightingArc = new (
+                sourceObject.firstChunk, closestBodyChunk,
+                Mathf.Clamp(damage / 4f, 0.1f, 1f), damage > 1 ? 1f : 0.5f, (int)(stun / 10f + 5), color
+            );
+            target.room.AddObject(lightingArc);
         }
 
         if (!hitPlayer && target is Player) { damage = 0; }

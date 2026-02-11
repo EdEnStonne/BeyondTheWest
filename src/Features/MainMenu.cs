@@ -6,6 +6,7 @@ namespace BeyondTheWest;
 
 public static class BTWMenu
 {
+    public static bool errorDisplayed = false;
     public static void ApplyHooks()
     {
         On.Menu.MainMenu.ctor += MainMenu_OnStart;
@@ -35,5 +36,16 @@ public static class BTWMenu
                     + Environment.NewLine + $"({string.Join(", ",errorContext)})"), 
                 self.manager, null));
         }
+
+        if (BTWPlugin.oldInputConfigEnabled)
+        {
+            self.manager.ShowDialog(new DialogNotify(
+                self.Translate("It seems that you have installed the original \"Improved Input Config\" mod." 
+                    + Environment.NewLine + $"Please use instead the forked version of Zombieseatflesh7 named :"
+                    + Environment.NewLine + $"\"Improved Input Config: Extended\""
+                    + Environment.NewLine + $"(it works with every mods than needs input config as a dependency !)"), 
+                self.manager, null));
+        }
+        errorDisplayed = true;
     }
 }

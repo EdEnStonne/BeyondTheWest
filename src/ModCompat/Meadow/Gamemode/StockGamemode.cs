@@ -43,9 +43,15 @@ public partial class StockArenaMode : ExternalArenaGameMode
         if (arenaGame.SessionStillGoing 
             && (arenaGame.game?.world?.rainCycle == null 
                 || arenaGame.game.world.rainCycle.TimeUntilRain > rainTimerToSuddentDeath)
-            && ArenaLives.PlayerCountedAsAliveInArena(abstractPlayer))
+            && ArenaLives.PlayerCountedAsAliveInArena(abstractPlayer)
+            && abstractPlayer.GetOnlineCreature() is OnlineCreature onlineCreature
+            && onlineCreature.owner is OnlinePlayer onlinePlayer)
         {
-            return true;
+            int index = OnlineManager.lobby.playerAvatars.FindIndex(x => x.Key == onlinePlayer);
+            if (index >= 0 && OnlineManager.lobby.playerAvatars[index].Value.type != (byte)OnlineEntity.EntityId.IdType.none)
+            {
+                return true;
+            }
         }
         return false;
     }
@@ -78,7 +84,7 @@ public partial class StockArenaMode : ExternalArenaGameMode
     {
         return false;
     }
-    
+
     public override string TimerText()
     {
         return BTWFunc.Translate("Prepare for combat,") + " " + BTWFunc.Translate(PlayingAsText());
@@ -218,9 +224,45 @@ public static class StockArenaModeHook
     public static void ApplyHooks()
     {
         new Hook(typeof(ArenaMode).GetConstructor(new[] { typeof(Lobby) }), SetUpNewGamemode);
+        new Hook(typeof(ArenaRPCs).GetMethod(nameof(ArenaRPCs.Arena_RemovePlayerWhoQuit)), DismissLivesOfThoseWhoQuit);
+        On.Menu.PauseMenu.Singal += ArenaMenu_OnArenaExit;
         On.Player.ctor += Player_AddArenaLivesFromSettings;
     }
 
+    private static void ArenaMenu_OnArenaExit(On.Menu.PauseMenu.orig_Singal orig, PauseMenu self, MenuObject sender, string message)
+    {
+        if (message == "EXIT" && MeadowFunc.IsMeadowArena(out var arena)
+            && (Custom.rainWorld.processManager.currentMainLoop as RainWorldGame)?.GetArenaGameSession is ArenaGameSession arenaGameSession)
+        {
+            foreach (var absPlayer in arenaGameSession.Players.FindAll(x => x.IsLocal()))
+            {
+                if (ArenaLives.TryGetLives(absPlayer, out var arenaLives))
+                {
+                    BTWPlugin.Log($"Dismissing live of [{absPlayer}] : i'm heading out !");
+                    arenaLives.Destroy();
+                }
+            }
+        }
+        orig(self, sender, message);
+    }
+
+    private static void DismissLivesOfThoseWhoQuit(Action<OnlinePlayer> orig, OnlinePlayer earlyQuitterOrLatecomer)
+    {
+        if (MeadowFunc.IsMeadowArena(out var arena) 
+            && (Custom.rainWorld.processManager.currentMainLoop as RainWorldGame)?.GetArenaGameSession is ArenaGameSession arenaGameSession)
+        {
+            foreach (var absPlayer in arenaGameSession.Players.FindAll(x => x.GetOnlineCreature()?.owner == earlyQuitterOrLatecomer))
+            {
+                if (ArenaLives.TryGetLives(absPlayer, out var arenaLives))
+                {
+                    BTWPlugin.Log($"Dismissing live of [{absPlayer}] : [{earlyQuitterOrLatecomer}] is leaving !");
+                    arenaLives.fake = false;
+                    arenaLives.Destroy();
+                }
+            }
+        }
+        orig(earlyQuitterOrLatecomer);
+    }
     private static void SetUpNewGamemode(Action<ArenaMode, Lobby> orig, ArenaMode self, Lobby lobby)
     {
         orig(self, lobby);
