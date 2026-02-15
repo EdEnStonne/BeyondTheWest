@@ -163,7 +163,7 @@ public static class MeadowHookHelper
     {
         if (!CompetitiveAddition.ReachedMomentWhenLivesAreSetTo0(exitManager?.gameSession))
         {
-            return orig || ArenaLives.PlayerCountedAsAliveInArena(abstractCreature);
+            return orig || ArenaLives.IsPlayerRevivingInArena(abstractCreature);
         }
         return orig;
     }

@@ -43,15 +43,12 @@ public partial class StockArenaMode : ExternalArenaGameMode
         if (arenaGame.SessionStillGoing 
             && (arenaGame.game?.world?.rainCycle == null 
                 || arenaGame.game.world.rainCycle.TimeUntilRain > rainTimerToSuddentDeath)
-            && ArenaLives.PlayerCountedAsAliveInArena(abstractPlayer)
+            && ArenaLives.IsPlayerRevivingInArena(abstractPlayer)
             && abstractPlayer.GetOnlineCreature() is OnlineCreature onlineCreature
-            && onlineCreature.owner is OnlinePlayer onlinePlayer)
+            && onlineCreature.owner is OnlinePlayer onlinePlayer
+            && MeadowFunc.IsOwnerInSession(onlinePlayer))
         {
-            int index = OnlineManager.lobby.playerAvatars.FindIndex(x => x.Key == onlinePlayer);
-            if (index >= 0 && OnlineManager.lobby.playerAvatars[index].Value.type != (byte)OnlineEntity.EntityId.IdType.none)
-            {
-                return true;
-            }
+            return true;
         }
         return false;
     }

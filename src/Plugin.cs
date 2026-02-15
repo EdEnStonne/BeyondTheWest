@@ -11,7 +11,7 @@ namespace BeyondTheWest
     class BTWPlugin : BaseUnityPlugin
     {
         private const string MOD_ID = "edenstonne.beyondthewest";
-        public const string MOD_VERSION = "1.4.3";
+        public const string MOD_VERSION = "1.4.4";
         private static bool isInit = false;
         private static bool ressourceInit = false;
         public static bool ressourceFullyEnded = false;

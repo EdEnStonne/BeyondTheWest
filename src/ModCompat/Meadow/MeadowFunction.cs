@@ -124,6 +124,28 @@ public static class MeadowFunc
     {
         return abstractCreature?.GetOnlineCreature()?.owner is not null;
     }
+    public static bool IsOwnerInSession(AbstractCreature abstractCreature)
+    {
+        if (abstractCreature.GetOnlineCreature() is OnlineCreature onlineCreature
+            && onlineCreature.owner is OnlinePlayer onlinePlayer)
+        {
+            return IsOwnerInSession(onlinePlayer);
+        }
+        return false;
+    }
+    public static bool IsOwnerInSession(OnlinePlayer onlinePlayer)
+    {
+        if (onlinePlayer is not null)
+        {
+            int index = OnlineManager.lobby.playerAvatars.FindIndex(x => x.Key == onlinePlayer);
+            if (index >= 0 && OnlineManager.lobby.playerAvatars[index].Value.type != (byte)OnlineEntity.EntityId.IdType.none)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     
     // Creature Check
     public static bool IsMine(AbstractPhysicalObject abstractPhysicalObject) // From PearlCat, works better than mine

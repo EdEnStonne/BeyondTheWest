@@ -633,9 +633,13 @@ public static class ArenaItemSpawnHooks
         BTWPlugin.Log("ArenaItemSpawnHooks IL 1 ended !");
     }
 
-    private static bool IsNewSpawningSystem()
+    private static bool IsNewSpawningSystem(Room room)
     {
-        return new ArenaItemSpawn.ArenaItemSpawnSetting().newSystem;
+        if (room?.game?.GetArenaGameSession is CompetitiveGameSession)
+        {
+            return new ArenaItemSpawn.ArenaItemSpawnSetting().newSystem;
+        }
+        return false;
     }
     private static void Room_NewSpawnSystem(ILContext il)
     {
@@ -676,6 +680,7 @@ public static class ArenaItemSpawnHooks
             ))
             {
                 cursor.MoveAfterLabels();
+                cursor.Emit(OpCodes.Ldarg_0);
                 cursor.EmitDelegate(IsNewSpawningSystem);
                 cursor.Emit(OpCodes.Brtrue, label);
             }

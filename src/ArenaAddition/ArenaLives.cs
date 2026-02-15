@@ -24,7 +24,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
         TryGetLives(creature, out ArenaLives lives);
         return lives;
     }
-    public static bool PlayerCountedAsAliveInArena(AbstractCreature abstractPlayer)
+    public static bool IsPlayerRevivingInArena(AbstractCreature abstractPlayer)
     {
         return abstractPlayer != null 
             && (
@@ -37,7 +37,8 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
                 )
             && ArenaLives.TryGetLives(abstractPlayer, out var arenaLives) 
             && arenaLives.blockArenaOut
-            && arenaLives.lifesleft > 0;
+            && arenaLives.lifesleft > 0
+            && !(BTWPlugin.meadowEnabled && !MeadowFunc.IsOwnerInSession(abstractPlayer));
     }
     public static int AdditionalPlayerInArenaCount(ArenaGameSession arenaGame)
     {
@@ -46,7 +47,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
         {
             try
             {
-                revivingPlayers = arenaGame.Players?.Count(x => PlayerCountedAsAliveInArena(x)) ?? 0;
+                revivingPlayers = arenaGame.Players?.Count(x => IsPlayerRevivingInArena(x)) ?? 0;
             }
             catch (Exception ex)
             {
@@ -366,7 +367,6 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
 
     public override void Destroy()
     {
-        base.Destroy();
         BTWPlugin.Log($"Live destroyed for player $[{this.abstractTarget}]");
         if (this.abstractTarget != null)
         {
@@ -378,7 +378,12 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
             {
                 arenaLivesList.Remove(this.abstractTarget);
             }
+            if (this.wasAbstractCreatureDestroyed)
+            {
+                this.abstractTarget.Destroy();
+            }
         }
+        base.Destroy();
     }
     public override void Update(bool eu)
     {
@@ -716,10 +721,25 @@ public static class ArenaLivesHooks
     public static void ApplyPostHooks()
     {
         On.ArenaGameSession.PlayersStillActive += ArenaGameSession_AddRevivingPlayers;
+        On.ArenaBehaviors.ExitManager.PlayerTryingToEnterDen += ArenaGameSession_RemoveLifeFromPlayerInDen;
         On.AbstractWorldEntity.Destroy += AbstractCreature_DontDestroyIfReviving;
         BTWPlugin.Log("CompetitiveAddition ApplyPostHooks Done !");
     }
-    
+
+    private static bool ArenaGameSession_RemoveLifeFromPlayerInDen(On.ArenaBehaviors.ExitManager.orig_PlayerTryingToEnterDen orig, ArenaBehaviors.ExitManager self, ShortcutHandler.ShortCutVessel shortcutVessel)
+    {
+        if (orig(self, shortcutVessel))
+        {
+            if (ArenaLives.TryGetLives(shortcutVessel?.creature?.abstractCreature, out var arenaLives))
+            {
+                BTWPlugin.Log($"[{shortcutVessel?.creature?.abstractCreature}] entered a den, removing its lifes");
+                arenaLives.Destroy();
+            }
+            return true;
+        }
+        return false;
+    }
+
     public static void LogLivesState(AbstractCreature abstractPlayer)
     {
         if (abstractPlayer == null) { return; } 
@@ -743,7 +763,7 @@ public static class ArenaLivesHooks
                 + $"Lives Left <{arenaLives.lifesleft}>\n"
                 + $"Block Out Arena <{arenaLives.blockArenaOut}>\n"
                 + $"Strict <{arenaLives.enforceAfterReachingZero}>\n"
-                + $"Reviving block <{ArenaLives.PlayerCountedAsAliveInArena(abstractPlayer)}>\n");
+                + $"Reviving block <{ArenaLives.IsPlayerRevivingInArena(abstractPlayer)}>\n");
         }
         else
         {
@@ -781,7 +801,8 @@ public static class ArenaLivesHooks
             && BTWFunc.IsLocal(creature.abstractCreature)
             && ArenaLives.TryGetLives(creature.abstractCreature, out var lives)
             && lives.canRespawn
-            && lives.lifesleft > 0)
+            && lives.lifesleft > 0
+            && !(BTWPlugin.meadowEnabled && !MeadowFunc.IsOwnerInSession(creature.abstractCreature)))
         {
             if (creature == creature.abstractCreature.realizedCreature)
             {
@@ -805,7 +826,7 @@ public static class ArenaLivesHooks
             && abstractCreature != null
             && ArenaLives.TryGetLives(abstractCreature, out var lives))
         {
-            if (lives.canRespawn && lives.lifesleft > 0 && (!BTWPlugin.meadowEnabled || MeadowFunc.HasOwner(abstractCreature)))
+            if (lives.canRespawn && lives.lifesleft > 0 && !(BTWPlugin.meadowEnabled && !MeadowFunc.IsOwnerInSession(abstractCreature)))
             {
                 abstractCreature.destroyOnAbstraction = false;
                 abstractCreature.Die();
