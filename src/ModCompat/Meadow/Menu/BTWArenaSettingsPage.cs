@@ -15,34 +15,39 @@ namespace BeyondTheWest.MeadowCompat.BTWMenu;
 
 public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
 {
-    public const string AL_BLOCKWIN = "BTW_AL_BLW";
-    public const string AL_REVIVEFROMABYSS = "BTW_AL_RFA";
     public const string AI_NEWITEMSPAWNSYSTEM = "BTW_AI_NSS";
     public const string AI_ITEMSPAWNDIVERSITY = "BTW_AI_ISD";
     public const string AI_ITEMSPAWNRANDOM = "BTW_AI_ISR";
     public const string AI_ITEMRESPAWN = "BTW_AI_IRS";
+    public const string AI_CHECKSPEAR = "BTW_AI_CSC";
+    public const string AI_CHECKTROWABLE = "BTW_AI_CTC";
+    public const string AI_CHECKOTHERS = "BTW_AI_CMC";
+    public const string AI_NOSPEAR = "BTW_AI_NSR";
+    public const string AB_INSTANTDEATH = "BTW_AB_DIE";
+    public const string AB_EXTRAITEMUSES = "BTW_AB_EIU";
+    public const string RESETTODEFAULT = "BTW_RESETTODEFAULT";
+
     public MenuTabWrapper tabWrapper;
 
-    public MenuLabel ArenaLives_Title, ArenaItems_Title, WIP_Warning;
-    public OpTextBox ArenaLives_AdditionalReviveTime_TextBox,
-        ArenaLives_Amount_TextBox,
-        ArenaLives_ReviveTime_TextBox,
-        ArenaLives_RespawnShieldDuration_TextBox,
-        ArenaItems_ItemSpawnMultiplierCent_TextBox,
-        ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox;
-    public MenuLabel ArenaLives_AdditionalReviveTime_Label,
-        ArenaLives_Amount_Label, 
-        ArenaLives_ReviveTime_Label,
-        ArenaLives_RespawnShieldDuration_Label,
-        ArenaItems_ItemSpawnMultiplierCent_Label,
-        ArenaItems_ItemSpawnMultiplierPerPlayersCent_Label;
-    public RestorableCheckbox ArenaLives_BlockWin_CheckBox, 
-        ArenaItems_NewItemSpawningSystem_CheckBox, 
+    public MenuLabel ArenaItems_Title, WIP_Warning;
+    public OpTextBox ArenaItems_ItemSpawnMultiplierCent_TextBox,
+        ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox,
+        ArenaItems_ItemRespawnTimer_TextBox;
+    public MenuLabel ArenaItems_ItemSpawnMultiplierCent_Label,
+        ArenaItems_ItemSpawnMultiplierPerPlayersCent_Label,
+        ArenaItems_ItemRespawnTimer_Label;
+    public RestorableCheckbox ArenaItems_NewItemSpawningSystem_CheckBox, 
         ArenaItems_ItemSpawnDiversity_CheckBox, 
         ArenaItems_ItemSpawnRandom_CheckBox, 
-        ArenaItems_ItemRespawn_CheckBox;
+        ArenaItems_ItemRespawn_CheckBox, 
+        ArenaItems_CheckSpearCount_CheckBox, 
+        ArenaItems_CheckThrowableCount_CheckBox, 
+        ArenaItems_CheckMiscellaneousCount_CheckBox, 
+        ArenaItems_NoSpear_CheckBox, 
+        ArenaBonus_InstantDeath_CheckBox, 
+        ArenaBonus_ExtraItemsUses_CheckBox;
 
-    public SimpleButton backButton;
+    public SimpleButton backButton, resetButton;
 
     public override string Name => "BTW Arena Settings"; //this will appear on Select Settings Page
 
@@ -84,77 +89,25 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         }
 
         CreateWarning(ref WIP_Warning, "Those settings are still WIP (here be dragons !)", -1f);
-
-        //--------------------- Arena Lives
-        CreateTitle(ref ArenaLives_Title, "Arena Lives", 0);
-
-        // ArenaLives_Amount
-        CreateIntTextBox(ref ArenaLives_Amount_TextBox, ref ArenaLives_Amount_Label,
-            BTWRemix.MeadowArenaLivesAmount, "Lives :", 1);
-
-        ArenaLives_Amount_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
-        {
-            if (!BTWMeadowArenaSettings.TryGetSettings(out var btwAData)) return;
-            btwAData.ArenaLives_Amount =
-                BTWRemix.MeadowArenaLivesAmount.ClampValue(ArenaLives_Amount_TextBox.valueInt);
-        };
-
-        // ArenaLives_BlockWin
-        CreateCheckBox(ref ArenaLives_BlockWin_CheckBox, BTWRemix.MeadowArenaLivesBlockWin,
-            "Block session end on revival :", AL_BLOCKWIN, 2);
-
-        //  ArenaLives_ReviveTime
-        CreateIntTextBox(ref ArenaLives_ReviveTime_TextBox, ref ArenaLives_ReviveTime_Label,
-            BTWRemix.MeadowArenaLivesReviveTime, "Revive time :", 3);
-
-        ArenaLives_ReviveTime_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
-        {
-            if (!BTWMeadowArenaSettings.TryGetSettings(out var btwAData)) return;
-            btwAData.ArenaLives_ReviveTime =
-                BTWRemix.MeadowArenaLivesReviveTime.ClampValue(ArenaLives_ReviveTime_TextBox.valueInt);
-        };
-
-        //  ArenaLives_ReviveTime
-        CreateIntTextBox(ref ArenaLives_AdditionalReviveTime_TextBox, ref ArenaLives_AdditionalReviveTime_Label,
-            BTWRemix.MeadowArenaLivesAdditionalReviveTime, "Additionnal per life revive time :", 4);
-
-        ArenaLives_AdditionalReviveTime_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
-        {
-            if (!BTWMeadowArenaSettings.TryGetSettings(out var btwAData)) return;
-            btwAData.ArenaLives_AdditionalReviveTime =
-                BTWRemix.MeadowArenaLivesAdditionalReviveTime.ClampValue(ArenaLives_AdditionalReviveTime_TextBox.valueInt);
-        };
-
-        //  ArenaLives_RespawnShieldDuration
-        CreateIntTextBox(ref ArenaLives_RespawnShieldDuration_TextBox, ref ArenaLives_RespawnShieldDuration_Label,
-            BTWRemix.MeadowArenaLivesRespawnShieldDuration, "Respawn shield duration :", 5);
-
-        ArenaLives_RespawnShieldDuration_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
-        {
-            if (!BTWMeadowArenaSettings.TryGetSettings(out var btwAData)) return;
-            btwAData.ArenaLives_RespawnShieldDuration =
-                BTWRemix.MeadowArenaLivesRespawnShieldDuration.ClampValue(ArenaLives_RespawnShieldDuration_TextBox.valueInt);
-        };
         
         //--------------------- Arena Item Spawn 
-        CreateTitle(ref ArenaItems_Title, "Arena Item Spawn", 6);
+        CreateTitle(ref ArenaItems_Title, "Arena Settings", 0);
 
         // ArenaItems_NewItemSpawningSystem
         CreateCheckBox(ref ArenaItems_NewItemSpawningSystem_CheckBox, BTWRemix.MeadowNewItemSpawningSystem,
-            "New item spawning system :", AI_ITEMSPAWNDIVERSITY, 7);
+            "New item spawning system :", AI_NEWITEMSPAWNSYSTEM, 1);
 
         // ArenaItems_ItemSpawnDiversity
         CreateCheckBox(ref ArenaItems_ItemSpawnDiversity_CheckBox, BTWRemix.MeadowItemSpawnDiversity,
-            "Item Diversity :", AI_NEWITEMSPAWNSYSTEM, 8);
+            "Item Diversity :", AI_ITEMSPAWNDIVERSITY, 2);
 
         // ArenaItems_ItemSpawnRandom
         CreateCheckBox(ref ArenaItems_ItemSpawnRandom_CheckBox, BTWRemix.MeadowItemSpawnRandom,
-            "Random Items :", AI_ITEMSPAWNRANDOM, 9);
+            "Random Items :", AI_ITEMSPAWNRANDOM, 3);
 
         //  ArenaItems_ItemSpawnMultiplierCent
         CreateIntTextBox(ref ArenaItems_ItemSpawnMultiplierCent_TextBox, ref ArenaItems_ItemSpawnMultiplierCent_Label,
-            BTWRemix.MeadowItemSpawnMultiplierCent, "Item Spawn multiplicator % :", 10, true);
-
+            BTWRemix.MeadowItemSpawnMultiplierCent, "Item Spawn multiplicator % :", 4, true);
         ArenaItems_ItemSpawnMultiplierCent_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
         {
             if (!BTWMeadowArenaSettings.TryGetSettings(out var btwAData)) return;
@@ -164,8 +117,7 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
 
         //  ArenaItems_ItemSpawnMultiplierPerPlayersCent
         CreateIntTextBox(ref ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox, ref ArenaItems_ItemSpawnMultiplierPerPlayersCent_Label,
-            BTWRemix.MeadowItemSpawnMultiplierPerPlayersCent, "Added multiplicator per player % :", 11, true);
-
+            BTWRemix.MeadowItemSpawnMultiplierPerPlayersCent, "Added multiplicator per player % :", 5, true);
         ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
         {
             if (!BTWMeadowArenaSettings.TryGetSettings(out var btwAData)) return;
@@ -173,27 +125,63 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
                 BTWRemix.MeadowItemSpawnMultiplierPerPlayersCent.ClampValue(ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox.valueInt);
         };
 
-        // ArenaItems_ItemSpawnRandom
+        // ArenaItems_ItemRespawn
         CreateCheckBox(ref ArenaItems_ItemRespawn_CheckBox, BTWRemix.MeadowItemRespawn,
-            "Items Respawn :", AI_ITEMRESPAWN, 12);
+            "Items Respawn :", AI_ITEMRESPAWN, 6);
+
+        // ArenaItems_ItemRespawnTimer
+        CreateIntTextBox(ref ArenaItems_ItemRespawnTimer_TextBox, ref ArenaItems_ItemRespawnTimer_Label,
+            BTWRemix.MeadowItemRespawnTimer, "Item Respawn Timer :", 7, true);
+        ArenaItems_ItemRespawnTimer_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
+        {
+            if (!BTWMeadowArenaSettings.TryGetSettings(out var btwAData)) return;
+            btwAData.ArenaItems_ItemRespawnTimer = 
+                ArenaItems_ItemRespawnTimer_TextBox.cfgEntry.ClampValue(ArenaItems_ItemRespawnTimer_TextBox.valueInt);
+        };
+
+        // ArenaItems_CheckSpearCount
+        CreateCheckBox(ref ArenaItems_CheckSpearCount_CheckBox, BTWRemix.MeadowItemCheckSpearCount,
+            "Check Spear Count :", AI_CHECKSPEAR, 8);
+
+        // ArenaItems_CheckThrowableCount
+        CreateCheckBox(ref ArenaItems_CheckThrowableCount_CheckBox, BTWRemix.MeadowItemCheckThrowableCount,
+            "Check Throwable Count :", AI_CHECKTROWABLE, 9);
+
+        // ArenaItems_CheckMiscellaneousCount
+        CreateCheckBox(ref ArenaItems_CheckMiscellaneousCount_CheckBox, BTWRemix.MeadowItemCheckMiscellaneousCount,
+            "Check Miscellaneous Count :", AI_CHECKOTHERS, 10);
+
+        // ArenaItems_NoSpears
+        CreateCheckBox(ref ArenaItems_NoSpear_CheckBox, BTWRemix.MeadowItemNoSpear,
+            "No Spears :", AI_NOSPEAR, 11);
+
+        // ArenaBonus_InstantDeath
+        CreateCheckBox(ref ArenaBonus_InstantDeath_CheckBox, BTWRemix.MeadowArenaInstantDeath,
+            "Instant Death :", AB_INSTANTDEATH, 12);
+
+        // ArenaBonus_ExtraItemsUses
+        CreateCheckBox(ref ArenaBonus_ExtraItemsUses_CheckBox, BTWRemix.MeadowArenaExtraItemUses,
+            "Extra Item Uses :", AB_EXTRAITEMUSES, 13);
 
 
         this.SafeAddSubobjects(
             tabWrapper,
-            WIP_Warning, ArenaLives_Title, ArenaItems_Title,
+            WIP_Warning, ArenaItems_Title,
 
-            ArenaLives_BlockWin_CheckBox, 
             ArenaItems_NewItemSpawningSystem_CheckBox,
             ArenaItems_ItemSpawnDiversity_CheckBox,
             ArenaItems_ItemSpawnRandom_CheckBox,
             ArenaItems_ItemRespawn_CheckBox,
+            ArenaItems_CheckSpearCount_CheckBox,
+            ArenaItems_CheckThrowableCount_CheckBox,
+            ArenaItems_CheckMiscellaneousCount_CheckBox,
+            ArenaItems_NoSpear_CheckBox,
+            ArenaBonus_InstantDeath_CheckBox,
+            ArenaBonus_ExtraItemsUses_CheckBox,
 
-            ArenaLives_AdditionalReviveTime_Label,
-            ArenaLives_Amount_Label, 
-            ArenaLives_ReviveTime_Label,
-            ArenaLives_RespawnShieldDuration_Label,
             ArenaItems_ItemSpawnMultiplierCent_Label,
-            ArenaItems_ItemSpawnMultiplierPerPlayersCent_Label);
+            ArenaItems_ItemSpawnMultiplierPerPlayersCent_Label,
+            ArenaItems_ItemRespawnTimer_Label);
     }
 
     public void SyncMenuObjectStatus(MenuObject obj)
@@ -202,18 +190,23 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
     }
     public override void SaveInterfaceOptions()
     {
-        BTWRemix.MeadowArenaLivesAdditionalReviveTime.Value = this.ArenaLives_AdditionalReviveTime_TextBox.valueInt;
-        BTWRemix.MeadowArenaLivesAmount.Value = this.ArenaLives_Amount_TextBox.valueInt;
-        BTWRemix.MeadowArenaLivesBlockWin.Value = this.ArenaLives_BlockWin_CheckBox.Checked;
-        BTWRemix.MeadowArenaLivesReviveTime.Value = this.ArenaLives_ReviveTime_TextBox.valueInt;
-        BTWRemix.MeadowArenaLivesRespawnShieldDuration.Value = this.ArenaLives_RespawnShieldDuration_TextBox.valueInt;
-        
+        BTWRemix.MeadowItemSpawnMultiplierCent.Value = this.ArenaItems_ItemSpawnMultiplierCent_TextBox.valueInt;
+        BTWRemix.MeadowItemSpawnMultiplierPerPlayersCent.Value = this.ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox.valueInt;
+        BTWRemix.MeadowItemRespawnTimer.Value = this.ArenaItems_ItemRespawnTimer_TextBox.valueInt;
+
         BTWRemix.MeadowNewItemSpawningSystem.Value = this.ArenaItems_NewItemSpawningSystem_CheckBox.Checked;
         BTWRemix.MeadowItemSpawnDiversity.Value = this.ArenaItems_ItemSpawnDiversity_CheckBox.Checked;
         BTWRemix.MeadowItemSpawnRandom.Value = this.ArenaItems_ItemSpawnRandom_CheckBox.Checked;
-        BTWRemix.MeadowItemSpawnMultiplierCent.Value = this.ArenaItems_ItemSpawnMultiplierCent_TextBox.valueInt;
-        BTWRemix.MeadowItemSpawnMultiplierPerPlayersCent.Value = this.ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox.valueInt;
         BTWRemix.MeadowItemRespawn.Value = this.ArenaItems_ItemRespawn_CheckBox.Checked;
+
+        BTWRemix.MeadowItemCheckSpearCount.Value = this.ArenaItems_CheckSpearCount_CheckBox.Checked;
+        BTWRemix.MeadowItemCheckThrowableCount.Value = this.ArenaItems_CheckThrowableCount_CheckBox.Checked;
+        BTWRemix.MeadowItemCheckMiscellaneousCount.Value = this.ArenaItems_CheckMiscellaneousCount_CheckBox.Checked;
+        BTWRemix.MeadowItemNoSpear.Value = this.ArenaItems_NoSpear_CheckBox.Checked;
+        BTWRemix.MeadowArenaInstantDeath.Value = this.ArenaBonus_InstantDeath_CheckBox.Checked;
+        BTWRemix.MeadowArenaExtraItemUses.Value = this.ArenaBonus_ExtraItemsUses_CheckBox.Checked;
+        
+        BTWRemix.instance._SaveConfigFile();
     }
     public override void CallForSync()
     {
@@ -221,25 +214,51 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         
         if (!BTWMeadowArenaSettings.TryGetSettings(out var btwSettings)) return;
 
-        btwSettings.ArenaLives_AdditionalReviveTime = this.ArenaLives_AdditionalReviveTime_TextBox.valueInt;
-        btwSettings.ArenaLives_Amount = this.ArenaLives_Amount_TextBox.valueInt;
-        btwSettings.ArenaLives_ReviveTime = this.ArenaLives_ReviveTime_TextBox.valueInt;
-        btwSettings.ArenaLives_RespawnShieldDuration = this.ArenaLives_RespawnShieldDuration_TextBox.valueInt;
-
         btwSettings.ArenaItems_ItemSpawnMultiplierCent = this.ArenaItems_ItemSpawnMultiplierCent_TextBox.valueInt;
         btwSettings.ArenaItems_ItemSpawnMultiplierPerPlayersCent = this.ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox.valueInt;
+        btwSettings.ArenaItems_ItemRespawnTimer = this.ArenaItems_ItemRespawnTimer_TextBox.valueInt;
     }
     
     public override void SelectAndCreateBackButtons(SettingsPage previousSettingPage, bool forceSelectedObject)
     {
         if (backButton == null)
-            {
-                backButton = new(menu, this, menu.Translate("BACK"), BACKTOSELECT, new(15, 15), new(80, 30));
-                AddObjects(backButton);
-                menu.MutualVerticalButtonBind(backButton, ArenaLives_Amount_Label);
-                menu.MutualVerticalButtonBind(ArenaItems_ItemSpawnMultiplierPerPlayersCent_Label, backButton); //loop
-            }
-            if (forceSelectedObject) menu.selectedObject = ArenaItems_ItemSpawnMultiplierPerPlayersCent_Label;
+        {
+            backButton = new(menu, this, menu.Translate("BACK"), BACKTOSELECT, new(15, 15), new(80, 30));
+            AddObjects(backButton);
+            menu.MutualVerticalButtonBind(backButton, ArenaItems_NewItemSpawningSystem_CheckBox);
+        }
+        if (forceSelectedObject) menu.selectedObject = ArenaBonus_InstantDeath_CheckBox;
+        if (resetButton == null)
+        {
+            resetButton = new(menu, this, menu.Translate("RESET"), RESETTODEFAULT, new(355, 15), new(80, 30));
+            AddObjects(resetButton);
+            menu.MutualVerticalButtonBind(resetButton, backButton); 
+            menu.MutualVerticalButtonBind(ArenaBonus_InstantDeath_CheckBox, resetButton); //loop
+        }
+    }
+    public override void Singal(MenuObject sender, string message)
+    {
+        base.Singal(sender, message);
+        if (message == RESETTODEFAULT)
+        {
+            (RWCustom.Custom.rainWorld.processManager.currentMainLoop as Menu.Menu)?.PlaySound(SoundID.MENU_Button_Successfully_Assigned); 
+            
+            this.ArenaItems_ItemSpawnMultiplierCent_TextBox.valueInt = ValueConverter.ConvertToValue<int>(BTWRemix.MeadowItemSpawnMultiplierCent.defaultValue);
+            this.ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox.valueInt = ValueConverter.ConvertToValue<int>(BTWRemix.MeadowItemSpawnMultiplierPerPlayersCent.defaultValue);
+            this.ArenaItems_ItemRespawnTimer_TextBox.valueInt = ValueConverter.ConvertToValue<int>(BTWRemix.MeadowItemRespawnTimer.defaultValue);
+            
+            this.ArenaItems_NewItemSpawningSystem_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowNewItemSpawningSystem.defaultValue);
+            this.ArenaItems_ItemSpawnDiversity_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowItemSpawnDiversity.defaultValue);
+            this.ArenaItems_ItemSpawnRandom_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowItemSpawnRandom.defaultValue);
+            this.ArenaItems_ItemRespawn_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowItemRespawn.defaultValue);
+
+            this.ArenaItems_CheckSpearCount_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowItemCheckSpearCount.defaultValue);
+            this.ArenaItems_CheckThrowableCount_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowItemCheckThrowableCount.defaultValue);
+            this.ArenaItems_CheckMiscellaneousCount_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowItemCheckMiscellaneousCount.defaultValue);
+            this.ArenaItems_NoSpear_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowItemNoSpear.defaultValue);
+            this.ArenaBonus_InstantDeath_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowArenaInstantDeath.defaultValue);
+            this.ArenaBonus_ExtraItemsUses_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowArenaExtraItemUses.defaultValue);
+        }
     }
     public override void Update()
     {
@@ -260,13 +279,10 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
                 textBox.held = textBox._KeyboardOn;
                 if (!textBox.held) { textBox.valueInt = value; }
             }
-            UpdateIntTextBox(ref this.ArenaLives_AdditionalReviveTime_TextBox, settings.ArenaLives_AdditionalReviveTime);
-            UpdateIntTextBox(ref this.ArenaLives_Amount_TextBox, settings.ArenaLives_Amount);
-            UpdateIntTextBox(ref this.ArenaLives_ReviveTime_TextBox, settings.ArenaLives_ReviveTime);
-            UpdateIntTextBox(ref this.ArenaLives_RespawnShieldDuration_TextBox, settings.ArenaLives_RespawnShieldDuration);
 
             UpdateIntTextBox(ref this.ArenaItems_ItemSpawnMultiplierCent_TextBox, settings.ArenaItems_ItemSpawnMultiplierCent);
             UpdateIntTextBox(ref this.ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox, settings.ArenaItems_ItemSpawnMultiplierPerPlayersCent);
+            UpdateIntTextBox(ref this.ArenaItems_ItemRespawnTimer_TextBox, settings.ArenaItems_ItemRespawnTimer);
         }
     }
     public override void GrafUpdate(float timeStacker)
@@ -278,13 +294,10 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         { // can you guess this menu made me go crazy ? No ? Too bad I just told you.
             label.label.color = textBox.rect.colorEdge;
         }
-        GrafUpdateIntTextBox(ref ArenaLives_AdditionalReviveTime_TextBox, ref ArenaLives_AdditionalReviveTime_Label);
-        GrafUpdateIntTextBox(ref ArenaLives_Amount_TextBox, ref ArenaLives_Amount_Label);
-        GrafUpdateIntTextBox(ref ArenaLives_ReviveTime_TextBox, ref ArenaLives_ReviveTime_Label);
-        GrafUpdateIntTextBox(ref ArenaLives_RespawnShieldDuration_TextBox, ref ArenaLives_RespawnShieldDuration_Label);
 
         GrafUpdateIntTextBox(ref this.ArenaItems_ItemSpawnMultiplierCent_TextBox, ref this.ArenaItems_ItemSpawnMultiplierCent_Label);
         GrafUpdateIntTextBox(ref this.ArenaItems_ItemSpawnMultiplierPerPlayersCent_TextBox, ref this.ArenaItems_ItemSpawnMultiplierPerPlayersCent_Label);
+        GrafUpdateIntTextBox(ref this.ArenaItems_ItemRespawnTimer_TextBox, ref this.ArenaItems_ItemRespawnTimer_Label);
     }
 
     public bool GetChecked(CheckBox box)
@@ -292,12 +305,16 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         string id = box.IDString;
         if (BTWMeadowArenaSettings.TryGetSettings(out var settings))
         {
-            if (id == AL_BLOCKWIN) return settings.ArenaLives_BlockWin;
-
             if (id == AI_ITEMSPAWNDIVERSITY) return settings.ArenaItems_ItemSpawnDiversity;
             if (id == AI_ITEMSPAWNRANDOM) return settings.ArenaItems_ItemSpawnRandom; 
             if (id == AI_NEWITEMSPAWNSYSTEM) return settings.ArenaItems_NewItemSpawningSystem;
             if (id == AI_ITEMRESPAWN) return settings.ArenaItems_ItemRespawn;
+            if (id == AI_CHECKSPEAR) return settings.ArenaItems_CheckSpearCount;
+            if (id == AI_CHECKTROWABLE) return settings.ArenaItems_CheckThrowableCount;
+            if (id == AI_CHECKOTHERS) return settings.ArenaItems_CheckMiscellaneousCount;
+            if (id == AI_NOSPEAR) return settings.ArenaItems_NoSpear;
+            if (id == AB_INSTANTDEATH) return settings.ArenaBonus_InstantDeath;
+            if (id == AB_EXTRAITEMUSES) return settings.ArenaBonus_ExtraItemUses;
         }
         return false;
     }
@@ -306,11 +323,16 @@ public class BTWArenaSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
     {
         if (!BTWMeadowArenaSettings.TryGetSettings(out var settings)) return;
         string id = box.IDString;
-        if (id == AL_BLOCKWIN) {settings.ArenaLives_BlockWin = c;}
 
-        else if (id == AI_ITEMSPAWNDIVERSITY) {settings.ArenaItems_ItemSpawnDiversity = c;}
+        if (id == AI_ITEMSPAWNDIVERSITY) {settings.ArenaItems_ItemSpawnDiversity = c;}
         else if (id == AI_ITEMSPAWNRANDOM) {settings.ArenaItems_ItemSpawnRandom = c;}
         else if (id == AI_NEWITEMSPAWNSYSTEM) {settings.ArenaItems_NewItemSpawningSystem = c;}
         else if (id == AI_ITEMRESPAWN) {settings.ArenaItems_ItemRespawn = c;}
+        else if (id == AI_CHECKSPEAR) {settings.ArenaItems_CheckSpearCount = c;}
+        else if (id == AI_CHECKTROWABLE) {settings.ArenaItems_CheckThrowableCount = c;}
+        else if (id == AI_CHECKOTHERS) {settings.ArenaItems_CheckMiscellaneousCount = c;}
+        else if (id == AI_NOSPEAR) {settings.ArenaItems_NoSpear = c;}
+        else if (id == AB_INSTANTDEATH) {settings.ArenaBonus_InstantDeath = c;}
+        else if (id == AB_EXTRAITEMUSES) {settings.ArenaBonus_ExtraItemUses = c;}
     }
 }

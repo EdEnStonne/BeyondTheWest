@@ -68,26 +68,23 @@ public class ArenaItemSpawnManager
         }
         return objectType;
     }
-    public static ObjectData GetNewObjectDataFromPlacedObject(ObjectType objectType, PlacedObject placedObject)
+    public static ObjectData GetNewObjectDataFromPlacedObject(ObjectType objectType, PlacedObject placedObject, ObjectType[] blocklist = null)
     {
         ObjectData objectData;
+        ObjectDataPool newPoll = new();
         ArenaItemSpawn.ArenaItemSpawnSetting settings = new();
         if (settings.randomItem)
         {
-            ObjectDataPool newPoll = new(ArenaItemSpawn.allPool);
-            if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
-            {
-                MeadowFunc.RemoveRestrictedItemsInArenaFromPool(ref newPoll);
-            }
-            objectData = newPoll.Pool();
+            newPoll = new(ArenaItemSpawn.allPool);
         }
         else
         {
-            objectData = new(objectType, (placedObject.data as MItemData).type == MItemData.Type.ExplosiveSpear ? 1 : 0);
+            newPoll.AddToPool(
+                new ObjectData(objectType, (placedObject.data as MItemData).type == MItemData.Type.ExplosiveSpear ? 1 : 0), 
+                500);
             
             if (settings.diversity)
             {
-                ObjectDataPool newPoll;
                 if (objectType == ObjectType.Spear)
                 {
                     newPoll = new(ArenaItemSpawn.spearPool);
@@ -100,34 +97,43 @@ public class ArenaItemSpawnManager
                 {
                     newPoll = new(ArenaItemSpawn.othersPool);
                 }
-                newPoll.AddToPool(objectData, 500);
-
-                if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
-                {
-                    MeadowFunc.RemoveRestrictedItemsInArenaFromPool(ref newPoll);
-                }
-                objectData = newPoll.Pool();
             }
         }
+        if (blocklist != null)
+        {
+            newPoll.RemoveFromPool(x => blocklist.Contains(x.objectData.objectType));
+        }
+        if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+        {
+            MeadowFunc.RemoveRestrictedItemsInArenaFromPool(ref newPoll);
+        }
+        // BTWPlugin.Log($"New pool from [{objectType}] !");
+        // newPoll.LogPool();
+        if (newPoll.IsEmpty) { return new(); }
+        objectData = newPoll.Pool();
         return objectData;
     }
-    public static ObjectData GetNewObjectDataFromPlacedObject(PlacedObject placedObject)
+    public static ObjectData GetNewObjectDataFromPlacedObject(PlacedObject placedObject, ObjectType[] blocklist = null)
     {
         ObjectType objectType = ObjectType.Rock;
         if (placedObject.data is MItemData mItemData)
         {
             objectType = GetObjectTypeFromMultiplayerItemData(mItemData);
         }
-        return GetNewObjectDataFromPlacedObject(objectType, placedObject);
+        return GetNewObjectDataFromPlacedObject(objectType, placedObject, blocklist);
     }
-    public static void AddItemSpawnerFromPlacedObject(ArenaGameSession arena, Room room, ObjectType objectType, PlacedObject placedObject, int count)
+    public static void AddItemSpawnerFromPlacedObject(ArenaGameSession arena, Room room, ObjectType objectType, PlacedObject placedObject, int count, ObjectType[] blocklist = null)
     {
         List<ObjectData> objectList = new();
         for (int i = 1; i <= count; i++)
         {
-            ObjectData objectData = GetNewObjectDataFromPlacedObject(objectType, placedObject);
+            ObjectData objectData = GetNewObjectDataFromPlacedObject(objectType, placedObject, blocklist);
+            if (objectData.IsDefault) { continue; }
+            
             objectList.Add( objectData );
         }
+        if (objectList.Count == 0) { return; }
+
         ArenaItemSpawn itemSpawn = new(placedObject.pos, objectList);
         if (BTWPlugin.meadowEnabled && MeadowFunc.ShouldHoldFireFromOnlineArenaTimer())
         {
@@ -210,12 +216,12 @@ public class ArenaItemSpawnManager
             IntVector2 XPtilePos = new(tilePos.x + 1, tilePos.y);
             IntVector2 XntilePos = new(tilePos.x - 1, tilePos.y);
 
-            if (!room.GetTile(tilePos).Solid
-                && !room.GetTile(YPtilePos).Solid
-                && !room.GetTile(YNtilePos).Solid
-                && !room.GetTile(XPtilePos).Solid
-                && !room.GetTile(XntilePos).Solid
-                && room.GetTile(GroundtilePos).Solid
+            if (room.GetTile(tilePos).IsAir()
+                && room.GetTile(YPtilePos).IsAir()
+                && room.GetTile(YNtilePos).IsAir()
+                && room.GetTile(XPtilePos).IsAir()
+                && room.GetTile(XntilePos).IsAir()
+                && room.GetTile(GroundtilePos).IsWalkable()
                 && !this.itemSpawns.Exists(x => (x.pos - this.room.MiddleOfTile(tilePos)).magnitude <= this.spawnerLimitRadius)
             )
             {
@@ -238,7 +244,7 @@ public class ArenaItemSpawnManager
                 {
                     validPos = true;
                 }
-                else if (room.GetTile(tilePos).Solid)
+                else if (room.GetTile(tilePos).IsWalkable())
                 {
                     while (tilePos.y < room.Height)
                     {
@@ -402,7 +408,9 @@ public class ArenaItemSpawnManager
                         if (BTWFunc.random < multiplayerItemData.chance)
                         {
                             AddItemSpawnerFromPlacedObject(
-                                this.arena, this.room, GetObjectTypeFromMultiplayerItemData(multiplayerItemData), availableSpawn, (int)(Mathf.Pow(BTWFunc.random, 5) * 2) + 1);
+                                this.arena, this.room, GetObjectTypeFromMultiplayerItemData(multiplayerItemData), 
+                                availableSpawn, (int)(Mathf.Pow(BTWFunc.random, 5) * 2) + 1, 
+                                this.noSpears ? ArenaItemSpawn.spearPool.AllItemsTypes().ToArray() : null);
                         }
                     }
                 }
@@ -415,9 +423,20 @@ public class ArenaItemSpawnManager
                         List<ObjectData> objectList = new();
                         for (int i = 1; i <= (int)(Mathf.Pow(BTWFunc.random, 5) * 2) + 1; i++)
                         {
-                            ObjectData objectData = ArenaItemSpawn.allPool.Pool();
+                            ObjectDataPool newPool = new(ArenaItemSpawn.allPool);
+                            if (this.noSpears)
+                            {
+                                newPool.RemoveFromPool(x => ArenaItemSpawn.spearPool.AllItemsTypes().Exists(y => y == x.objectData.objectType));
+                            }
+                            if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+                            {
+                                MeadowFunc.RemoveRestrictedItemsInArenaFromPool(ref newPool);
+                            }
+                            ObjectData objectData = newPool.Pool();
+                            if (objectData.IsDefault) { continue; }
                             objectList.Add( objectData );
                         }
+                        if (objectList.Count == 0) { continue; }
                         ArenaItemSpawn itemSpawn = new(spot, objectList);
                         if (BTWPlugin.meadowEnabled && MeadowFunc.ShouldHoldFireFromOnlineArenaTimer())
                         {
@@ -433,7 +452,7 @@ public class ArenaItemSpawnManager
             }
         }
 
-        if (this.doCheckSpearsCount)
+        if (this.doCheckSpearsCount && !this.noSpears)
         {
             int spearcount = SpearsAvailable();
             // BTWPlugin.Log($"Counting spears ! Spears <{spearcount}> VS Players : <{this.playersCount}>");
@@ -448,9 +467,16 @@ public class ArenaItemSpawnManager
                     List<ObjectData> objectList = new();
                     for (int i = 1; i <= spawning; i++)
                     {
-                        ObjectData objectData = ArenaItemSpawn.spearPool.Pool();
+                        ObjectDataPool newPool = new(ArenaItemSpawn.spearPool);
+                        if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+                        {
+                            MeadowFunc.RemoveRestrictedItemsInArenaFromPool(ref newPool);
+                        }
+                        ObjectData objectData = newPool.Pool();
+                        if (objectData.IsDefault) { continue; }
                         objectList.Add( objectData );
                     }
+                    if (objectList.Count == 0) { continue; }
                     ArenaItemSpawn itemSpawn = new(spot, (int)(BTWFunc.Random(10, 20) * BTWFunc.FrameRate), objectList);
                     if (BTWPlugin.meadowEnabled && MeadowFunc.ShouldHoldFireFromOnlineArenaTimer())
                     {
@@ -474,7 +500,7 @@ public class ArenaItemSpawnManager
         if (this.doCheckThrowableCount)
         {
             int throwableCount = ThrowableAvailable();
-            while (throwableCount < this.playersCount + 1)
+            while (throwableCount < this.playersCount + (this.noSpears ? 5 : 1))
             {
                 int spawning = (int)(Mathf.Pow(BTWFunc.random, 5) * 2) + 1;
                 Vector2 spot = GetRandomSpawnPos();
@@ -485,9 +511,16 @@ public class ArenaItemSpawnManager
                     List<ObjectData> objectList = new();
                     for (int i = 1; i <= spawning; i++)
                     {
-                        ObjectData objectData = ArenaItemSpawn.rockPool.Pool();
+                        ObjectDataPool newPool = new(ArenaItemSpawn.rockPool);
+                        if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+                        {
+                            MeadowFunc.RemoveRestrictedItemsInArenaFromPool(ref newPool);
+                        }
+                        ObjectData objectData = newPool.Pool();
+                        if (objectData.IsDefault) { continue; }
                         objectList.Add( objectData );
                     }
+                    if (objectList.Count == 0) { continue; }
                     ArenaItemSpawn itemSpawn = new(spot, (int)(BTWFunc.Random(20, 30) * BTWFunc.FrameRate), objectList);
                     if (BTWPlugin.meadowEnabled && MeadowFunc.ShouldHoldFireFromOnlineArenaTimer())
                     {
@@ -522,9 +555,16 @@ public class ArenaItemSpawnManager
                     List<ObjectData> objectList = new();
                     for (int i = 1; i <= spawning; i++)
                     {
-                        ObjectData objectData = ArenaItemSpawn.othersPool.Pool();
+                        ObjectDataPool newPool = new(ArenaItemSpawn.othersPool);
+                        if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+                        {
+                            MeadowFunc.RemoveRestrictedItemsInArenaFromPool(ref newPool);
+                        }
+                        ObjectData objectData = newPool.Pool();
+                        if (objectData.IsDefault) { continue; }
                         objectList.Add( objectData );
                     }
+                    if (objectList.Count == 0) { continue; }
                     ArenaItemSpawn itemSpawn = new(spot, (int)(BTWFunc.Random(5, 60) * BTWFunc.FrameRate), objectList);
                     this.itemSpawns.Add(itemSpawn);
                     itemSpawn.itemSpawnManager = this;
@@ -550,6 +590,7 @@ public class ArenaItemSpawnManager
     public bool doCheckSpearsCount = true;
     public bool doCheckThrowableCount = true;
     public bool doCheckMiscellaniousCount = true;
+    public bool noSpears = false;
 
     public bool doRespawn = true;
     public int RespawnAttemps = 10;

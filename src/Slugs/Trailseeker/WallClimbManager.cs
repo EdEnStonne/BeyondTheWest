@@ -434,7 +434,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
                     // if (this.wallGrip < 1f) { Plugin.Log("Gripping ! " + this.wallGrip); }
                     foreach (BodyChunk bodyChunk in player.bodyChunks)
                     {
-                        bodyChunk.vel.y = player.g * this.wallGrip;
+                        bodyChunk.vel.y = player.gravity * this.wallGrip;
                     }
                 }
 
@@ -675,7 +675,6 @@ public static class WallClimbManagerHooks
             else
             {
                 BTWPlugin.logger.LogError("Couldn't find IL hook :<");
-                BTWPlugin.Log(il);
             }
             BTWPlugin.Log("IL hook ended");
         }
@@ -752,7 +751,6 @@ public static class WallClimbManagerHooks
             else
             {
                 BTWPlugin.logger.LogError("Couldn't find IL hook :<");
-                BTWPlugin.Log(il);
             }
             BTWPlugin.Log("IL hook ended");
         }
@@ -794,7 +792,6 @@ public static class WallClimbManagerHooks
             else
             {
                 BTWPlugin.logger.LogError("Couldn't find IL hook :<");
-                BTWPlugin.Log(il);
             }
             BTWPlugin.Log("IL hook ended");
         }

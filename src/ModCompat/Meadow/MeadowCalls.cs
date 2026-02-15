@@ -5,6 +5,8 @@ using BeyondTheWest.MSCCompat;
 using BeyondTheWest.ArenaAddition;
 using System.Collections.Generic;
 using BeyondTheWest.MeadowCompat.Data;
+using BeyondTheWest.Items;
+using BepInEx;
 
 namespace BeyondTheWest.MeadowCompat;
 public static class MeadowCalls
@@ -14,7 +16,7 @@ public static class MeadowCalls
     {
         if (BTWMeadowArenaSettings.TryGetSettings(out var meadowArenaSettings))
         {
-            wallClimbManager.MaxWallClimb = meadowArenaSettings.Trailseeker_MaxWallClimb;
+            // wallClimbManager.MaxWallClimb = meadowArenaSettings.Trailseeker_MaxWallClimb;
             wallClimbManager.MaxWallGripCount = meadowArenaSettings.Trailseeker_WallGripTimer * BTWFunc.FrameRate;
         }
     }
@@ -22,7 +24,7 @@ public static class MeadowCalls
     {
         if (BTWMeadowArenaSettings.TryGetSettings(out var settings))
         {
-            modifiedTech.poleBonus = settings.Trailseeker_PoleClimbBonus;
+            // modifiedTech.poleBonus = settings.Trailseeker_PoleClimbBonus;
         }
     }
     public static void PoleKickManager_Init(PoleKickManager poleKickManager)
@@ -38,22 +40,29 @@ public static class MeadowCalls
     }
     public static void PoleKickManager_RPCKick(Player kicker, BodyChunk chuckHit, Vector2 knockback, float knockbackBonus)
     {
-        OnlineCreature onlinePlayer = kicker?.abstractCreature?.GetOnlineCreature();
-        Creature target = chuckHit?.owner as Creature;
-        if (onlinePlayer == null || target == null) { return; }
+        if (kicker?.abstractCreature?.GetOnlineCreature() is not OnlineCreature onlineKicker) { return; }
+        if (chuckHit?.owner is not Creature target) { return; }
+        if (target.abstractCreature?.GetOnlineCreature()  is not OnlineCreature onlineTarget) { return; }
+        if (target.room?.abstractRoom?.GetResource() is not RoomSession roomSession) { return; }
+        if (chuckHit == null)  { return; }
 
-        OnlineCreature onlineTarget = target.abstractCreature?.GetOnlineCreature();
-        if (onlineTarget == null || chuckHit == null)  { return; }
-
-        byte chuckIndex = (byte)chuckHit.index;;
-
-        MeadowRPCs.InvokeAllOtherPlayerWithRPC(
-            typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.PoleKickManager_Kick)).CreateDelegate(
-                typeof(Action<RPCEvent, OnlineCreature, OnlineCreature, byte, Vector2, byte>)),
-                onlinePlayer, onlineTarget, chuckIndex, knockback, 
+        byte chuckIndex = (byte)chuckHit.index;
+        
+        MeadowRPCs.InvokeAllOtherPlayerWithRPCInRoom(roomSession, MeadowRPCs.PoleKickManager_Kick,
+                onlineKicker, onlineTarget, chuckIndex, knockback, 
                 (byte)Mathf.Clamp(knockbackBonus * 100f, byte.MinValue, byte.MaxValue)
         );
     }
+    public static void PoleKickManager_RPCKickWhiff(Player kicker, Vector2 position)
+    {
+        if (kicker?.abstractCreature?.GetOnlineCreature() is not OnlineCreature onlineKicker) { return; }
+        if (kicker?.room?.abstractRoom?.GetResource() is not RoomSession roomSession) { return; }
+
+        MeadowRPCs.InvokeAllOtherPlayerWithRPCInRoom(roomSession, MeadowRPCs.PoleKickManager_WhiffKick,
+                onlineKicker, position
+        );
+    }
+    
 
     // Core
     public static OnlineCreature CoreMeadow_OnlineCreature(AbstractEnergyCore abstractEnergyCore)
@@ -72,10 +81,10 @@ public static class MeadowCalls
         
         if (BTWMeadowArenaSettings.TryGetSettings(out var meadowArenaSettings))
         {
-            abstractEnergyCore.CoreMaxEnergy = meadowArenaSettings.Core_MaxEnergy;
-            abstractEnergyCore.CoreEnergyRecharge = meadowArenaSettings.Core_RegenEnergy;
-            abstractEnergyCore.CoreOxygenEnergyUsage = meadowArenaSettings.Core_OxygenEnergyUsage;
-            abstractEnergyCore.CoreAntiGravity = meadowArenaSettings.Core_AntiGravityCent / 100f;
+            // abstractEnergyCore.CoreMaxEnergy = meadowArenaSettings.Core_MaxEnergy;
+            // abstractEnergyCore.CoreEnergyRecharge = meadowArenaSettings.Core_RegenEnergy;
+            // abstractEnergyCore.CoreOxygenEnergyUsage = meadowArenaSettings.Core_OxygenEnergyUsage;
+            // abstractEnergyCore.CoreAntiGravity = meadowArenaSettings.Core_AntiGravityCent / 100f;
             abstractEnergyCore.CoreMaxBoost = meadowArenaSettings.Core_MaxLeap;
             abstractEnergyCore.isShockwaveEnabled = meadowArenaSettings.Core_Shockwave;
 
@@ -99,66 +108,57 @@ public static class MeadowCalls
     }
     public static void CoreMeadow_BoostRPC(AbstractEnergyCore abstractEnergyCore, byte pow)
     {
-        OnlineCreature onlineCreature = CoreMeadow_OnlineCreature(abstractEnergyCore);
-        if (onlineCreature == null) { return; }
+        if (CoreMeadow_OnlineCreature(abstractEnergyCore) is not OnlineCreature onlineCore) { return; }
+        if (abstractEnergyCore?.Room?.GetResource() is not RoomSession roomSession) { return; }
 
-        MeadowRPCs.InvokeAllOtherPlayerWithRPCOnce(
-            typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.Core_Boost)).CreateDelegate(
-                typeof(Action<RPCEvent, OnlinePhysicalObject, byte>)), onlineCreature, 
-                pow
+        MeadowRPCs.InvokeAllOtherPlayerWithRPCOnceInRoom(roomSession, MeadowRPCs.Core_Boost,
+            onlineCore, pow
         );
     }
     public static void CoreMeadow_ShockwaveRPC(AbstractEnergyCore abstractEnergyCore)
     {
-        OnlineCreature onlineCreature = CoreMeadow_OnlineCreature(abstractEnergyCore);
-        if (onlineCreature == null) { return; }
+        if (CoreMeadow_OnlineCreature(abstractEnergyCore) is not OnlineCreature onlineCore) { return; }
+        if (abstractEnergyCore?.Room?.GetResource() is not RoomSession roomSession) { return; }
 
-        MeadowRPCs.InvokeAllOtherPlayerWithRPC(
-            typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.Core_Shockwave)).CreateDelegate(
-                typeof(Action<RPCEvent, OnlinePhysicalObject>)), onlineCreature
+        MeadowRPCs.InvokeAllOtherPlayerWithRPCInRoom(roomSession, MeadowRPCs.Core_Shockwave,
+            onlineCore
         );
     }
     public static void CoreMeadow_ExplodeRPC(AbstractEnergyCore abstractEnergyCore)
     {
-        OnlineCreature onlineCreature = CoreMeadow_OnlineCreature(abstractEnergyCore);
-        if (onlineCreature == null) { return; }
+        if (CoreMeadow_OnlineCreature(abstractEnergyCore) is not OnlineCreature onlineCore) { return; }
+        if (abstractEnergyCore?.Room?.GetResource() is not RoomSession roomSession) { return; }
 
-        MeadowRPCs.InvokeAllOtherPlayerWithRPC(
-            typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.Core_Explode)).CreateDelegate(
-                typeof(Action<RPCEvent, OnlinePhysicalObject>)), onlineCreature
+        MeadowRPCs.InvokeAllOtherPlayerWithRPCInRoom(roomSession, MeadowRPCs.Core_Explode,
+            onlineCore
         );
     }
     public static void CoreMeadow_PopRPC(AbstractEnergyCore abstractEnergyCore)
     {
-        OnlineCreature onlineCreature = CoreMeadow_OnlineCreature(abstractEnergyCore);
-        if (onlineCreature == null) { return; }
+        if (CoreMeadow_OnlineCreature(abstractEnergyCore) is not OnlineCreature onlineCore) { return; }
+        if (abstractEnergyCore?.Room?.GetResource() is not RoomSession roomSession) { return; }
 
-        MeadowRPCs.InvokeAllOtherPlayerWithRPCOnce(
-            typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.Core_Pop)).CreateDelegate(
-                typeof(Action<RPCEvent, OnlinePhysicalObject>)), onlineCreature
+        MeadowRPCs.InvokeAllOtherPlayerWithRPCOnceInRoom(roomSession, MeadowRPCs.Core_Pop,
+            onlineCore
         );
     }
     public static void CoreMeadow_DisableRPC(AbstractEnergyCore abstractEnergyCore)
     {
-        OnlineCreature onlineCreature = CoreMeadow_OnlineCreature(abstractEnergyCore);
-        if (onlineCreature == null) { return; }
+        if (CoreMeadow_OnlineCreature(abstractEnergyCore) is not OnlineCreature onlineCore) { return; }
+        if (abstractEnergyCore?.Room?.GetResource() is not RoomSession roomSession) { return; }
 
-        OnlinePlayer onlinePlayer = onlineCreature.owner;
-        onlinePlayer.InvokeRPC(
-            typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.Core_Disable)).CreateDelegate(
-                typeof(Action<RPCEvent, OnlinePhysicalObject>)), onlineCreature
+        MeadowRPCs.InvokeAllOtherPlayerWithRPCInRoom(roomSession, MeadowRPCs.Core_Disable,
+            onlineCore
         );
     }
     public static void CoreMeadow_OxygenGiveRPC(AbstractEnergyCore abstractEnergyCore, Player target)
     {
-        OnlineCreature onlineCreature = CoreMeadow_OnlineCreature(abstractEnergyCore);
-        OnlineCreature targetOnlineCreature = target.abstractCreature.GetOnlineCreature();
-        if (onlineCreature == null || targetOnlineCreature == null) { return; }
+        if (CoreMeadow_OnlineCreature(abstractEnergyCore) is not OnlineCreature onlineCore) { return; }
+        if (target?.abstractCreature?.GetOnlineCreature() is not OnlineCreature onlineTarget) { return; }
+        if (abstractEnergyCore?.Room?.GetResource() is not RoomSession roomSession) { return; }
 
-        MeadowRPCs.InvokeAllOtherPlayerWithRPCOnce(
-            typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.Core_GaveOxygenToOthers)).CreateDelegate(
-                typeof(Action<RPCEvent, OnlinePhysicalObject, OnlinePhysicalObject>)), onlineCreature,
-                targetOnlineCreature
+        MeadowRPCs.InvokeAllOtherPlayerWithRPCInRoom(roomSession, MeadowRPCs.Core_GaveOxygenToOthers,
+            onlineCore, onlineTarget
         );
     }
 
@@ -184,9 +184,9 @@ public static class MeadowCalls
             staticChargeManager.isMeadowArena = true;
             if (BTWMeadowArenaSettings.TryGetSettings(out var meadowArenaSettings))
             {
-                staticChargeManager.FullECharge = meadowArenaSettings.Spark_MaxCharge;
-                staticChargeManager.MaxECharge = meadowArenaSettings.Spark_MaxCharge + meadowArenaSettings.Spark_AdditionnalOvercharge;
-                staticChargeManager.RechargeMult = meadowArenaSettings.Spark_ChargeRegenerationMult;
+                // staticChargeManager.FullECharge = meadowArenaSettings.Spark_MaxCharge;
+                // staticChargeManager.MaxECharge = meadowArenaSettings.Spark_MaxCharge + meadowArenaSettings.Spark_AdditionnalOvercharge;
+                // staticChargeManager.RechargeMult = meadowArenaSettings.Spark_ChargeRegenerationMult;
                 staticChargeManager.MaxEBounce = meadowArenaSettings.Spark_MaxElectricBounce;
                 staticChargeManager.DoDischargeDamagePlayers = meadowArenaSettings.Spark_DoDischargeDamage;
                 staticChargeManager.RiskyOvercharge = meadowArenaSettings.Spark_RiskyOvercharge;
@@ -196,7 +196,7 @@ public static class MeadowCalls
             }
             if (MeadowFunc.ShouldHoldFireFromOnlineArenaTimer())
             {
-                staticChargeManager.dischargeCooldown = 10;
+                // staticChargeManager.dischargeCooldown = 10;
                 staticChargeManager.isMeadowArenaTimerCountdown = true;
                 BTWPlugin.Log(staticChargeManager.AbstractPlayer + " In Timer !");
             }
@@ -208,14 +208,9 @@ public static class MeadowCalls
     }
     public static void SparMeadow_ElectricExplosionRPC(ElectricExplosion electricExplosion)
     {
-        if (electricExplosion == null || electricExplosion.room == null) { return; }
+        if (electricExplosion?.room?.abstractRoom?.GetResource() is not RoomSession roomSession) { return; }
 
-        RoomSession roomSession = electricExplosion.room.abstractRoom.GetResource();
-        if (roomSession == null) { return; }
-
-        MeadowRPCs.InvokeAllOtherPlayerWithRPC(
-            typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.Spark_ElectricExplosionSync)).CreateDelegate(
-                typeof(Action<RPCEvent, RoomSession, Vector2, byte, byte, byte>)),
+        MeadowRPCs.InvokeAllOtherPlayerWithRPCInRoom(roomSession, MeadowRPCs.Spark_ElectricExplosionSync,
                 roomSession, electricExplosion.pos, 
                 (byte)electricExplosion.lifeTime, (byte)electricExplosion.rad, (byte)(electricExplosion.backgroundNoise * 100f)
         );
@@ -225,19 +220,26 @@ public static class MeadowCalls
         Creature killTagHolder, float killTagHolderDmgFactor, float damage, float stun, 
         Color color, bool doSpams = false)
     {
-        if (target == null || target.abstractCreature == null) { return; }
-        OnlineCreature onlineTarget = target.abstractCreature.GetOnlineCreature();
-        if (onlineTarget == null || onlineTarget.owner == null) { return; }
+        if (target?.abstractCreature?.GetOnlineCreature() is not OnlineCreature onlineTarget) { return; }
+        if (target?.room?.abstractRoom?.GetResource() is not RoomSession roomSession) { return; }
 
         byte chuckIndex = 0;
         if (closestBodyChunk != null) { chuckIndex = (byte)closestBodyChunk.index; }
 
-        MeadowRPCs.InvokeAllOtherPlayerWithRPC(
-            typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.Spark_ElectricExplosionHit)).CreateDelegate(
-                typeof(Action<RPCEvent, OnlineCreature, byte, OnlinePhysicalObject, OnlineCreature, byte, ushort, ushort, Color, bool>)),
+        MeadowRPCs.InvokeAllOtherPlayerWithRPCInRoom(roomSession, MeadowRPCs.Spark_ElectricExplosionHit,
                 onlineTarget, chuckIndex, sourceObject?.abstractPhysicalObject?.GetOnlineObject(), 
                 killTagHolder?.abstractCreature?.GetOnlineCreature(), (byte)(killTagHolderDmgFactor * 100f),
                 (ushort)(damage * 100f), (ushort)stun, color, doSpams
+        );
+    }
+    public static void ElectricExplosion_SparkExplosionRPC(Room room, float size, 
+        Vector2 position, byte sparks, float volume, bool underwater, Color color)
+    {
+        if (room?.abstractRoom?.GetResource() is not RoomSession roomSession) { return; }
+        
+        MeadowRPCs.InvokeAllOtherPlayerWithRPCInRoom(roomSession, MeadowRPCs.Spark_SparkExplosion,
+                roomSession, (short)Mathf.Clamp(size, 0, short.MaxValue), position,
+                sparks, (byte)Mathf.Clamp(volume * 100f, 0, byte.MaxValue), underwater, color
         );
     }
 
@@ -259,26 +261,17 @@ public static class MeadowCalls
     public static void MSCCompat_RPCSyncLightnightArc(UpdatableAndDeletable lightnightArc)
     {
         if (lightnightArc == null || !ModManager.MSC) { return; }
+        if (lightnightArc?.room?.abstractRoom?.GetResource() is not RoomSession roomSession) { return; }
 
         if (lightnightArc is LightingArc arc)
         {
-            if (arc.from?.owner == null || arc.target?.owner == null) { 
-                
-            }
-            else
-            {
-                if (arc.from.owner is not Creature from || arc.target.owner  is not Creature target) { return; }
+            OnlineCreature onlineFrom = (arc.from?.owner as Creature)?.abstractCreature?.GetOnlineCreature();
+            OnlineCreature onlineTarget = (arc.target?.owner as Creature)?.abstractCreature?.GetOnlineCreature();
 
-                OnlineCreature onlineFrom = from.abstractCreature.GetOnlineCreature();
-                OnlineCreature onlineTarget = target.abstractCreature.GetOnlineCreature();
-                if (onlineFrom == null || onlineTarget == null) { return; }
-
-                MeadowRPCs.InvokeAllOtherPlayerWithRPCOnce(
-                typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.MSCCompat_Lightning)).CreateDelegate(
-                    typeof(Action<RPCEvent, OnlineCreature, OnlineCreature, byte, byte, byte, Color>)),
-                    onlineFrom, onlineTarget, (byte)(arc.width / 100f), (byte)(arc.intensity / 100f), (byte)arc.lifeTime, arc.color
-                );
-            }
+            MeadowRPCs.InvokeAllOtherPlayerWithRPCOnceInRoom(roomSession, MeadowRPCs.MSCCompat_Lightning,
+                roomSession, onlineFrom, onlineTarget, arc.fromOffset, arc.targetOffset,
+                (byte)(arc.width / 100f), (byte)(arc.intensity / 100f), (byte)arc.lifeTime, arc.color
+            );
             
         }
     }
@@ -286,127 +279,97 @@ public static class MeadowCalls
     // Arena Additions
     public static void BTWArena_RPCArenaForcedDeathEffect(ArenaForcedDeath forcedDeath)
     {
-        if (forcedDeath == null || forcedDeath.abstractTarget == null) { return; }
-        OnlineCreature onlineCreature = forcedDeath.abstractTarget.GetOnlineCreature();
+        if (forcedDeath?.abstractTarget?.GetOnlineCreature() is not OnlineCreature onlineCreature) { return; }
+        if (!onlineCreature.isMine) { return; }
 
-        if (onlineCreature == null) { return; }
-        MeadowRPCs.InvokeAllOtherPlayerWithRPC(
-        typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.BTWArenaAddition_AreneForcedDeathEffect)).CreateDelegate(
-            typeof(Action<RPCEvent, OnlineCreature>)),
+        onlineCreature.BroadcastRPCInRoom(MeadowRPCs.BTWArenaAddition_AreneForcedDeathEffect,
             onlineCreature
         );
     }
     public static void BTWArena_RPCArenaForcefieldAdded(ArenaShield shield)
     {
-        if (shield == null || shield.target == null || !shield.target.abstractCreature.IsLocal()) { return; }
-        OnlineCreature onlineCreature = shield.target.abstractCreature.GetOnlineCreature();
-
-        if (onlineCreature == null) { return; }
-        MeadowRPCs.InvokeAllOtherPlayerWithRPC(
-        typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.BTWArenaAddition_AddArenaShield)).CreateDelegate(
-            typeof(Action<RPCEvent, OnlineCreature, byte>)),
+        if (shield?.target?.abstractCreature?.GetOnlineCreature() is not OnlineCreature onlineCreature) { return; }
+        if (!onlineCreature.isMine) { return; }
+        
+        onlineCreature.BroadcastRPCInRoom(MeadowRPCs.BTWArenaAddition_AddArenaShield,
             onlineCreature, (byte)(shield.shieldTime / BTWFunc.FrameRate)
         );
     }
     public static void BTWArena_RPCArenaForcefieldBlock(ArenaShield shield)
     {
-        if (shield == null || shield.target == null) { return; }
-        OnlineCreature onlineCreature = shield.target.abstractCreature.GetOnlineCreature();
+        if (shield?.target?.abstractCreature?.GetOnlineCreature() is not OnlineCreature onlineCreature) { return; }
 
-        if (onlineCreature == null) { return; }
-        MeadowRPCs.InvokeAllOtherPlayerWithRPC(
-        typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.BTWArenaAddition_BlockArenaShield)).CreateDelegate(
-            typeof(Action<RPCEvent, OnlineCreature>)),
+        onlineCreature.BroadcastRPCInRoom(MeadowRPCs.BTWArenaAddition_BlockArenaShield,
             onlineCreature
         );
     }
     public static void BTWArena_RPCArenaForcefieldDismiss(ArenaShield shield)
     {
-        if (shield == null || shield.target == null || !shield.target.abstractCreature.IsLocal()) { return; }
-        OnlineCreature onlineCreature = shield.target.abstractCreature.GetOnlineCreature();
+        if (shield?.target?.abstractCreature?.GetOnlineCreature() is not OnlineCreature onlineCreature) { return; }
+        if (!onlineCreature.isMine) { return; }
 
-        if (onlineCreature == null) { return; }
-        MeadowRPCs.InvokeAllOtherPlayerWithRPC(
-            typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.BTWArenaAddition_DismissArenaShield)).CreateDelegate(
-                typeof(Action<RPCEvent, OnlineCreature>)),
-                onlineCreature
+        onlineCreature.BroadcastRPCInRoom(MeadowRPCs.BTWArenaAddition_DismissArenaShield,
+            onlineCreature
         );
     }
     
     public static void BTWArena_ArenaLivesInit(ArenaLives arenaLives)
     {
-        if (arenaLives.abstractTarget == null) { return; }
-        OnlineCreature onlineCreature = arenaLives.abstractTarget.GetOnlineCreature();
-        if (onlineCreature == null) { return; }
+        if (arenaLives?.abstractTarget?.GetOnlineCreature() is not OnlineCreature onlineCreature) { return; }
 
         bool IsMine = arenaLives.abstractTarget.IsLocal();
-
         arenaLives.fake = !IsMine;
+        arenaLives.meadowInit = true;
 
         if (MeadowFunc.IsMeadowLobby())
         {
             arenaLives.IsMeadowLobby = true;
-            // arenaLives.canRespawn = false;
-            if (arenaLives.target is Player player && BTWMeadowArenaSettings.TryGetSettings(out var meadowArenaSettings))
-            {
-                arenaLives.lifes = meadowArenaSettings.ArenaLives_Amount;
-                arenaLives.lifesleft = meadowArenaSettings.ArenaLives_Amount;
-                arenaLives.reviveAdditionnalTime = meadowArenaSettings.ArenaLives_AdditionalReviveTime * BTWFunc.FrameRate;
-                arenaLives.blockArenaOut = meadowArenaSettings.ArenaLives_BlockWin;
-                arenaLives.reviveTime = meadowArenaSettings.ArenaLives_ReviveTime * BTWFunc.FrameRate;
-                arenaLives.enforceAfterReachingZero = true;
-                arenaLives.shieldTime = meadowArenaSettings.ArenaLives_RespawnShieldDuration * BTWFunc.FrameRate;
-            }
-            if (IsMine && !arenaLives.fake)
+            if (IsMine)
             {
                 if (!onlineCreature.TryGetData<Data.OnlineArenaLivesData>(out _))
                 {
                     onlineCreature.AddData(new Data.OnlineArenaLivesData());
                 }
-                MeadowRPCs.InvokeAllOtherPlayerWithRPCOnce(
-                    typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.BTWArenaAddition_AddArenaLifes)).CreateDelegate(
-                        typeof(Action<RPCEvent, OnlineCreature>)),
-                        onlineCreature
+                onlineCreature.BroadcastRPCInRoom(MeadowRPCs.BTWArenaAddition_AddArenaLifes,
+                    onlineCreature
                 );
             }
         }
     }    
     public static void BTWArena_RPCArenaLivesDestroy(ArenaLives arenaLives)
     {
-        if (arenaLives.abstractTarget == null) { return; }
-        OnlineCreature onlineCreature = arenaLives.abstractTarget.GetOnlineCreature();
-        if (onlineCreature == null) { return; }
+        if (arenaLives?.abstractTarget?.GetOnlineCreature() is not OnlineCreature onlineCreature) { return; }
 
         if (!arenaLives.fake)
         {
-            MeadowRPCs.InvokeAllOtherPlayerWithRPCOnce(
-                typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.BTWArenaAddition_DestroyArenaLifes)).CreateDelegate(
-                    typeof(Action<RPCEvent, OnlineCreature>)),
-                    onlineCreature
+            onlineCreature.BroadcastRPCInRoom(MeadowRPCs.BTWArenaAddition_DestroyArenaLifes,
+                onlineCreature
             );
         }
     }
     public static void BTWArena_RPCAddItemSpawnerToRequested(OnlinePlayer onlinePlayer, ArenaItemSpawn itemSpawner)
     {
-        if (itemSpawner == null || itemSpawner.room == null) { return; }
+        if (itemSpawner?.room?.abstractRoom?.GetResource() is not RoomSession roomSession) { return; }
+        if (!roomSession.participants.Exists(x => x == onlinePlayer)) 
+        { 
+            BTWPlugin.LogError($"Trying to ping [{onlinePlayer}] when they're not even in the room [{roomSession}] !");
+            return; 
+        }
 
-        RoomSession roomSession = itemSpawner.room.abstractRoom.GetResource();
-        if (roomSession == null) { return; }
-
-        onlinePlayer.InvokeRPC(
-            typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.BTWArenaAddition_AddItemSpawn)).CreateDelegate(
-                typeof(Action<RPCEvent, RoomSession, Vector2, ushort, ushort, OnlineObjectDataList>)),
+        onlinePlayer.InvokeRPC(MeadowRPCs.BTWArenaAddition_AddItemSpawn,
                 roomSession, itemSpawner.pos, (ushort)Mathf.Clamp(itemSpawner.spawnTime, 0, ushort.MaxValue),
                 (ushort)Mathf.Clamp(itemSpawner.spawnCount, 0, ushort.MaxValue), new OnlineObjectDataList(itemSpawner.objectList)
         );
     }
-    public static void BTWArena_RPCAddItemSpawnerToAll(ArenaItemSpawn itemSpawner)
+    public static void BTWArena_RPCAddItemSpawnerToAllInRoom(ArenaItemSpawn itemSpawner)
     {
-        foreach (var player in OnlineManager.players)
+        if (itemSpawner?.room?.abstractRoom?.GetResource() is not RoomSession roomSession) { return; }
+
+        foreach (var participant in roomSession.participants)
         {
-            if (!player.isMe)
+            if (!participant.isMe)
             {
-                BTWArena_RPCAddItemSpawnerToRequested(player, itemSpawner);
+                BTWArena_RPCAddItemSpawnerToRequested(participant, itemSpawner);
             }
         }
     }
@@ -419,9 +382,7 @@ public static class MeadowCalls
         RoomSession roomSession = arena.room.abstractRoom.GetResource();
         if (roomSession == null) { return; }
 
-        arenaOnline.currentLobbyOwner.InvokeRPC(
-            typeof(MeadowRPCs).GetMethod(nameof(MeadowRPCs.BTWArenaAddition_RequestAllItemSpawn)).CreateDelegate(
-                typeof(Action<RPCEvent, RoomSession>)),
+        arenaOnline.currentLobbyOwner.InvokeRPC(MeadowRPCs.BTWArenaAddition_RequestAllItemSpawn,
                 roomSession
         );
     }
@@ -430,10 +391,190 @@ public static class MeadowCalls
         if (BTWMeadowArenaSettings.TryGetSettings(out var meadowArenaSettings))
         {
             arenaItemSpawnManager.doRespawn = meadowArenaSettings.ArenaItems_ItemRespawn;
-            arenaItemSpawnManager.doCheckSpearsCount = meadowArenaSettings.ArenaItems_ItemRespawn;
-            arenaItemSpawnManager.doCheckThrowableCount = meadowArenaSettings.ArenaItems_ItemRespawn;
-            arenaItemSpawnManager.doCheckMiscellaniousCount = meadowArenaSettings.ArenaItems_ItemRespawn;
+            arenaItemSpawnManager.respawnCount.Reset(meadowArenaSettings.ArenaItems_ItemRespawnTimer * BTWFunc.FrameRate);
+            arenaItemSpawnManager.doCheckSpearsCount = meadowArenaSettings.ArenaItems_CheckSpearCount;
+            arenaItemSpawnManager.doCheckThrowableCount = meadowArenaSettings.ArenaItems_CheckThrowableCount;
+            arenaItemSpawnManager.doCheckMiscellaniousCount = meadowArenaSettings.ArenaItems_CheckMiscellaneousCount;
+            arenaItemSpawnManager.noSpears = meadowArenaSettings.ArenaItems_NoSpear;
         }
         arenaItemSpawnManager.playersCount = MeadowFunc.GetPlayersInLobby();
     }
+    
+    public static void BTWStockArena_RequestLifeChange(OnlinePlayer onlinePlayer, int lives)
+    {
+        if (MeadowFunc.IsMeadowArena(out var arenaOnline) 
+            && arenaOnline.IsStockArenaMode()
+            && OnlineManager.lobby.isOwner)
+        {
+            onlinePlayer.InvokeRPC(MeadowRPCs.BTWStockArena_ChangeLifes, lives);
+        }
+    }
+
+    // Tristors
+
+    public static void BTWItems_AbstractTristorInit(AbstractTristor abstractTristor)
+    {
+        abstractTristor.isMeadowInit = true;
+        bool IsMine = abstractTristor.IsLocal();
+        OnlinePhysicalObject onlinePhysicalObject = abstractTristor.GetOnlineObject();
+
+        if (MeadowFunc.IsMeadowLobby() && IsMine)
+        {
+            if (onlinePhysicalObject == null)
+            {
+                abstractTristor.isMeadowInit = false;
+            }
+            else if (!onlinePhysicalObject.TryGetData<OnlineTristorData>(out _))
+            {
+                onlinePhysicalObject.AddData(new OnlineTristorData());
+            }
+        }
+    }
+
+    // Void Crystal
+    
+    public static void BTWItems_AbstractVoidCrystalInit(AbstractVoidCrystal abstractVoidCrystal)
+    {
+        abstractVoidCrystal.isMeadowInit = true;
+        bool IsMine = abstractVoidCrystal.IsLocal();
+        OnlinePhysicalObject onlinePhysicalObject = abstractVoidCrystal.GetOnlineObject();
+
+        if (MeadowFunc.IsMeadowLobby() && IsMine)
+        {
+            if (onlinePhysicalObject == null)
+            {
+                abstractVoidCrystal.isMeadowInit = false;
+            }
+            else if (!onlinePhysicalObject.TryGetData<OnlineVoidCrystal>(out _))
+            {
+                onlinePhysicalObject.AddData(new OnlineVoidCrystal());
+            }
+        }
+    }
+
+    // Void Spear
+    public static void BTWItems_AbstractCrystalSpearInit(AbstractCrystalSpear abstractCrystalSpear)
+    {
+        abstractCrystalSpear.isMeadowInit = true;
+        bool IsMine = abstractCrystalSpear.IsLocal();
+        OnlinePhysicalObject onlinePhysicalObject = abstractCrystalSpear.GetOnlineObject();
+
+        if (MeadowFunc.IsMeadowLobby() && IsMine)
+        {
+            if (onlinePhysicalObject == null)
+            {
+                abstractCrystalSpear.isMeadowInit = false;
+            }
+            // else if (!onlinePhysicalObject.TryGetData<OnlineCrystalSpear>(out _))
+            // {
+            //     onlinePhysicalObject.AddData(new OnlineCrystalSpear());
+            // }
+        }
+    }
+    public static void BTWItems_PopCrystalSpear(CrystalSpear crystalSpear)
+    {
+        if (crystalSpear?.abstractCrystalSpear?.GetOnlineObject() is OnlinePhysicalObject onlinePhysicalObject
+            && crystalSpear.Local())
+        {
+            onlinePhysicalObject.BroadcastRPCInRoom(MeadowRPCs.BTWItems_CrystalSpearPop, 
+                onlinePhysicalObject, crystalSpear.firstChunk.pos);
+        }
+    }
+    public static void BTWItems_ExplodeCrystalSpear(CrystalSpear crystalSpear)
+    {
+        if (crystalSpear?.abstractCrystalSpear?.GetOnlineObject() is OnlinePhysicalObject onlinePhysicalObject
+            && crystalSpear.Local())
+        {
+            onlinePhysicalObject.BroadcastRPCInRoom(MeadowRPCs.BTWItems_CrystalSpearExplode, 
+                onlinePhysicalObject, crystalSpear.firstChunk.pos);
+        }
+    }
+
+    // Void Spark
+    public static void BTWItems_VoidSparkEnterRoom(VoidSpark voidSpark)
+    {
+        voidSpark.meadowInit = true;
+        RoomSession roomSession = voidSpark.room?.abstractRoom?.GetResource();
+        if (MeadowFunc.IsMeadowLobby() && roomSession is not null)
+        {
+            if (!roomSession.isAvailable || !roomSession.isActive) 
+            {
+                voidSpark.meadowInit = false;
+            }
+            else
+            {
+                if (OnlineVoidSpark.map.TryGetValue(voidSpark, out var ovs))
+                {
+                    ovs.EnterResource(roomSession);
+                }
+                else
+                {
+                    RainMeadow.RainMeadow.Debug($"{roomSession} - registering {voidSpark}");
+                    ovs = OnlineVoidSpark.RegisterVoidSpark(voidSpark);
+                    ovs.EnterResource(roomSession);
+                }
+            }
+        }
+    }
+    public static void BTWItems_VoidSparkLeaveRoom(VoidSpark voidSpark)
+    {
+        RoomSession roomSession = voidSpark.room?.abstractRoom?.GetResource();
+        if (MeadowFunc.IsMeadowLobby() && roomSession is not null)
+        {
+            if (roomSession.isAvailable && roomSession.isActive)
+            {
+                if (OnlineVoidSpark.map.TryGetValue(voidSpark, out var ovs))
+                {
+                    ovs.ExitResource(roomSession);
+                }
+                else
+                {
+                    RainMeadow.RainMeadow.Error($"Unregistered void spark leaving {roomSession} : {voidSpark}<{voidSpark.ID}> - {Environment.StackTrace}");
+                }
+            }
+        }
+    }
+    public static void BTWItems_VoidSparkDissipate(VoidSpark voidSpark)
+    {
+        OnlineVoidSpark onlineVoidSpark = voidSpark.GetOnlineVoidSpark();
+        if (MeadowFunc.IsMeadowLobby() && onlineVoidSpark != null && onlineVoidSpark.isMine)
+        {
+            onlineVoidSpark.BroadcastRPCInRoom(onlineVoidSpark.Dissipate, voidSpark.position);
+        }
+    }
+    public static void BTWItems_VoidSparkExplode(VoidSpark voidSpark)
+    {
+        OnlineVoidSpark onlineVoidSpark = voidSpark.GetOnlineVoidSpark();
+        if (MeadowFunc.IsMeadowLobby() && onlineVoidSpark != null && onlineVoidSpark.isMine)
+        {
+            onlineVoidSpark.BroadcastRPCInRoom(onlineVoidSpark.Explode, voidSpark.position);
+        }
+    }
+    public static void BTWItems_VoidSparkHitSomething(VoidSpark voidSpark)
+    {
+        OnlineVoidSpark onlineVoidSpark = voidSpark.GetOnlineVoidSpark();
+        OnlineCreature onlineKillTagHolder = voidSpark.killTagHolder?.GetOnlineCreature();
+        OnlineEntity onlineTarget = null;
+        if (voidSpark.target is PhysicalObject physicalObject)
+        {
+            onlineTarget = physicalObject.abstractPhysicalObject.GetOnlineObject();
+        }
+        if (MeadowFunc.IsMeadowLobby() && onlineTarget is not null)
+        {
+            if (onlineVoidSpark != null)
+            {
+                if (onlineVoidSpark.isMine)
+                {
+                    onlineVoidSpark.BroadcastRPCInRoom(OnlineVoidSpark.HitSomething, onlineVoidSpark,
+                        onlineTarget, (ushort)(voidSpark.damage * 100), voidSpark.direction, voidSpark.lastPosition, onlineKillTagHolder);
+                }
+            }
+            else
+            {
+               onlineVoidSpark.BroadcastRPCInRoom(OnlineVoidSpark.HitSomethingSparkless,
+                    onlineTarget, (ushort)(voidSpark.damage * 100), voidSpark.direction, voidSpark.lastPosition, onlineKillTagHolder);
+            }
+        }
+    }
+
 }

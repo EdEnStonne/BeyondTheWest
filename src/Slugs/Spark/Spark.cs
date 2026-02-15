@@ -17,6 +17,7 @@ public class SparkFunc
 
         On.Player.ctor += Player_Electric_Charge_Init;
         On.Player.ThrownSpear += Player_Spear_Elec_Modifier;
+        IL.Player.UpdateBodyMode += Player_SparkCrawlSpeed;
         BTWPlugin.Log("SparkFunc ApplyHooks Done !");
     }
 
@@ -29,11 +30,21 @@ public class SparkFunc
     private static void Player_Electric_Charge_Init(On.Player.orig_ctor orig, Player self, AbstractCreature abstractCreature, World world)
     {
         orig(self, abstractCreature, world);
+        if (IsSpark(self) && self.GetBTWData() is BTWCreatureData bTWCreatureData)
+        {
+            bTWCreatureData.electricExplosionImmune = true;
+            BTWPlugin.Log("Registered Spark as electricExplosionImmune");
+        }
         if (IsSpark(self) && !StaticChargeManager.TryGetManager(self.abstractCreature, out _))
         {
             BTWPlugin.Log("Spark StaticChargeManager initiated");
             StaticChargeManager.AddManager(abstractCreature);
             BTWPlugin.Log("Spark StaticChargeManager created !");
+        }
+        if (IsSpark(self) && self.GetBTWPlayerData() is BTWPlayerData bTWPlayerData)
+        {
+            bTWPlayerData.slugHeight = 15f;
+            BTWPlugin.Log("Changed Spark Height to 15 !");
         }
     }
     private static void Player_Spear_Elec_Modifier(On.Player.orig_ThrownSpear orig, Player self, Spear spear)
@@ -87,5 +98,48 @@ public class SparkFunc
             room.PlaySound(SoundID.Death_Lightning_Spark_Spontaneous, frontPos, 0.35f * mult, UnityEngine.Random.Range(1.25f, 2f));
             room.PlaySound(SoundID.Fire_Spear_Pop, frontPos, 0.15f * mult, UnityEngine.Random.Range(0.75f, 0.85f));
         }
+    }
+    
+    private static float BoostSparkCrawl(float orig, Player player)
+    {
+        if (player.IsSpark())
+        {
+            return 3.5f;
+        }
+        return orig;
+    }
+    private static void Player_SparkCrawlSpeed(ILContext il)
+    {
+        BTWPlugin.Log("Spark IL 1 starts");
+        try
+        {
+            BTWPlugin.Log("Trying to hook IL");
+            ILCursor cursor = new(il);
+            
+            if (cursor.TryGotoNext(MoveType.After,
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>(nameof(Player.bodyMode)),
+                x => x.MatchLdsfld<Player.BodyModeIndex>(nameof(Player.BodyModeIndex.Crawl)),
+                x => x.MatchCall(out _),
+                x => x.MatchBrfalse(out _),
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>(nameof(Player.dynamicRunSpeed)),
+                x => x.MatchLdcI4(0)) 
+            && cursor.TryGotoNext(MoveType.Before,
+                x => x.MatchStelemR4()
+            ))
+            {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate(BoostSparkCrawl);
+            }
+
+            BTWPlugin.Log("IL hook ended");
+        }
+        catch (Exception ex)
+        {
+            BTWPlugin.logger.LogError(ex);
+        }
+        BTWPlugin.Log("Spark IL 1 ends");
+        // BTWPlugin.Log(il);
     }
 }

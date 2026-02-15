@@ -8,7 +8,7 @@ using BeyondTheWest.MeadowCompat;
 namespace BeyondTheWest.ArenaAddition;
 public class ArenaForcedDeath : UpdatableAndDeletable, IDrawable
 {
-    public ArenaForcedDeath(AbstractCreature abstractCreature, int killingTime, bool stunlockCreature, Creature killTagHolder, bool fake = false) 
+    public ArenaForcedDeath(AbstractCreature abstractCreature, int killingTime, bool stunlockCreature, AbstractCreature killTagHolder, bool fake = false) 
     {
         this.stunlockCreature = stunlockCreature;
         this.killTagHolder = killTagHolder;
@@ -41,6 +41,7 @@ public class ArenaForcedDeath : UpdatableAndDeletable, IDrawable
     public void CancelKill()
     {
         this.room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, CreatureMainChunk, false, 0.35f, 0.35f + BTWFunc.random * 0.35f);
+        this.jobDone = true;
     }
     public void TriggerKillScene()
     {
@@ -60,10 +61,10 @@ public class ArenaForcedDeath : UpdatableAndDeletable, IDrawable
                 {
                     BTWFunc.CustomKnockback(creature, BTWFunc.RandomCircleVector(20f));
                 }
-                if (this.killTagHolder != null) { creature.SetKillTag(this.killTagHolder.abstractCreature); }
+                if (this.killTagHolder != null) { creature.SetKillTag(this.killTagHolder); }
                 if (BTWPlugin.meadowEnabled)
                 {
-                    ArenaDeathTracker.SetDeathTrackerOfCreature(creature.abstractCreature, 40);
+                    ArenaDeathTracker.SetDeathTrackerOfCreature(creature.abstractCreature, 40, true);
                 }
                 creature.Die();
             }
@@ -199,7 +200,7 @@ public class ArenaForcedDeath : UpdatableAndDeletable, IDrawable
     }
 
     public AbstractCreature abstractTarget;
-    public Creature killTagHolder;
+    public AbstractCreature killTagHolder;
     public Color baseColor = Color.white;
     public int life = 0;
     public int killingTime = BTWFunc.FrameRate * 1;

@@ -33,7 +33,7 @@ public class StaticChargeBatteryUI : UpdatableAndDeletable, IDrawable
     }
     private void SetBatteryChargeSprite(RoomCamera.SpriteLeaser sLeaser, float pourcent)
     {
-        float xpos = 13f * Mathf.Clamp01(pourcent) - 7f;
+        float xpos = -6f + (6 + 5) * Mathf.Clamp01(pourcent);
         TriangleMesh BatteryCharge = (TriangleMesh)sLeaser.sprites[2];
         BatteryCharge.MoveVertice(2, new Vector2(xpos, -4f));
         BatteryCharge.MoveVertice(3, new Vector2(xpos, 4f));
@@ -54,7 +54,7 @@ public class StaticChargeBatteryUI : UpdatableAndDeletable, IDrawable
         }
         else
         {
-            float xpos = 18f * pourcent - 9.5f;
+            float xpos = -8.5f + (8.5f + 7.5f) * pourcent;
             BatteryOvercharge.MoveVertice(2, new Vector2(xpos, -5.5f));
             BatteryOvercharge.MoveVertice(3, new Vector2(xpos, 5.5f));
 
@@ -75,7 +75,7 @@ public class StaticChargeBatteryUI : UpdatableAndDeletable, IDrawable
     private void SetBatteryRechargeSprite(RoomCamera.SpriteLeaser sLeaser, float pourcent)
     {
         pourcent = Mathf.Clamp01(pourcent);
-        float xpos = 18f * pourcent - 9f;
+        float xpos = -9f + (9 + 9) * pourcent;
         TriangleMesh BatteryRecharge = (TriangleMesh)sLeaser.sprites[4];
         BatteryRecharge.MoveVertice(2, new Vector2(xpos, -9f));
         BatteryRecharge.MoveVertice(3, new Vector2(xpos, -7f));

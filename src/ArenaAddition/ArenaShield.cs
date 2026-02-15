@@ -41,7 +41,7 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
     
     public void Init()
     {
-        if (this.target != null)
+        if (this.target != null && this.room != null)
         {
             this.isInit = true;
             this.baseColor = this.target.ShortCutColor();
@@ -111,16 +111,13 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
     public override void Update(bool eu)
     {
         base.Update(eu);
+        if (!this.isInit)
+        {
+            Init();
+        }
         if (this.target == null) 
         {  
-            if (this.isInit)
-            {
-                this.Destroy(); 
-            }
-            else
-            {
-                Init();
-            }
+            this.Destroy(); 
             return; 
         }
         if (this.blockAnim > 0) { this.blockAnim--; }
@@ -458,6 +455,7 @@ public static class ArenaShieldHooks
                 return;
             }
             shield.Dismiss();
+            BTWPlugin.Log("REMOVED SHIELD OF PLAYER ["+ player +"]. Reason : out of bounds.");
         }
         orig(self);
     }
@@ -533,7 +531,6 @@ public static class ArenaShieldHooks
             && shield.Shielding)
         {
             BTWPlugin.Log("REMOVED SHIELD OF PLAYER ["+ player +"]. Reason : violence.");
-
             shield.Dismiss();
             Vector2 dir = (source.lastPos - (hitChunk ?? self.firstChunk).lastPos).normalized * 3f + BTWFunc.RandomCircleVector() + Vector2.up;
             BTWFunc.CustomKnockback(player, dir.normalized, 20f, true);

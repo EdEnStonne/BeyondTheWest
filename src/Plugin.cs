@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Logging;
+using BeyondTheWest.Items;
 
 namespace BeyondTheWest 
 {
@@ -9,14 +11,20 @@ namespace BeyondTheWest
     class BTWPlugin : BaseUnityPlugin
     {
         private const string MOD_ID = "edenstonne.beyondthewest";
-        public const string MOD_VERSION = "1.3.7";
+        public const string MOD_VERSION = "1.4.4";
         private static bool isInit = false;
         private static bool ressourceInit = false;
-        private static bool modcheckInit = false;
+        public static bool ressourceFullyEnded = false;
+        private static bool compatInit = false;
+        public static bool compatFullyEnded = false;
         private static bool hooksInit = false;
+        public static bool hooksFullyEnded = false;
         static readonly bool debug = true;
         public static ManualLogSource logger; // Logger from glebi574
         public static bool meadowEnabled = false;
+        public static bool oldInputConfigEnabled = false;
+        public static bool inputConfigEnabled = false;
+        public static bool pushToMeowEnabled = false;
 
         public static void Log(object data)
         {
@@ -24,6 +32,36 @@ namespace BeyondTheWest
             {
                 logger.LogDebug("[BTWDebug "+ DateTime.Now.Hour.ToString() +":"+ DateTime.Now.Minute.ToString() +":"+ DateTime.Now.Second.ToString() +"."+ DateTime.Now.Millisecond.ToString() +"] : "+ data);
             }
+        }
+        public static void LogError(object data)
+        {
+            if (logger != null)
+            {
+                logger.LogError("["+ DateTime.Now.Hour.ToString() +":"+ DateTime.Now.Minute.ToString() +":"+ DateTime.Now.Second.ToString() +"."+ DateTime.Now.Millisecond.ToString() +"] : "+ data);
+            }
+        }
+        public static void LogAllRegisteredImage()
+        {
+            Log("Logging all registered images :");
+            foreach (KeyValuePair<string, FAtlasElement> keyValuePair in Futile.atlasManager._allElementsByName)
+            {
+                FAtlasElement value = keyValuePair.Value;
+                Log($"    >{value.name}");
+            }
+        }
+        public static string[] GetVersionArray()
+        {
+            return MOD_VERSION.Split(new char[]{'.'}, 3);
+        }
+        public static int[] GetVersionIntArray()
+        {
+            int[] version = new int[3];
+            string[] strVersion = GetVersionArray();
+            for (int i = 0; i < 3; i++)
+            {
+                version[i] = int.Parse(strVersion[i]);
+            }
+            return version;
         }
         
         public void OnEnable()
@@ -34,44 +72,115 @@ namespace BeyondTheWest
             Logger.LogInfo("BTW initializing...");
 
             logger = Logger;
-            On.RainWorld.OnModsInit += Extras.WrapInit(LoadResources);
-            On.RainWorld.OnModsInit += Extras.WrapInit(ApplyHooks);
-            // ApplyHooks();
+            On.RainWorld.OnModsInit += LoadResources;
+            On.RainWorld.OnModsInit += ApplyHooks;
 
             On.RainWorld.OnModsInit += RemixMenuInit;
             On.RainWorld.PostModsInit += PostModsLoad;
         }
 
-        public static void ApplyHooks(RainWorld rainWorld)
+        // Load the remix menu
+        private void RemixMenuInit(On.RainWorld.orig_OnModsInit orig, RainWorld self)
         {
-            ApplyHooks();
+            orig(self);
+            MachineConnector.SetRegisteredOI(MOD_ID, BTWRemix.instance);
         }
-        public static void ApplyHooks()
+
+        // Load main hooks, when this mod is initialized
+        public static void ApplyHooks(On.RainWorld.orig_OnModsInit orig, RainWorld self)
         {
+            orig(self);
             logger.LogInfo("ApplyHooks starts !");
             if (hooksInit) { Log("ApplyHooks already done !"); return;}
 
             try
             {
                 hooksInit = true;
+
+                BTWMenu.ApplyHooks();
+
+                BTWExtensionsHook.ApplyHooks();
+                NewObjectsHooks.ApplyHooks();
+                BTWSkins.ApplyHooks();
+
                 CoreFunc.ApplyHooks();
                 SparkFunc.ApplyHooks();
                 TrailseekerFunc.ApplyHooks();
 
                 WIPSlugLock.ApplyHooks();
+                BTWCreatureDataHooks.ApplyHooks();
                 BTWPlayerDataHooks.ApplyHooks();
 
                 ArenaAddition.ArenaHookHelper.ApplyHooks();
-                BTWSkins.ApplyHooks();
-
-                // RainTimerAddition.ApplyHooks();
+                
+                hooksFullyEnded = true;
             }
             catch (Exception e)
             {
-                logger.LogError(e);
+                logger.LogError("Error while starting BTW hooks !\n"+e);
             }
 
             logger.LogInfo("Hooks initialized !");
+        }
+        
+        // Load any resources, such as sprites or sounds (BEFORE the function)
+        private void LoadResources(On.RainWorld.orig_OnModsInit orig, RainWorld self)
+        {
+            orig(self);
+            Log("LoadResources starts !");
+            if (ressourceInit) { Log("LoadResources already done !"); return;}
+
+            try
+            {
+                ressourceInit = true;
+
+                BTWSkins.LoadSkins();
+                NewObjectsHooks.LoadIcons();
+
+                ressourceFullyEnded = true;
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e);
+            } 
+
+            Log("LoadResources initialized !");
+        }
+        
+        
+        // Post load for any compat with other mods
+        public static void CheckMods()
+        {
+            Log("Checking Mods starts !");
+
+            foreach (ModManager.Mod mod in ModManager.ActiveMods.FindAll(x => x.enabled))
+            {
+                if (mod.id == "henpemaz_rainmeadow")
+                {
+                    Log("Found meadow !");
+                    meadowEnabled = true;
+                }
+                else if (mod.id == "improved-input-config")
+                {
+                    if (mod.name == "Improved Input Config")
+                    {
+                        Log("Found old improved input config !");
+                        oldInputConfigEnabled = true;
+                    }
+                    else
+                    {
+                        Log("Found forked improved input config !");
+                        inputConfigEnabled = true;
+                    }
+                }
+                else if (mod.id == "pushtomeow")
+                {
+                    Log("Found push to meow !");
+                    pushToMeowEnabled = true;
+                }
+            }
+
+            Log("Checking Mods initialized !");
         }
         public static void ApplySoftDependiesHooks()
         {
@@ -87,6 +196,10 @@ namespace BeyondTheWest
             if (ModManager.Watcher)
             {
                 ApplyWatcherHooks();
+            }
+            if (pushToMeowEnabled)
+            {
+                ApplyPushToMeowHooks();
             }
             logger.LogInfo("Soft Hooks initialized !");
         }
@@ -108,81 +221,37 @@ namespace BeyondTheWest
             Log("Watcher Hooks start !");
             WatcherCompat.SpawnWatcherPool.ApplyHooks();
             Log("Watcher Hooks initialized !");
-        }
-
-        public static void CheckMods()
+        }  
+        public static void ApplyPushToMeowHooks()
         {
-            Log("Checking Mods starts !");
-            if (modcheckInit) { Log("Checking Mods already done !"); return;}
-            modcheckInit = true;
+            Log("PushToMeow Hooks start !");
+            PushToMeowCompat.BTWMeow.ApplyHooks();
+            Log("PushToMeow Hooks initialized !");
+        }  
 
-            foreach (ModManager.Mod mod in ModManager.ActiveMods)
-            {
-                if (mod.id == "henpemaz_rainmeadow" && mod.enabled)
-                {
-                    Log("Found meadow !");
-                    meadowEnabled = true;
-                }
-            }
-
-            Log("Checking Mods initialized !");
-        }
-
-        // Load any resources, such as sprites or sounds (BEFORE the function)
-        private void LoadResources(RainWorld rainWorld)
+        private void PostModsLoad(On.RainWorld.orig_PostModsInit orig, RainWorld self)
         {
-            LoadResources();
-        }
-        private void LoadResources()
-        {
-            Log("LoadResources starts !");
-            if (ressourceInit) { Log("LoadResources already done !"); return;}
+            orig(self);
+            logger.LogInfo("Post Mods Load starts");
+
+            if (compatInit) { Log("Post Mods already done !"); return;}
 
             try
             {
-                BTWSkins.LoadSkins();
-                ressourceInit = true;
+                compatInit = true;
+
+                CheckMods();
+                ApplySoftDependiesHooks();
+                ArenaAddition.ArenaHookHelper.ApplyPostHooks();
+
+                compatFullyEnded = true;
             }
             catch (Exception e)
             {
                 Logger.LogError(e);
             } 
-
-            Log("LoadResources initialized !");
-        }
-        
-        // Welcome to tha hook
-        private void RemixMenuInit(On.RainWorld.orig_OnModsInit orig, RainWorld self)
-        {
-            orig(self);
-            MachineConnector.SetRegisteredOI(MOD_ID, BTWRemix.instance);
-        }
-
-        // After mod loads
-        private void PostModsLoad(On.RainWorld.orig_PostModsInit orig, RainWorld self)
-        {
-            orig(self);
-            logger.LogInfo("Post Mods Load starts");
-            BTWPlugin.CheckMods();
-            if (!ressourceInit)
-            {
-                logger.LogError("Mod didn't load properly, loading missing ressources...");
-                LoadResources(self);
-            }
-            if (!modcheckInit)
-            {
-                logger.LogError("Mod didn't load properly, loading missing mod checks...");
-                CheckMods();
-            }
-            if (!hooksInit)
-            {
-                logger.LogError("Mod didn't load properly, loading missing hooks...");
-                ApplyHooks();
-            }
-            ApplySoftDependiesHooks();
-            ArenaAddition.ArenaHookHelper.ApplyPostHooks();
+            
             logger.LogInfo("Post Mods Load initialized");
         }
-        
     }
 }

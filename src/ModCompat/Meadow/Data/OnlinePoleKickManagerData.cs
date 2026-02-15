@@ -20,6 +20,7 @@ public class OnlinePoleKickManagerData : OnlineEntity.EntityData
         //--------- Variables
         [OnlineField]
         public bool bodyInFrontOfPole;
+        [OnlineField]
         public bool kickExhausted;
 
         //--------- ctor

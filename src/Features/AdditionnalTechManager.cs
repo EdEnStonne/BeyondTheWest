@@ -8,32 +8,9 @@ using Mono.Cecil.Cil;
 
 namespace BeyondTheWest;
 
-public abstract class AdditionnalTechManager<TSelf> where TSelf : AdditionnalTechManager<TSelf>
+public abstract class AdditionnalTechManager<TSelf> : BTWManager<TSelf> where TSelf : AdditionnalTechManager<TSelf>
 {
-    public static ConditionalWeakTable<AbstractCreature, TSelf> managers = new();
-    public static bool TryGetManager(AbstractCreature creature, out TSelf manager)
-    {
-        return managers.TryGetValue(creature, out manager);
-    }
-    public static TSelf GetManager(AbstractCreature creature)
-    {
-        TryGetManager(creature, out TSelf manager);
-        return manager;
-    }
-    public static void AddNewManager(AbstractCreature creature, TSelf manager)
-    {
-        RemoveManager(creature);
-        managers.Add(creature, manager);
-    }
-    public static void RemoveManager(AbstractCreature creature)
-    {
-        if (TryGetManager(creature, out _))
-        {
-            managers.Remove(creature);
-        }
-    }
-    
-    public AdditionnalTechManager(AbstractCreature abstractCreature)
+    public AdditionnalTechManager(AbstractCreature abstractCreature) : base(abstractCreature)
     {
         this.abstractPlayer = abstractCreature;
     }
@@ -51,45 +28,47 @@ public abstract class AdditionnalTechManager<TSelf> where TSelf : AdditionnalTec
         return BTWFunc.GetIntDirInput(player, index);
     }
 
-    public virtual void Update()
+    public override void Update()
     {
-        Player player = this.RealizedPlayer;
-        Room room = player.room;
-        if (BTWPlugin.meadowEnabled)
+        base.Update();
+        if (this.RealizedPlayer is Player player && player.room is Room room)
         {
-            if (player != null
-                && MeadowFunc.TryGetBottomPlayer(player, out Player pupeter))
+            if (BTWPlugin.meadowEnabled)
             {
-                abstractPlayerInControl = pupeter.abstractCreature;
+                if (player != null
+                    && MeadowFunc.TryGetBottomPlayer(player, out Player pupeter))
+                {
+                    abstractPlayerInControl = pupeter.abstractCreature;
+                }
+                else
+                {
+                    abstractPlayerInControl = null;
+                }
             }
-            else
+            if (this.debugEnabled)
             {
-                abstractPlayerInControl = null;
+                if (this.debugCircle != null && (room == null || this.debugCircle.room != room))
+                {
+                    this.debugCircle.room?.RemoveObject( this.debugCircle );
+                    this.debugCircle.Destroy();
+                    this.debugCircle = null;
+                }
+                else if (room != null)
+                {
+                    if (this.debugCircle == null)
+                    {
+                        this.debugCircle = new();
+                        room.AddObject( this.debugCircle );
+                    }
+                    this.debugCircle.visible = this.debugCircleVisible;
+                }
             }
-        }
-        if (this.debugEnabled)
-        {
-            if (this.debugCircle != null && (room == null || this.debugCircle.room != room))
+            else if (this.debugCircle != null)
             {
-                this.debugCircle.room?.RemoveObject( this.debugCircle );
+                room?.RemoveObject( this.debugCircle );
                 this.debugCircle.Destroy();
                 this.debugCircle = null;
             }
-            else if (room != null)
-            {
-                if (this.debugCircle == null)
-                {
-                    this.debugCircle = new();
-                    room.AddObject( this.debugCircle );
-                }
-                this.debugCircle.visible = this.debugCircleVisible;
-            }
-        }
-        else if (this.debugCircle != null)
-        {
-            room?.RemoveObject( this.debugCircle );
-            this.debugCircle.Destroy();
-            this.debugCircle = null;
         }
     }
     public virtual void ResetPlayerCustomStates()
@@ -112,7 +91,10 @@ public abstract class AdditionnalTechManager<TSelf> where TSelf : AdditionnalTec
                 PKM.poleTechCooldown.Reset(10);
                 PKM.isPolePounce = false;
                 PKM.bodyInFrontOfPole = false;
+                PKM.kickWhiff.Reset();
+                PKM.kickActive.Reset();
                 PKM.kickKaizo.Reset();
+                PKM.kickPole.Reset();
                 PKM.CancelPoolLoop();
             }
             if (this is not BTWPlayerData && BTWPlayerData.TryGetManager(player.abstractCreature, out var BTWPD))
@@ -152,14 +134,6 @@ public abstract class AdditionnalTechManager<TSelf> where TSelf : AdditionnalTec
                 return player;
             }
             return this.RealizedPlayer;
-        }
-    }
-    public Room RealizedRoom
-    {
-        get
-        {
-            Player player = RealizedPlayer;
-            return player?.room;
         }
     }
     public Vector2 DirectionalInput

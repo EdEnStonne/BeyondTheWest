@@ -5,6 +5,8 @@ using BeyondTheWest.ArenaAddition;
 using System.Collections.Generic;
 using ObjectType = AbstractPhysicalObject.AbstractObjectType;
 using Unity;
+using RWCustom;
+using BeyondTheWest.Items;
 
 namespace BeyondTheWest.MeadowCompat;
 
@@ -95,36 +97,57 @@ public static class MeadowFunc
         }
         return false;
     }
+    public static AbstractCreature GetPlayerFromOwnerInArena(OnlinePlayer onlinePlayer)
+    {
+        if (IsMeadowArena(out var arenaOnline))
+        {
+            Room room = (Custom.rainWorld.processManager.currentMainLoop as RainWorldGame)?.GetArenaGameSession?.room;
+            if (room != null)
+            {
+                List<AbstractCreature> players = room.abstractRoom.creatures.FindAll(
+                    x => x.creatureTemplate.TopAncestor().type == CreatureTemplate.Type.Slugcat
+                        && !(ModManager.MSC && x.creatureTemplate.TopAncestor().type == MoreSlugcats.MoreSlugcatsEnums.CreatureTemplateType.SlugNPC));
+                
+                for (int i = 0; i < players.Count; i++)
+                {
+                    if (players[i].GetOnlineCreature() is OnlineCreature onlineCreature
+                        && onlineCreature.owner == onlinePlayer)
+                    {
+                        return players[i];
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    public static bool HasOwner(AbstractCreature abstractCreature)
+    {
+        return abstractCreature?.GetOnlineCreature()?.owner is not null;
+    }
+    public static bool IsOwnerInSession(AbstractCreature abstractCreature)
+    {
+        if (abstractCreature.GetOnlineCreature() is OnlineCreature onlineCreature
+            && onlineCreature.owner is OnlinePlayer onlinePlayer)
+        {
+            return IsOwnerInSession(onlinePlayer);
+        }
+        return false;
+    }
+    public static bool IsOwnerInSession(OnlinePlayer onlinePlayer)
+    {
+        if (onlinePlayer is not null)
+        {
+            int index = OnlineManager.lobby.playerAvatars.FindIndex(x => x.Key == onlinePlayer);
+            if (index >= 0 && OnlineManager.lobby.playerAvatars[index].Value.type != (byte)OnlineEntity.EntityId.IdType.none)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     
     // Creature Check
-    public static bool IsCreatureMine(AbstractCreature abstractCreature)
-    {
-        return IsCreatureMine(abstractCreature, out _);
-    }
-    public static bool IsCreatureMine(AbstractCreature abstractCreature, out OnlineCreature onlineCreature)
-    {
-        onlineCreature = null;
-        if (!IsMeadowLobby())
-        {
-            return true;
-        }
-        onlineCreature = abstractCreature.GetOnlineCreature();
-        return onlineCreature == null || onlineCreature.isMine;
-    }
-    public static bool IsObjectMine(AbstractPhysicalObject abstractPhysicalObject)
-    {
-        return IsObjectMine(abstractPhysicalObject, out _);
-    }
-    public static bool IsObjectMine(AbstractPhysicalObject abstractPhysicalObject, out OnlinePhysicalObject onlinePhysicalObject)
-    {
-        onlinePhysicalObject = null;
-        if (!IsMeadowLobby())
-        {
-            return true;
-        }
-        onlinePhysicalObject = abstractPhysicalObject.GetOnlineObject();
-        return onlinePhysicalObject == null || onlinePhysicalObject.isMine;
-    }
     public static bool IsMine(AbstractPhysicalObject abstractPhysicalObject) // From PearlCat, works better than mine
     {
         return !IsMeadowLobby() || abstractPhysicalObject.IsLocal();
@@ -242,6 +265,7 @@ public static class MeadowFunc
             arenaItemSpawnSetting.doScalePerPlayer = true;
             arenaItemSpawnSetting.randomItem = settings.ArenaItems_ItemSpawnRandom;
             arenaItemSpawnSetting.diversity = settings.ArenaItems_ItemSpawnDiversity;
+            arenaItemSpawnSetting.noSpears = settings.ArenaItems_NoSpear;
         }
     }
     public static void ReviveOnlinePlayer(ArenaGameSession arenaGame, AbstractCreature abstractPlayer, int exit = 0)
@@ -350,30 +374,48 @@ public static class MeadowFunc
     {
         if (IsMeadowArena(out var arenaOnline))
         {
-            // apparently nothing on the blocklist, it's private so I can't even check on it :<
-            if (ModManager.MSC)
-            {
-                // fuck you FireEgg, you're a cool item but you keep CRASHING THE DARN GAME
-                itemPool.pool.RemoveAll(x => x.objectData.objectType == MoreSlugcats.MoreSlugcatsEnums.AbstractObjectType.FireEgg);
-            }
+            itemPool.RemoveFromPool(x => ArenaOnlineGameMode.blockList.Contains(x.objectData.objectType));
             if (!arenaOnline.enableBombs)
             {
-                itemPool.pool.RemoveAll(x => 
+                itemPool.RemoveFromPool(x => 
                     x.objectData.objectType == ObjectType.FirecrackerPlant
-                    && x.objectData.objectType == ObjectType.ScavengerBomb);
+                    || x.objectData.objectType == ObjectType.ScavengerBomb
+                    || x.objectData.objectType == ObjectType.PuffBall
+                    || x.objectData.objectType == ObjectType.FlareBomb
+                    || x.objectData.objectType == AbstractTristor.TristorType
+                    || x.objectData.objectType == AbstractVoidCrystal.VoidCrystalType);
                 if (ModManager.MSC)
                 {
-                    itemPool.pool.RemoveAll(x => 
+                    itemPool.RemoveFromPool(x => 
                         x.objectData.objectType == DLCSharedEnums.AbstractObjectType.SingularityBomb
-                        && x.objectData.objectType == MoreSlugcats.MoreSlugcatsEnums.AbstractObjectType.FireEgg);
+                        || x.objectData.objectType == MoreSlugcats.MoreSlugcatsEnums.AbstractObjectType.FireEgg);
                 }
             }
             if (!arenaOnline.enableBees)
             {
-                itemPool.pool.RemoveAll(x => 
-                    x.objectData.objectType == ObjectType.JellyFish
-                    && x.objectData.objectType == ObjectType.SporePlant);
+                itemPool.RemoveFromPool(x => x.objectData.objectType == ObjectType.SporePlant);
             }
+        }
+    }
+    public static void HandleKarmaFlowerInArena(ArenaLives arenaLives)
+    {
+        if (IsMeadowArena(out var arenaOnline) && arenaOnline.IsStockArenaMode(out var stockArenaMode))
+        {
+            if (stockArenaMode.karmaFlowerGiveLife)
+            {
+                arenaLives.lifesleft++;
+                arenaLives.DisplayLives();
+            }
+            if (stockArenaMode.karmaFlowerGiveProtection && !arenaLives.reinforced)
+            {
+                arenaLives.reinforced = true;
+                arenaLives.DisplayLives();
+            }
+        }
+        else if (!arenaLives.reinforced)
+        {
+            arenaLives.reinforced = true;
+            arenaLives.DisplayLives();
         }
     }
 

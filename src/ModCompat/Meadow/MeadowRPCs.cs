@@ -6,11 +6,12 @@ using BeyondTheWest.MSCCompat;
 using BeyondTheWest.ArenaAddition;
 using System.Collections.Generic;
 using BeyondTheWest.MeadowCompat.Data;
+using BeyondTheWest.Items;
 
 namespace BeyondTheWest.MeadowCompat;
 public static class MeadowRPCs
 {
-    [RPCMethod]
+    [SoftRPCMethod]
     public static void BTWVersionChecker_VersionMismatch(RPCEvent rpc, string subscribedVersion)
     {
         if (OnlineManager.lobby != null && OnlineManager.lobby.isOwner && rpc.from != null)
@@ -18,6 +19,22 @@ public static class MeadowRPCs
             ChatLogManager.LogSystemMessage(rpc.from.id.GetPersonaName() + " " 
                 + BTWFunc.Translate("doesn't have the good version of Beyond the West ! (Player : ") 
                 + $"{subscribedVersion} / " + BTWFunc.Translate("Host : " ) + $"{BTWPlugin.MOD_VERSION})");
+        }
+    }
+    [SoftRPCMethod]
+    public static void BTWVersionChecker_RequestVersionInfo(RPCEvent rpc)
+    {
+        if (OnlineManager.lobby != null && OnlineManager.lobby.isOwner && rpc.from != null)
+        {
+            rpc.from.InvokeRPC(BTWVersionChecker_GetVersionInfo, BTWVersionChecker.lobbyBTWVersionData);
+        }
+    }
+    [SoftRPCMethod]
+    public static void BTWVersionChecker_GetVersionInfo(RPCEvent rpc, BTWVersionChecker.LobbyBTWVersionData lobbyBTWVersionData)
+    {
+        if (OnlineManager.lobby != null && !OnlineManager.lobby.isOwner && rpc.from != null && rpc.from == OnlineManager.lobby.owner)
+        {
+            BTWVersionChecker.CompareVersion(ref lobbyBTWVersionData);
         }
     }
     [RPCMethod]
@@ -40,24 +57,27 @@ public static class MeadowRPCs
         BTWPlugin.Log($"Player [{player}] did a kick on [{target}] with <{knockback}> and <{kBonusCent / 100f}> knockback bonus !");
     }
     [RPCMethod]
-    public static void Spark_SparkExplosion(RPCEvent rpc, OnlinePhysicalObject playerOpo, short size, 
-        Vector2 position, byte sparks, byte volumeCent)
+    public static void PoleKickManager_WhiffKick(RPCEvent rpc, OnlineCreature playerOpo, Vector2 position)
     {
-        // Plugin.Log("Opening the RPC : " + playerOpo.ToString() + "/" + size.ToString() + "/" + position.ToString() + "/" + sparks.ToString() + "/" + volumeCent.ToString());
-        var SCM = MeadowFunc.GetOnlinePlayerStaticChargeManager(playerOpo);
-        if (SCM == null) { return; }
-        if (SCM.active || !SCM.isMeadowFakePlayer) { return; }
-        // Plugin.Log("Checking some stuff :" + SCM.ToString() + "/" + SCM.active + "/" + SCM.isMeadowFakePlayer);
+        if (playerOpo?.abstractCreature?.realizedCreature is not Player player) { return; }
+
+        PoleKickManager.WhiffKick(player, position);
+        BTWPlugin.Log($"Player [{player}] did a kick at [{position}] but missed !");
+    }
+    [RPCMethod]
+    public static void Spark_SparkExplosion(RPCEvent rpc, RoomSession onlineRoom, short size, 
+        Vector2 position, byte sparks, byte volumeCent, bool underwater, Color color)
+    {
+        Room room = onlineRoom?.absroom?.realizedRoom;
+        if (room == null) { return; }
 
         float volume = volumeCent;
         volume /= 100f;
-        Player player = SCM.Player;
-        Room room = SCM.Room;
-        Color color = player.ShortCutColor();
-        ElectricExplosion.MakeSparkExplosion(room, size, position, sparks, player.bodyMode == Player.BodyModeIndex.Swimming, color);
+        ElectricExplosion.MakeSparkExplosion(room, size, position, sparks, underwater, color);
         room.PlaySound(SoundID.Death_Lightning_Spark_Spontaneous, position, 0.5f + Math.Min(1f, volume), UnityEngine.Random.Range(1.1f, 1.5f));
         room.PlaySound(SoundID.Bomb_Explode, position, volume / 2f, UnityEngine.Random.Range(1.75f, 2.25f));
-        BTWPlugin.Log("Fake player [" + SCM.Player.ToString() + "] did a spark explosion !");
+        
+        BTWPlugin.Log($"A spark explosion happened at [{position}] !");
     }
     [RPCMethod]
     public static void Spark_ElectricExplosionSync(RPCEvent rpc, RoomSession roomSession, Vector2 pos, 
@@ -94,7 +114,7 @@ public static class MeadowRPCs
         ElectricExplosion.ShockCreature(
             target, closestBodyChunk, sourceObject, killTagHolder, 
             killTagHolderDmgFactorCent / 100f, damageCent / 100f, stun,
-            color, doSpams, false, true, new());
+            color, doSpams, false, true);
         
         BTWPlugin.Log($"Creature [{target}] got hit by an electric explosion of damage <{damageCent / 100f}> and stun <{stun}> !");
     }
@@ -181,43 +201,25 @@ public static class MeadowRPCs
         }
     }
     [RPCMethod]
-    public static void MSCCompat_Lightning(RPCEvent rpc, OnlineCreature fromOc, OnlineCreature targetOc, byte widthCent, byte intensityCent, byte lifeTime, Color color)
+    public static void MSCCompat_Lightning(RPCEvent rpc, RoomSession roomSession, OnlineCreature fromOc, OnlineCreature targetOc, 
+        Vector2 fromPos, Vector2 targetPos, byte widthCent, byte intensityCent, byte lifeTime, Color color)
     {
         if (!ModManager.MSC) { return; }
+        if (roomSession?.absroom?.realizedRoom is not Room room) { return; }
 
-        AbstractCreature abstractFrom = fromOc.abstractCreature;
-        AbstractCreature abstractTarget = targetOc.abstractCreature;
-        if (abstractFrom == null || abstractTarget == null) { return; }
-        
-        Creature from = abstractFrom.realizedCreature;
-        Creature target = abstractTarget.realizedCreature;
-        if (from == null || target == null || from.room == null || target.room == null) { return; }
+        Creature from = fromOc?.abstractCreature?.realizedCreature;
+        Creature target = targetOc?.abstractCreature?.realizedCreature;
 
-        LightingArc lightingArc = new (
-            from.mainBodyChunk, target.mainBodyChunk,
-            widthCent * 100f, intensityCent * 100f, lifeTime, color
-        );
-        from.room.AddObject(lightingArc);
-
-        BTWPlugin.Log("Added lightning arc from "+ from.ToString() +" to "+ target.ToString() +" !");
-    }
-    [RPCMethod]
-    public static void MSCCompat_LightningPos(RPCEvent rpc, RoomSession roomSession, Vector2 from, Vector2 target, byte widthCent, byte intensityCent, byte lifeTime, Color color)
-    {
-        if (!ModManager.MSC) { return; }
-        if (roomSession == null) { return; }
-        AbstractRoom abstractRoom = roomSession.absroom;
-        if (abstractRoom == null || abstractRoom.realizedRoom == null) { return; }
-
-        Room room = abstractRoom.realizedRoom;
-
-        LightingArc lightingArc = new (
-            from, target,
-            widthCent * 100f, intensityCent * 100f, lifeTime, color
-        );
+        LightingArc lightingArc = new (widthCent * 100f, intensityCent * 100f, lifeTime, color)
+        {
+            from = from?.mainBodyChunk,
+            target = target?.mainBodyChunk,
+            fromOffset = fromPos,
+            targetOffset = targetPos
+        };
         room.AddObject(lightingArc);
 
-        BTWPlugin.Log("Added lightning arc from "+ from.ToString() +" to "+ target.ToString() +" !");
+        BTWPlugin.Log($"Added lightning arc from [{from}] to [{target}] !");
     }
     [RPCMethod]
     public static void BTWArenaAddition_AreneForcedDeathEffect(RPCEvent rpc, OnlineCreature targetOc)
@@ -313,10 +315,8 @@ public static class MeadowRPCs
     public static void BTWArenaAddition_AddItemSpawn(RPCEvent rpc, RoomSession roomSession, Vector2 position, 
         ushort spawnTime, ushort spawnCount, OnlineObjectDataList onlineObjectList)
     {
-        if (roomSession == null) { return; }
-        AbstractRoom abstractRoom = roomSession.absroom;
-        if (abstractRoom == null || abstractRoom.realizedRoom == null) { return; }
-        Room room = abstractRoom.realizedRoom;
+        if (roomSession?.absroom?.realizedRoom is not Room room) { return; }
+        if (onlineObjectList.objectList?.ToList() is not List<ObjectData> objList || objList.Count == 0) { return; }
 
         ArenaItemSpawn arenaItemSpawn = new(position, spawnTime, onlineObjectList.objectList.ToList(), false, true)
         {
@@ -338,13 +338,45 @@ public static class MeadowRPCs
         
         foreach (ArenaItemSpawn itemSpawner in room.updateList.FindAll(x => x is ArenaItemSpawn).Cast<ArenaItemSpawn>())
         {
-            if (!(itemSpawner.spawnTime <= itemSpawner.spawnCount))
+            if (itemSpawner.spawnTime > itemSpawner.spawnCount)
             {
                 MeadowCalls.BTWArena_RPCAddItemSpawnerToRequested(rpc.from, itemSpawner);
             }
         }
 
         BTWPlugin.Log($"Send all itemSpawner as requested !");
+    }
+    [RPCMethod]
+    public static void BTWStockArena_ChangeLifes(RPCEvent rpc, int lives)
+    {
+        if (MeadowFunc.IsMeadowArena(out var arenaOnline) 
+            && arenaOnline.IsStockArenaMode()
+            && BTWMeadowArenaSettings.TryGetSettings(out var arenaSettings)
+            && rpc.from == OnlineManager.lobby.owner)
+        {
+            arenaSettings.arenaStockClientSettings.lives = lives;
+            BTWPlugin.Log($"Changed current life count to <{lives}>");
+        }
+    }
+    [RPCMethod]
+    public static void BTWItems_CrystalSpearPop(RPCEvent rpc, OnlinePhysicalObject onlineCrystalSpear, Vector2 pos)
+    {
+        if (onlineCrystalSpear?.apo?.realizedObject is CrystalSpear crystalSpear
+            && !crystalSpear.Local())
+        {
+            crystalSpear.Pop(pos);
+            BTWPlugin.Log($"Fake Crystal Spear Poped at [{pos}] !");
+        }
+    }
+    [RPCMethod]
+    public static void BTWItems_CrystalSpearExplode(RPCEvent rpc, OnlinePhysicalObject onlineCrystalSpear, Vector2 pos)
+    {
+        if (onlineCrystalSpear?.apo?.realizedObject is CrystalSpear crystalSpear
+            && !crystalSpear.Local())
+        {
+            crystalSpear.Explode(pos: pos);
+            BTWPlugin.Log($"Fake Crystal Spear Exploded at [{pos}] !");
+        }
     }
 
     public static bool CheckIfRPCTypesMatch(Delegate del, params object[] args)
@@ -369,7 +401,6 @@ public static class MeadowRPCs
     }
     public static void InvokeAllOtherPlayerWithRPC(Delegate del, params object[] args)
     {
-        // if (!CheckIfRPCTypesMatch(del, args)) { return; }
         foreach (var player in OnlineManager.players)
         {
             if (!player.isMe)
@@ -380,8 +411,29 @@ public static class MeadowRPCs
     }
     public static void InvokeAllOtherPlayerWithRPCOnce(Delegate del, params object[] args)
     {
-        // if (!CheckIfRPCTypesMatch(del, args)) { return; }
         foreach (var player in OnlineManager.players)
+        {
+            if (!player.isMe)
+            {
+                player.InvokeOnceRPC(del, args);
+            }
+        }
+    }
+    public static void InvokeAllOtherPlayerWithRPCInRoom(RoomSession roomSession, Delegate del, params object[] args)
+    {
+        if (roomSession is null) { return; }
+        foreach (var player in roomSession.participants)
+        {
+            if (!player.isMe)
+            {
+                player.InvokeRPC(del, args);
+            }
+        }
+    }
+    public static void InvokeAllOtherPlayerWithRPCOnceInRoom(RoomSession roomSession, Delegate del, params object[] args)
+    {
+        if (roomSession is null) { return; }
+        foreach (var player in roomSession.participants)
         {
             if (!player.isMe)
             {

@@ -108,7 +108,21 @@ public class EnergyCore : PhysicalObject, IDrawable
             {
                 case 1: // Idle
                     {
-                        this.color = new(0.5f * eRatio, 0.25f + 0.75f * eRatio, 0.5f * eRatio);
+                        if (this.meowBlink > 0)
+                        {
+                            this.color = new(1f, 0.6f, 0.8f);
+                        }
+                        else
+                        {
+                            if (energy <= this.AEC.CoreMaxEnergy)
+                            {
+                                this.color = new(0.5f * eRatio, 0.25f + 0.75f * eRatio, 0.5f * eRatio);
+                            }
+                            else
+                            {
+                                this.color = new(0.5f, 1f, 0.8f);
+                            }
+                        }
                         break;
                     }
                 case 2: // Boosting
@@ -489,8 +503,8 @@ public class EnergyCore : PhysicalObject, IDrawable
 
             if (!this.AEC.isMeadowArenaTimerCountdown)
             {
-                this.room.AddObject(new Explosion(this.room, this, vector, 5, er * 0.1f, 3f, 0.75f, 300f, 0.25f, null, 0f, 60f, 1f));
-                this.room.AddObject(new Explosion(this.room, this, vector, 5, er       , 1f, 0.10f, 60f, 0.25f, null, 0.2f, 30f, 1f));
+                this.room.AddObject(new Explosion(this.room, this, vector, 5, er * 0.5f, 3f, 1.10f, 300f, 0.25f, null, 0f, 60f, 1f));
+                this.room.AddObject(new Explosion(this.room, this, vector, 5, er       , 1f, 0.55f, 60f, 0.25f, null, 0.2f, 30f, 1f));
             }
             this.room.AddObject(new Explosion.ExplosionLight(vector, er * 0.1f, 0.5f, 5, Color.white));
             this.room.AddObject(new Explosion.ExplosionLight(vector, er, 1f, 10, Color.white));
@@ -669,11 +683,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                 this.AEC.energy < this.AEC.CoreMaxEnergy
             )
             {
-                this.AEC.energy += this.AEC.CoreEnergyRecharge / 40f; 
-                if (this.AEC.energy >= this.AEC.CoreMaxEnergy)
-                {
-                    this.AEC.energy = this.AEC.CoreMaxEnergy;
-                }
+                this.AEC.energy = Mathf.Min(this.AEC.CoreMaxEnergy, this.AEC.energy + this.AEC.CoreEnergyRecharge / 40f);
             }
 
             if (this.AEC.energy <= 0f && this.AEC.repairCount <= 0)
@@ -714,11 +724,6 @@ public class EnergyCore : PhysicalObject, IDrawable
                 this.AEC.coreBoostLeft = this.AEC.CoreMaxBoost;
                 this.flipFromBoost = false;
             }
-
-            // if (player.superLaunchJump > 0)
-            // {
-            //     this.AEC.boostingCount = -20;
-            // }
         }
     }
     public void RepairUpdate()
@@ -791,7 +796,7 @@ public class EnergyCore : PhysicalObject, IDrawable
         rCam.ReturnFContainer("HUD").AddChild(sLeaser.sprites[3]);
     }
     public void ApplyPalette(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, RoomPalette palette) { }
-    public virtual void DrawSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
+    public void DrawSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
         if (this.slatedForDeletetion || this.room != rCam.room || this.AEC == null)
         {
@@ -800,12 +805,11 @@ public class EnergyCore : PhysicalObject, IDrawable
         }
         if (this.player != null && !this.player.inShortcut)
         {
-            Vector2Int IntDir = this.IntDirectionalInput;
             BodyChunk playerBody = this.player.mainBodyChunk;
             Vector2 corePos = (this.player.bodyChunks[0].pos + this.player.bodyChunks[1].pos) / 2f;
-            this.firstChunk.pos = corePos + new Vector2(7.5f, 0) * IntDir.x;
+            this.firstChunk.pos = corePos + new Vector2(7.5f, 0) * this.player.input[0].x;
+
             float eRatio = Mathf.Clamp01(this.AEC.energy / this.AEC.CoreMaxEnergy);
-            // var ppos = pbody.pos;
 
             SetCoreMesh(sLeaser);
 
@@ -813,20 +817,13 @@ public class EnergyCore : PhysicalObject, IDrawable
                     this.player.bodyMode == Player.BodyModeIndex.Crawl ||
                     this.player.bodyMode == Player.BodyModeIndex.Default ||
                     this.player.bodyMode == Player.BodyModeIndex.Stand) ?
-                IntDir.x : 0;
+                this.player.input[0].x : 0;
             var dir = this.player.ThrowDirection;
             var crouchBonus = 
                 (this.player.bodyMode == Player.BodyModeIndex.Crawl ||
                 this.player.bodyMode == Player.BodyModeIndex.CorridorClimb) ? dir : 0f;
             var rot = playerBody.Rotation.GetAngle() + 90 + 20 * CinputX;
 
-            // this.firstChunk.pos = pbody.pos
-            //     + BTWFunc.OffsetRelativeToBody(
-            //         pbody,
-            //         new Vector2(1f * dir + 5f * cinputX + 4f * crouchBonus, 1f - Math.Abs(cinputX))
-            //     );
-            // vector.x = Mathf.Lerp(base.firstChunk.lastPos.x, base.firstChunk.pos.x, timeStacker) - camPos.x;
-            // vector.y = Mathf.Lerp(base.firstChunk.lastPos.y, base.firstChunk.pos.y, timeStacker) - camPos.y;
             Vector2 coreSpritePos = (PlayerMiddleSpritePos != null ?
                 PlayerMiddleSpritePos : corePos - camPos) + new Vector2(1, 0);
             coreSpritePos += new Vector2(1f * dir + 4f * CinputX, - Math.Abs(CinputX));
@@ -954,6 +951,10 @@ public class EnergyCore : PhysicalObject, IDrawable
 
                 if (!this.player.dead)
                 {
+                    if (this.meowBlink > 0)
+                    {
+                        this.meowBlink--;
+                    }
                     if (this.AEC.IsBetaBoost ? cinput.jmp : cinput.spec)
                     {
                         if (this.ShouldZeroG && this.AEC.boostingCount < 5)
@@ -1062,6 +1063,7 @@ public class EnergyCore : PhysicalObject, IDrawable
     public bool consideredDead = false;
     public bool allowJumpException = false;
     public int disableCooldown = 0;
+    public int meowBlink = 0;
 
     // Get - Set
     public Vector2 DirectionalInput

@@ -3,6 +3,8 @@ using RainMeadow;
 using JetBrains.Annotations;
 using UnityEngine;
 using BeyondTheWest.ArenaAddition;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace BeyondTheWest.MeadowCompat.Data;
 public class OnlineArenaLivesData : OnlineEntity.EntityData
@@ -25,7 +27,11 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
         [OnlineField]
         public bool countedAlive = true;
         [OnlineField]
+        public bool reinforced = false;
+        [OnlineField]
         public int reviveCounter = 0;
+        [OnlineField]
+        public int killChain = 0;
         [OnlineField]
         public int livesDisplayCounter = 0;
         [OnlineField]
@@ -61,6 +67,8 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
             this.respawnPosX = lives.respawnPos.x;
             this.respawnPosY = lives.respawnPos.y;
             this.respawnExit = lives.respawnExit;
+            this.reinforced = lives.reinforced;
+            this.killChain = lives.killChain;
         }
         //--------- Functions
         public override void ReadTo(OnlineEntity.EntityData data, OnlineEntity onlineEntity)
@@ -74,10 +82,10 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
             {
                 return;
             }
-            if (lives.lifesleft != this.lifesleft || lives.countedAlive != this.countedAlive)
+            if (lives.lifesleft != this.lifesleft || lives.countedAlive != this.countedAlive || lives.reinforced != this.reinforced)
             {
                 lives.karmaSymbolNeedToChange = true;
-                BTWPlugin.Log($"Detected a life change for [{onlineEntity} : {abstractCreature}] : <{this.lifesleft}> <{this.countedAlive}>");
+                BTWPlugin.Log($"Detected a life change for [{onlineEntity} : {abstractCreature}] : <{this.lifesleft}> <{this.countedAlive}> <{this.reinforced}>");
             }
             if (this.countedAlive && lives.room != null && lives.abstractTarget?.realizedCreature != null)
             {
@@ -87,12 +95,9 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
                     lives.room.abstractRoom.creatures.Add(lives.abstractTarget);
                 }
             }
-            if (lives.countedAlive == false 
-                && this.countedAlive == true 
-                && abstractCreature.creatureTemplate.TopAncestor().type == CreatureTemplate.Type.Slugcat)
+            if (lives.countedAlive == false && this.countedAlive == true)
             {
-                MeadowFunc.ResetDeathMessage(abstractCreature);
-                MeadowFunc.ResetSlugcatIcon(abstractCreature);
+                lives.ResetVariablesOnRevival();
             }
             if (lives.wasAbstractCreatureDestroyed && this.lifesleft <= 0 && lives.lifesleft > 0)
             {
@@ -105,7 +110,8 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
                 lives.lifesleft = this.lifesleft;
             }
             lives.reviveCounter = this.reviveCounter;
-            // BTWPlugin.Log($"Counter of Reviving entity [{onlineEntity} : {abstractCreature}] to <{lives.reviveCounter}>");
+            lives.reinforced = this.reinforced;
+            lives.killChain = this.killChain;
             lives.countedAlive = this.countedAlive;
             lives.livesDisplayCounter = this.livesDisplayCounter;
             lives.circlesAmount = this.circlesAmount;
