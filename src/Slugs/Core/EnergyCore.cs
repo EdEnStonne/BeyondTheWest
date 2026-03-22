@@ -617,6 +617,10 @@ public class EnergyCore : PhysicalObject, IDrawable
                         }
                     }
                     this.AEC.energy -= (Underwater ? this.AEC.Core0GWaterEnergyUsage : this.AEC.Core0GSpaceEnergyUsage) / BTWFunc.FrameRate;
+                    if (player.GetPoleKickManager() is PoleKickManager poleKickManager)
+                    {
+                        poleKickManager.poleTechCooldown.Reset(20);
+                    }
                 }
 
                 if (this.AEC.energy < 0f)
