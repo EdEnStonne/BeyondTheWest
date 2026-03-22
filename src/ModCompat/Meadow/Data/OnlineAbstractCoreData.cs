@@ -25,6 +25,8 @@ public class OnlineAbstractCoreData : OnlineEntity.EntityData
         [OnlineField]
         public int boostingCount;
         [OnlineField]
+        public int meowBlink;
+        [OnlineField]
         public int antiGravityCount;
         [OnlineField]
         public byte state;
@@ -50,9 +52,10 @@ public class OnlineAbstractCoreData : OnlineEntity.EntityData
             this.antiGravityCount = AEC.antiGravityCount;
             this.state = AEC.state;
             this.grayScale = 0f;
-            if (AEC.RealizedCore != null)
+            if (AEC.RealizedCore is EnergyCore energyCore)
             {
-                this.grayScale = AEC.RealizedCore.grayScale;
+                this.grayScale = energyCore.grayScale;
+                this.meowBlink = energyCore.meowBlink;
             }
         }
         //--------- Functions
@@ -65,9 +68,10 @@ public class OnlineAbstractCoreData : OnlineEntity.EntityData
             AEC.boostingCount = this.boostingCount;
             AEC.antiGravityCount = this.antiGravityCount;
             AEC.state = this.state;
-            if (AEC.RealizedCore != null)
+            if (AEC.RealizedCore is EnergyCore energyCore)
             {
-                AEC.RealizedCore.grayScale = this.grayScale;
+                energyCore.grayScale = this.grayScale;
+                energyCore.meowBlink = this.meowBlink;
             }
         }
         public override Type GetDataType()

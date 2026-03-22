@@ -34,7 +34,7 @@ public static class MeadowRPCs
     {
         if (OnlineManager.lobby != null && !OnlineManager.lobby.isOwner && rpc.from != null && rpc.from == OnlineManager.lobby.owner)
         {
-            BTWVersionChecker.CompareVersion(ref lobbyBTWVersionData);
+            BTWVersionChecker.CompareVersion(lobbyBTWVersionData);
         }
     }
     [RPCMethod]

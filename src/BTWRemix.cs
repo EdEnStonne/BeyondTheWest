@@ -292,6 +292,9 @@ public class BTWRemix : OptionInterface
         new ConfigurableInfo("Time left before rain when all players are set to 1 lives. Default: 100 ticks.",
         new ConfigAcceptableRange<int>(100, int.MaxValue))
     );
+    public static Configurable<bool> MeadowArenaStockTeam = instance.config.Bind("MeadowArenaStockTeam", false, 
+        new ConfigurableInfo("If this gamemode is counted as a team battle. If false, this will be a normal ffa. Default: false.")
+    );
 
     
     public static Configurable<bool> MeadowNewItemSpawningSystem = instance.config.Bind("MeadowNewItemSpawningSystem", true, 

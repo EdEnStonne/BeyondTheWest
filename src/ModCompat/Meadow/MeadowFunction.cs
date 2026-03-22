@@ -7,6 +7,7 @@ using ObjectType = AbstractPhysicalObject.AbstractObjectType;
 using Unity;
 using RWCustom;
 using BeyondTheWest.Items;
+using BeyondTheWest.MeadowCompat.Data;
 
 namespace BeyondTheWest.MeadowCompat;
 
@@ -151,6 +152,12 @@ public static class MeadowFunc
     public static bool IsMine(AbstractPhysicalObject abstractPhysicalObject) // From PearlCat, works better than mine
     {
         return !IsMeadowLobby() || abstractPhysicalObject.IsLocal();
+    }
+    public static bool IsMine(VoidSpark voidSpark)
+    {
+        return !IsMeadowLobby() 
+            || voidSpark?.GetOnlineVoidSpark() is not OnlineVoidSpark onlineVoidSpark 
+            || onlineVoidSpark.isMine;
     }
     public static bool IsCreatureFriendlies(Creature creature, Creature friend)
     {

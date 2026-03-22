@@ -5,6 +5,7 @@ using BeyondTheWest.MeadowCompat;
 using System.Runtime.CompilerServices;
 using MonoMod.Cil;
 using Mono.Cecil.Cil;
+using System.Collections.Generic;
 
 namespace BeyondTheWest;
 
@@ -22,6 +23,10 @@ public class BTWPlayerData : AdditionnalTechManager<BTWPlayerData>
     public BTWPlayerData(AbstractCreature abstractCreature) : base(abstractCreature)
     {
         this.local = BTWFunc.IsLocal(abstractCreature);
+        if (BTWPlugin.meadowEnabled)
+        {
+            MeadowCalls.BTWPlayerData_Init(this);
+        }
     }
 
     public override void Update()
@@ -55,10 +60,21 @@ public class BTWPlayerData : AdditionnalTechManager<BTWPlayerData>
                 player.bodyChunkConnections[0].distance = slugHeight;
             }
 
-            if (this.onlineDizzy > 0)
+            if (this.dizzy > 0)
             {
-                this.onlineDizzy--;
+                this.dizzy--;
                 player.Blink(5);
+                if (player.Local())
+                {
+                    if (this.dizzy == 0)
+                    {
+                        player.camoRechargePenalty = 0;
+                    }
+                    else
+                    {
+                        player.camoRechargePenalty = 5;
+                    }
+                }
             }
             if (this.onlineBlind > 0)
             {
@@ -74,7 +90,8 @@ public class BTWPlayerData : AdditionnalTechManager<BTWPlayerData>
     public Player.InputPackage dangerGraspCurrentInput = new();
     public float slugHeight = 17f;
     public bool local = true;
-    public int onlineDizzy = 0;
+    public int dizzy = 0;
+    public List<SporeCloud> sporecloudsHit = new();
     public int onlineBlind = 0;
 }
 public static class BTWPlayerDataHooks

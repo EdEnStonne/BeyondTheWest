@@ -188,7 +188,7 @@ public class StaticChargeManager
             }
             else
             {
-                this.rollquickStartbuffer.Tick();
+                this.rollquickStartbuffer.TickUp();
             }
         }
     }

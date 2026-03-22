@@ -15,13 +15,16 @@ public class OnlineVoidSparkState : OnlineEntity.EntityState
     public Vector2 lastPosition = Vector2.zero;
     [OnlineField]
     public int lifetime = 0;
+    [OnlineField]
+    public int destructionTime = 0;
 
     public OnlineVoidSparkState() : base() { }
     public OnlineVoidSparkState(OnlineVoidSpark onlineVoidSpark, OnlineResource inResource, uint ts) : base(onlineVoidSpark, inResource, ts)
     {
         this.position = onlineVoidSpark.voidSpark.position;
         this.lastPosition = onlineVoidSpark.voidSpark.lastPosition;
-        this.lifetime = onlineVoidSpark.voidSpark.lifetime;
+        this.lifetime = onlineVoidSpark.voidSpark.lifetime.value;
+        this.destructionTime = onlineVoidSpark.voidSpark.destructionTime.value;
     }
 
     public override void ReadTo(OnlineEntity onlineEntity)
@@ -31,6 +34,7 @@ public class OnlineVoidSparkState : OnlineEntity.EntityState
         var onlineVoidSpark = onlineEntity as OnlineVoidSpark;
         onlineVoidSpark.voidSpark.position = this.position;
         onlineVoidSpark.voidSpark.lastPosition = this.lastPosition;
-        onlineVoidSpark.voidSpark.lifetime = this.lifetime;
+        onlineVoidSpark.voidSpark.lifetime.value = this.lifetime;
+        onlineVoidSpark.voidSpark.destructionTime.value = this.destructionTime;
     }
 }

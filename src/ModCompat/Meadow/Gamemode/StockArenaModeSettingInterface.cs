@@ -28,6 +28,7 @@ public class OnlineStockArenaModeSettingsInterface : RectangularMenuObject, Chec
     public const string FLOWERKARMA1UP = "BTW_AL_FKU";
     public const string KILLKARMAPROTECTION = "BTW_AL_KKP";
     public const string KILL1UP = "BTW_AL_K1U";
+    public const string TEAMBATTLE = "BTW_AL_TBT";
 
     public const float textSpacing = 300f;
 
@@ -52,7 +53,8 @@ public class OnlineStockArenaModeSettingsInterface : RectangularMenuObject, Chec
         StrictAt0Lives_CheckBox,
         RespawnShield_CheckBox,
         KarmaFlowerProtection_CheckBox, KarmaFlower1UP_CheckBox,
-        KillKarmaProtection_CheckBox, Kill1UP_CheckBox;
+        KillKarmaProtection_CheckBox, Kill1UP_CheckBox, 
+        Team_CheckBox;
     public MultipleChoiceArray LifeAmount_MultipleChoiceArray;
     public StockButton LifeButton;
     public MenuTabWrapper tabWrapper;
@@ -174,61 +176,64 @@ public class OnlineStockArenaModeSettingsInterface : RectangularMenuObject, Chec
         
 
         CreateCheckBox(ref StrictAt0Lives_CheckBox, BTWRemix.MeadowArenaLivesStrict,
-            "Stop reviving at 0 lives :", STRICTAT0, new(25, size.y - 150), size.x * 2/3 - 35);
+            "Stop reviving at 0 lives :", STRICTAT0, new(25, size.y - 140), size.x * 2/3 - 35);
         
         CreateCheckBox(ref BlockWin_CheckBox, BTWRemix.MeadowArenaLivesBlockWin,
-            "Block arena from closing :", BLOCKWIN, new(25, size.y - 180), size.x * 2/3 - 35);
+            "Block arena from closing :", BLOCKWIN, new(25, size.y - 170), size.x * 2/3 - 35);
         
-        CreateLabel(ref ReviveTime_Label, "Revive time :", new(25, size.y - 210), Color.white, FLabelAlignment.Left, size.x * 2/3 - 10);
-        CreateIntTextBox(ref ReviveTime_TextBox, BTWRemix.MeadowArenaLivesReviveTime, new(size.x * 2/3 - 10, size.y - 210));
+        CreateLabel(ref ReviveTime_Label, "Revive time :", new(25, size.y - 200), Color.white, FLabelAlignment.Left, size.x * 2/3 - 10);
+        CreateIntTextBox(ref ReviveTime_TextBox, BTWRemix.MeadowArenaLivesReviveTime, new(size.x * 2/3 - 10, size.y - 200));
         ReviveTime_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
         {
             stockMode.reviveTime = ReviveTime_TextBox.cfgEntry.ClampValue(ReviveTime_TextBox.valueInt);
         };
 
-        CreateLabel(ref AdditionalReviveTime_Label, "Additional revive time :", new(25, size.y - 240), Color.white, FLabelAlignment.Left, size.x * 2/3 - 10);
-        CreateIntTextBox(ref AdditionalReviveTime_TextBox, BTWRemix.MeadowArenaLivesAdditionalReviveTime, new(size.x * 2/3 - 10, size.y - 240));
+        CreateLabel(ref AdditionalReviveTime_Label, "Additional revive time :", new(25, size.y - 230), Color.white, FLabelAlignment.Left, size.x * 2/3 - 10);
+        CreateIntTextBox(ref AdditionalReviveTime_TextBox, BTWRemix.MeadowArenaLivesAdditionalReviveTime, new(size.x * 2/3 - 10, size.y - 230));
         AdditionalReviveTime_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
         {
             stockMode.additionalReviveTime = AdditionalReviveTime_TextBox.cfgEntry.ClampValue(AdditionalReviveTime_TextBox.valueInt);
         };
 
         CreateCheckBox(ref RespawnShield_CheckBox, BTWRemix.MeadowArenaLivesRespawnShield,
-            "Respawn Shield :", RESPAWNSHIELD, new(25, size.y - 270), size.x * 2/3 - 35);
-        CreateIntTextBox(ref RespawnShieldDuration_TextBox, BTWRemix.MeadowArenaLivesRespawnShieldDuration, new(size.x * 2/3 + 35, size.y - 270));
+            "Respawn Shield :", RESPAWNSHIELD, new(25, size.y - 260), size.x * 2/3 - 35);
+        CreateIntTextBox(ref RespawnShieldDuration_TextBox, BTWRemix.MeadowArenaLivesRespawnShieldDuration, new(size.x * 2/3 + 35, size.y - 260));
         RespawnShieldDuration_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
         {
             stockMode.respawnShieldDuration = RespawnShieldDuration_TextBox.cfgEntry.ClampValue(RespawnShieldDuration_TextBox.valueInt);
         };
 
         CreateCheckBox(ref KarmaFlowerProtection_CheckBox, BTWRemix.MeadowArenaLivesStrict,
-            "Karma flower gives protection :", FLOWERKARMAPROTECTION, new(25, size.y - 300), size.x * 2/3 - 35);
+            "Karma flower gives protection :", FLOWERKARMAPROTECTION, new(25, size.y - 290), size.x * 2/3 - 35);
         
         CreateCheckBox(ref KarmaFlower1UP_CheckBox, BTWRemix.MeadowArenaLivesBlockWin,
-            "Karma flower gives +1 live :", FLOWERKARMA1UP, new(25, size.y - 330), size.x * 2/3 - 35);
+            "Karma flower gives +1 live :", FLOWERKARMA1UP, new(25, size.y - 320), size.x * 2/3 - 35);
 
         CreateCheckBox(ref KillKarmaProtection_CheckBox, BTWRemix.MeadowArenaLivesKillKarmaProtection,
-            "Kills give protection :", KILLKARMAPROTECTION, new(25, size.y - 360), size.x * 2/3 - 35);
-        CreateIntTextBox(ref KillCountKarmaProtection_TextBox, BTWRemix.MeadowArenaLivesKillKarmaProtectionAmount, new(size.x * 2/3 + 35, size.y - 360));
+            "Kills give protection :", KILLKARMAPROTECTION, new(25, size.y - 350), size.x * 2/3 - 35);
+        CreateIntTextBox(ref KillCountKarmaProtection_TextBox, BTWRemix.MeadowArenaLivesKillKarmaProtectionAmount, new(size.x * 2/3 + 35, size.y - 350));
         KillCountKarmaProtection_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
         {
             stockMode.killAmountForProtection = KillCountKarmaProtection_TextBox.cfgEntry.ClampValue(KillCountKarmaProtection_TextBox.valueInt);
         };
 
         CreateCheckBox(ref Kill1UP_CheckBox, BTWRemix.MeadowArenaLivesKill1UP,
-            "Kills give +1 live :", KILL1UP, new(25, size.y - 390), size.x * 2/3 - 35);
-        CreateIntTextBox(ref KillCount1UP_TextBox, BTWRemix.MeadowArenaLivesKill1UPAmount, new(size.x * 2/3 + 35, size.y - 390));
+            "Kills give +1 live :", KILL1UP, new(25, size.y - 380), size.x * 2/3 - 35);
+        CreateIntTextBox(ref KillCount1UP_TextBox, BTWRemix.MeadowArenaLivesKill1UPAmount, new(size.x * 2/3 + 35, size.y - 380));
         KillCount1UP_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
         {
             stockMode.killAmountForLife = KillCount1UP_TextBox.cfgEntry.ClampValue(KillCount1UP_TextBox.valueInt);
         };
         
-        CreateLabel(ref RainTimerToSuddentDeath_Label, "Rain time before sudden death :", new(25, size.y - 420), Color.white, FLabelAlignment.Left, size.x - 35);
-        CreateIntTextBox(ref RainTimerToSuddentDeath_TextBox, BTWRemix.MeadowArenaLivesRainTimerToSuddentDeath, new(size.x - 55, size.y - 420), size: size.x / 3);
+        CreateLabel(ref RainTimerToSuddentDeath_Label, "Rain time before sudden death :", new(25, size.y - 410), Color.white, FLabelAlignment.Left, size.x - 35);
+        CreateIntTextBox(ref RainTimerToSuddentDeath_TextBox, BTWRemix.MeadowArenaLivesRainTimerToSuddentDeath, new(size.x - 55, size.y - 410), size: size.x / 3);
         RainTimerToSuddentDeath_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
         {
             stockMode.rainTimerToSuddentDeath = RainTimerToSuddentDeath_TextBox.cfgEntry.ClampValue(RainTimerToSuddentDeath_TextBox.valueInt);
         };
+
+        CreateCheckBox(ref Team_CheckBox, BTWRemix.MeadowArenaStockTeam,
+            "Team Battle :", TEAMBATTLE, new(25, size.y - 440), size.x * 2/3 - 35);
 
         this.SafeAddSubobjects(
             tabWrapper,
@@ -236,6 +241,7 @@ public class OnlineStockArenaModeSettingsInterface : RectangularMenuObject, Chec
 
             EveryoneCanModifyTheirLifeAmount_CheckBox, StrictAt0Lives_CheckBox, BlockWin_CheckBox, RespawnShield_CheckBox,
             KarmaFlowerProtection_CheckBox, KarmaFlower1UP_CheckBox, KillKarmaProtection_CheckBox, Kill1UP_CheckBox,
+            Team_CheckBox,
 
             LifeAmount_Label, LifeAmountOfPlayer_Label, ReviveTime_Label, AdditionalReviveTime_Label, RainTimerToSuddentDeath_Label,
 
@@ -286,6 +292,7 @@ public class OnlineStockArenaModeSettingsInterface : RectangularMenuObject, Chec
         BTWRemix.MeadowArenaLivesKarmaFlower1UP.Value = this.KarmaFlower1UP_CheckBox.Checked;
         BTWRemix.MeadowArenaLivesKillKarmaProtection.Value = this.KillKarmaProtection_CheckBox.Checked;
         BTWRemix.MeadowArenaLivesKill1UP.Value = this.Kill1UP_CheckBox.Checked;
+        BTWRemix.MeadowArenaStockTeam.Value = this.Team_CheckBox.Checked;
         
         BTWRemix.instance._SaveConfigFile();
     }
@@ -386,19 +393,21 @@ public class OnlineStockArenaModeSettingsInterface : RectangularMenuObject, Chec
         if (id == FLOWERKARMA1UP) { return this.stockMode.karmaFlowerGiveLife; }
         if (id == KILLKARMAPROTECTION) { return this.stockMode.killGiveProtection; }
         if (id == KILL1UP) { return this.stockMode.killGiveLife; }
+        if (id == TEAMBATTLE) { return this.stockMode.isTeamBattle; }
         return false;
     }
     public void SetChecked(CheckBox box, bool c)
     {
         string id = box.IDString;
         if (id == EVERYONECANSET) { this.stockMode.everyoneCanModifyTheirLifeAmount = c; }
-        if (id == STRICTAT0) { this.stockMode.strictEnforceAfter0Lives = c; }
-        if (id == BLOCKWIN) { this.stockMode.blockWin = c; }
-        if (id == RESPAWNSHIELD) { this.stockMode.respawnShieldToggle = c; }
-        if (id == FLOWERKARMAPROTECTION) { this.stockMode.karmaFlowerGiveProtection = c; }
-        if (id == FLOWERKARMA1UP) { this.stockMode.karmaFlowerGiveLife = c; }
-        if (id == KILLKARMAPROTECTION) { this.stockMode.killGiveProtection = c; }
-        if (id == KILL1UP) { this.stockMode.killGiveLife = c; }
+        else if (id == STRICTAT0) { this.stockMode.strictEnforceAfter0Lives = c; }
+        else if (id == BLOCKWIN) { this.stockMode.blockWin = c; }
+        else if (id == RESPAWNSHIELD) { this.stockMode.respawnShieldToggle = c; }
+        else if (id == FLOWERKARMAPROTECTION) { this.stockMode.karmaFlowerGiveProtection = c; }
+        else if (id == FLOWERKARMA1UP) { this.stockMode.karmaFlowerGiveLife = c; }
+        else if (id == KILLKARMAPROTECTION) { this.stockMode.killGiveProtection = c; }
+        else if (id == KILL1UP) { this.stockMode.killGiveLife = c; }
+        else if (id == TEAMBATTLE) { this.stockMode.isTeamBattle = c; }
     }
 
     public int GetSelected(MultipleChoiceArray array)

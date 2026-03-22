@@ -36,15 +36,15 @@ public class ScreenBlind : UpdatableAndDeletable, IDrawable
         base.Update(eu);
         if (!this.timerFadeIn.ended)
         {
-            this.timerFadeIn.Tick();
+            this.timerFadeIn.TickUp();
         }
         else if (!this.timer.ended)
         {
-            this.timer.Tick();
+            this.timer.TickUp();
         }
         else if (!this.timerFadeOut.ended)
         {
-            this.timerFadeOut.Tick();
+            this.timerFadeOut.TickUp();
         }
         else
         {

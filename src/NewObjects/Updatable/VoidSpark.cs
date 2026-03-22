@@ -11,16 +11,28 @@ namespace BeyondTheWest;
 
 public class VoidSpark : UpdatableAndDeletable, IDrawable
 {
-    public static Vector2 GetPosition(UpdatableAndDeletable updatable)
+    public static BodyChunk GetChunk(UpdatableAndDeletable updatable)
     {
-        Vector2 position = Vector2.negativeInfinity;
         if (updatable is Creature creature)
         {
-            position = creature.mainBodyChunk.pos;
+            return creature.mainBodyChunk;
         }
         else if (updatable is PhysicalObject physicalObject)
         {
-            position = physicalObject.firstChunk.pos;
+            return physicalObject.firstChunk;
+        }
+        return null;
+    }
+    public static Vector2 GetPosition(UpdatableAndDeletable updatable)
+    {
+        Vector2 position = Vector2.negativeInfinity;
+        if (updatable is PhysicalObject)
+        {
+            position = GetChunk(updatable).pos;
+        }
+        else if (updatable is VoidSpark voidSpark)
+        {
+            position = voidSpark.position;
         }
         return position;
     }
@@ -155,9 +167,9 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
                         ArenaDeathTracker.SetDeathTrackerOfCreature(creature.abstractCreature, 56, false, true);
                     }
                     creature.Violence(null, direction, chunk, null, Creature.DamageType.None, damage, stun);
-                    if (BTWFunc.VectorProjectionNormSigned(chunk.vel, direction) < 40f)
+                    if (BTWFunc.VectorProjectionNormSigned(chunk.vel, direction) < 50f)
                     {
-                        BTWFunc.CustomKnockback(chunk, direction, Mathf.Min(40f, damage * 9f));
+                        BTWFunc.CustomKnockback(chunk, direction, Mathf.Min(50f, damage * 9f));
                     }
                     
                     if (ModManager.MSC && creature is Player targettedPlayer)
@@ -184,6 +196,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
                     {
                         bool wasOK = energyCore.AEC.energy > 0;
                         energyCore.AEC.energy -= damage * 300f;
+                        energyCore.grayScale = 1f;
                         if (energyCore.player != null)
                         {
                             BTWFunc.CustomKnockback(energyCore.player, direction, damage * 4f);
@@ -239,7 +252,10 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
         this.position = position;
         this.lastPosition = position;
         this.damage = damage;
-        this.lifetime = lifetime;
+        this.lifetime = new(lifetime)
+        {
+            value = lifetime
+        };
         this.fake = fake;
         if (!fake)
         {
@@ -307,12 +323,33 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
         
         BTWPlugin.Log($"VoidSpark hit [{this.target}] for <{this.damage}> dmg !");
 
-        if (target is IReactToVoidFlux reactToVoidFlux)
+        if (target.Local() && target is IReactToVoidFlux reactToVoidFlux)
         {
             reactToVoidFlux.HitByVoidSpark(this);
         }
         HitSomethingWithVoidSpark(this.target, this.damage, this.direction, this.killTagHolder);
-        this.lifetime = 0;
+        this.lifetime.value = 0;
+
+        if (!this.fake)
+        {
+            this.position = this.lastPosition;
+        }
+        if (ModManager.MSC && HasAPosition(this.target, out Vector2 targetPos))
+        {
+            this.lightingArc?.Destroy();
+            if (this.target is PhysicalObject targetPO)
+            {
+                this.lightingArc = new LightingArc(this.position, GetChunk(targetPO), 
+                    this.damage / 2f, 0.5f + Mathf.Log10(1 + this.damage), this.lifetime.value, this.color);
+            }
+            else
+            {
+                this.lightingArc = new LightingArc(this.position, targetPos, 
+                    this.damage / 2f, 0.5f + Mathf.Log10(1 + this.damage), this.lifetime.value, this.color);
+            }
+            this.room.AddObject(this.lightingArc);
+        }
+
 
         if (BTWPlugin.meadowEnabled && !this.fake)
         {
@@ -323,7 +360,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
     }
     public void HitWall()
     {
-        this.lifetime = 0;
+        this.lifetime.value = 0;
         MakeDraggedSparks(this.room, 15f, this.position, (byte)BTWFunc.RandInt(12, 17), this.color, 0.2f);
         
         if (BTWPlugin.meadowEnabled && !this.fake)
@@ -335,51 +372,52 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
     }
     public void Dissipate()
     {
-        this.lifetime = 0;
+        this.lifetime.value = 0;
+        this.destructionTime.value = 1;
         MakeDraggedSparks(this.room, 7f, this.position, (byte)BTWFunc.RandInt(4, 7), this.color, 0.2f);
         
         if (BTWPlugin.meadowEnabled && !this.fake)
         {
             MeadowCalls.BTWItems_VoidSparkDissipate(this);
         }
-
-        this.Destroy();
     }
 
     public override void Update(bool eu)
     {
         base.Update(eu);
-        if (this.lifetime <= 0 && !this.slatedForDeletetion)
+        if (this.lifetime.atZero && this.destructionTime.atZero && !this.slatedForDeletetion)
         {
             Dissipate();
             return;
         }
 
-        if (!this.fake)
+        if (this.destructionTime.atZero)
         {
-            if (BTWPlugin.meadowEnabled && !this.meadowInit)
+            if (!this.fake)
             {
-               MeadowCalls.BTWItems_VoidSparkEnterRoom(this);
-            }
-
-            this.lastPosition = this.position;
-            this.lifetime--;
-
-            if (!this.chainReactionNotified)
-            {
-                for (int i = 0; i < this.room.updateList.Count; i++)
+                if (BTWPlugin.meadowEnabled && !this.meadowInit)
                 {
-                    if (this.room.updateList[i] is IReactToVoidFlux reactToVoidFlux)
-                    {
-                        reactToVoidFlux.VoidSparkAppears(this);
-                    }
+                MeadowCalls.BTWItems_VoidSparkEnterRoom(this);
                 }
-                this.chainReactionNotified = true;
+
+                this.lastPosition = this.position;
+                this.lifetime.TickDown();
+
+                if (!this.chainReactionNotified)
+                {
+                    for (int i = 0; i < this.room.updateList.Count; i++)
+                    {
+                        if (this.room.updateList[i] is IReactToVoidFlux reactToVoidFlux)
+                        {
+                            reactToVoidFlux.VoidSparkAppears(this);
+                        }
+                    }
+                    this.chainReactionNotified = true;
+                }
+
+                this.target ??= LookForTarget();
             }
-
-            this.target ??= LookForTarget();
-
-            if (this.room.GetTile(this.position).Solid)
+            if (this.room.GetTile(this.position).Solid && !this.fake)
             {
                 HitWall();
             }
@@ -399,27 +437,37 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
             }
             else
             {
-                this.direction = BTWFunc.RandomCircleVector(BTWFunc.Random(BTWFunc.TileSize * this.damage));
-                this.position += this.direction;
+                this.direction = BTWFunc.RandomCircleVector(BTWFunc.Random(BTWFunc.TileSize * this.damage * 0.5f));
+                this.position += this.direction + this.momentum;
+                this.momentum *= momentumFriction;
+            }
+            
+
+            if (ModManager.MSC)
+            {
+                if (this.lightingArc == null)
+                {
+                    this.lightingArc = new LightingArc(this.position, this.lastPosition, 
+                        this.damage / 2f, 0.5f + Mathf.Log10(1 + this.damage), this.lifetime.value, this.color);
+                    this.room.AddObject(this.lightingArc);
+                }
+
+                LightingArc arc = this.lightingArc as LightingArc;
+                arc.fromOffset = this.position;
+                arc.targetOffset = Vector2.Lerp(arc.targetOffset, this.lastPosition, 0.35f);
+            }
+
+            room.AddObject(new MouseSparkDrag(position, BTWFunc.RandomCircleVector(5f), 5f, color, 0.2f));
+        }
+        else
+        {
+            this.destructionTime.TickUp();
+            if (this.destructionTime.reachedMax)
+            {
+                this.Destroy();
             }
         }
         
-
-        if (ModManager.MSC)
-        {
-            if (this.lightingArc == null)
-            {
-                this.lightingArc = new LightingArc(this.position, this.lastPosition, 
-                    this.damage / 2f, 0.5f + Mathf.Log10(1 + this.damage), this.lifetime, this.color);
-                this.room.AddObject(this.lightingArc);
-            }
-
-            LightingArc arc = this.lightingArc as LightingArc;
-            arc.fromOffset = this.position;
-            arc.targetOffset = Vector2.Lerp(arc.targetOffset, this.lastPosition, 0.35f);
-        }
-
-        room.AddObject(new MouseSparkDrag(position, BTWFunc.RandomCircleVector(5f), 5f, color, 0.2f));
     }
     public override void Destroy()
     {
@@ -459,10 +507,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
 		rCam.ReturnFContainer("ForegroundLights").AddChild(sLeaser.sprites[0]);
 		rCam.ReturnFContainer("ForegroundLights").AddChild(sLeaser.sprites[1]);
     }
-    public void ApplyPalette(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, RoomPalette palette)
-    {
-        
-    }
+    public void ApplyPalette(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, RoomPalette palette) {}
     public void DrawSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
         if (this.slatedForDeletetion || this.room != rCam.room)
@@ -476,21 +521,23 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
             sLeaser.sprites[i].y = this.position.y - camPos.y;
             sLeaser.sprites[i].color = this.color;
         }
-        float fade = Mathf.Clamp01(this.lifetime / 5f);
-        sLeaser.sprites[0].alpha = 0.5f * fade;
-        sLeaser.sprites[1].alpha = fade;
+        sLeaser.sprites[0].alpha = 0.5f * Mathf.Clamp01(this.lifetime.value / 5f);
+        sLeaser.sprites[1].alpha = BTWFunc.EaseIn(this.destructionTime.fractInv);
     }
 
 
     public float damage;
     public bool chainReactionNotified = false;
-    public int lifetime;
+    public Counter lifetime;
+    public Counter destructionTime = new(40);
     public int ID = -1;
     public bool fake = false;
     public bool meadowInit = false;
     public Vector2 position = Vector2.zero;
     public Vector2 lastPosition = Vector2.zero;
     public Vector2 direction = Vector2.zero;
+    public Vector2 momentum = Vector2.zero;
+    private const float momentumFriction = 0.90f;
     public Color color = new(1f, 0.6f, 0.7f);
     public static Color defaultColor = new(1f, 0.6f, 0.7f);
     public UpdatableAndDeletable target;

@@ -1,4 +1,5 @@
 using System;
+using BeyondTheWest.MeadowCompat;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using RWCustom;
@@ -110,6 +111,18 @@ public static class BTWExtensions
             dir == Room.SlopeDirection.UpLeft || dir == Room.SlopeDirection.UpRight ? 1 : -1);
     }
 
+    public static bool Local(this UpdatableAndDeletable updatableAndDeletable)
+    {
+        if (updatableAndDeletable is PhysicalObject physicalObject)
+        {
+            return BTWFunc.IsLocal(physicalObject);
+        }
+        else if (updatableAndDeletable is VoidSpark voidSpark)
+        {
+            return BTWFunc.IsLocal(voidSpark);
+        }
+        return true;
+    }
     public static bool Local(this PhysicalObject physicalObject)
     {
         return BTWFunc.IsLocal(physicalObject);
@@ -152,7 +165,7 @@ public static class BTWExtensionsHook
     public static void ApplyHooks()
     {
         IL.Weapon.Update += Weapon_BounceFix;
-        On.Player.ProcessDebugInputs += Player_Debug;
+        // On.Player.ProcessDebugInputs += Player_Debug;
     }
 
     private static void Player_Debug(On.Player.orig_ProcessDebugInputs orig, Player self)

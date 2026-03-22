@@ -12,6 +12,8 @@ using BeyondTheWest.ArenaAddition;
 using ArenaMode = RainMeadow.ArenaOnlineGameMode;
 using System.Linq;
 using RWCustom;
+using RainMeadow.Arena.ArenaOnlineGameModes.TeamBattle;
+using RainMeadow.UI;
 
 namespace BeyondTheWest.MeadowCompat.Gamemodes;
 
@@ -61,11 +63,22 @@ public partial class StockArenaMode : ExternalArenaGameMode
 
     public override bool IsExitsOpen(ArenaMode arena, On.ArenaBehaviors.ExitManager.orig_ExitsOpen orig, ExitManager self)
     {
+        // For next Meadow Update I suppose
+        // if (self.gameSession.GameTypeSetup.denEntryRule == ArenaSetup.GameTypeSetup.DenEntryRule.Always)
+        // {
+        //     return true;
+        // }
+
+        // if (self.gameSession.GameTypeSetup.denEntryRule == ArenaSetup.GameTypeSetup.DenEntryRule.Score)
+        // {
+        //     return orig(self) || (self.gameSession?.arenaSitting?.players?.Any(p => p?.score >= arena.denScore) ?? false);
+        // }
+
         int playersStillStanding = self.gameSession.Players?.Count(player =>
             (player.realizedCreature != null && player.realizedCreature.State.alive)
             || IsPlayerReviving(self?.gameSession, player)) ?? 0;
 
-        if (playersStillStanding == 1 && arena.arenaSittingOnlineOrder.Count > 1)
+        if (playersStillStanding == 1 && arena.arenaSittingOnlineOrder.Count > 1 && !arena.countdownInitiatedHoldFire)
         {
             return true;
         }
@@ -73,6 +86,53 @@ public partial class StockArenaMode : ExternalArenaGameMode
         if (self.world.rainCycle.TimeUntilRain <= 100)
         {
             return true;
+        }
+
+        if (this.isTeamBattle && playersStillStanding > 1 && arena.setupTime == 0) // taken from team battle
+        {
+            HashSet<int> aliveTeams = new HashSet<int>();
+            if (self.gameSession.Players != null)
+            {
+                foreach (var acPlayer in self.gameSession.Players)
+                {
+                    if (acPlayer != null)
+                    {
+                        OnlinePhysicalObject onlineP = acPlayer.GetOnlineObject();
+                        if (onlineP != null)
+                        {
+                            bool gotPlayerTeam = OnlineManager.lobby.clientSettings.TryGetValue(
+                                onlineP.owner,
+                                out var onlineClientP
+                            );
+                            if (gotPlayerTeam)
+                            {
+                                onlineClientP.TryGetData<ArenaTeamClientSettings>(
+                                    out var playerTeam
+                                );
+                                if (gotPlayerTeam)
+                                {
+                                    if (acPlayer.realizedCreature != null)
+                                    {
+                                        if (acPlayer.realizedCreature.State.alive || IsPlayerReviving(self?.gameSession, acPlayer)) // THIS is the only line changed. GOD.
+                                        {
+                                            aliveTeams.Add(playerTeam.team);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (aliveTeams.Count == 1)
+                {
+                    if (self.gameSession.game.world.rainCycle.speedUpToRain == false)
+                    {
+                        RainMeadow.RainMeadow.Debug("Team Stock Battle: Adding rain");
+                        self.gameSession.game.world.rainCycle.ArenaEndSessionRain();
+                    }
+                    return true;
+                }
+            }
         }
 
         return orig(self);
@@ -84,6 +144,10 @@ public partial class StockArenaMode : ExternalArenaGameMode
 
     public override string TimerText()
     {
+        if (this.isTeamBattle && TeamBattleGamemode is TeamBattleMode teamBattleMode)
+        {
+            return teamBattleMode.TimerText();
+        }
         return BTWFunc.Translate("Prepare for combat,") + " " + BTWFunc.Translate(PlayingAsText());
     }
     public override int SetTimer(ArenaMode arena)
@@ -118,7 +182,10 @@ public partial class StockArenaMode : ExternalArenaGameMode
     }
     public override string AddIcon(ArenaMode arena, PlayerSpecificOnlineHud owner, SlugcatCustomization customization, OnlinePlayer player)
     {
-
+        if (this.isTeamBattle && TeamBattleGamemode is TeamBattleMode teamBattleMode)
+        {
+            return teamBattleMode.AddIcon(arena, owner, customization, player);
+        }
         if (owner.clientSettings.owner == OnlineManager.lobby.owner)
         {
             return "ChieftainA";
@@ -142,11 +209,8 @@ public partial class StockArenaMode : ExternalArenaGameMode
             return Color.yellow;
         }
 
+        if (this.isTeamBattle) { return this.GetTeamBattleMode(arena).IconColor(arena, display, owner, customization, player); }
         return base.IconColor(arena, display, owner, customization, player);
-    }
-    public override Dialog AddGameModeInfo(ArenaMode arena, Menu.Menu menu)
-    {
-        return new DialogNotify(menu.LongTranslate("A free for all with a second chance, or more."), new Vector2(500f, 400f), menu.manager, () => { menu.PlaySound(SoundID.MENU_Button_Standard_Button_Pressed); });
     }
 
     public override void Killing(ArenaMode arena, On.ArenaGameSession.orig_Killing orig, ArenaGameSession self, Player killer, Creature killedCrit, int playerIndex)
@@ -214,6 +278,58 @@ public partial class StockArenaMode : ExternalArenaGameMode
             BTWPlugin.Log($"Hell yeah, got kill credit <{arenaLives.killChain}> !");
         }
     }
+
+    public override void ResetOnSessionEnd()
+    {
+        if (this.isTeamBattle && TeamBattleGamemode is TeamBattleMode teamBattleMode)
+        {
+            teamBattleMode.ResetOnSessionEnd();
+        }
+        base.ResetOnSessionEnd();
+    }
+    public override void ArenaSessionCtor(ArenaMode arena, On.ArenaGameSession.orig_ctor orig, ArenaGameSession self, RainWorldGame game)
+    {
+        if (this.isTeamBattle && TeamBattleGamemode is TeamBattleMode teamBattleMode)
+        {
+            teamBattleMode.ArenaSessionCtor(arena, orig, self, game);
+            return;
+        }
+        base.ArenaSessionCtor(arena, orig, self, game);
+    }
+    public override bool PlayerSittingResultSort(ArenaMode arena, On.ArenaSitting.orig_PlayerSittingResultSort orig, ArenaSitting self, ArenaSitting.ArenaPlayer A, ArenaSitting.ArenaPlayer B)
+    {
+        if (this.isTeamBattle && TeamBattleGamemode is TeamBattleMode teamBattleMode)
+        {
+            return teamBattleMode.PlayerSittingResultSort(arena, orig, self, A, B);
+        }
+        return base.PlayerSittingResultSort(arena, orig, self, A, B);
+    }
+    public override bool PlayerSessionResultSort(ArenaMode arena, On.ArenaSitting.orig_PlayerSessionResultSort orig, ArenaSitting self, ArenaSitting.ArenaPlayer A, ArenaSitting.ArenaPlayer B)
+    {
+        if (this.isTeamBattle && TeamBattleGamemode is TeamBattleMode teamBattleMode)
+        {
+            return teamBattleMode.PlayerSessionResultSort(arena, orig, self, A, B);
+        }
+        return base.PlayerSessionResultSort(arena, orig, self, A, B);
+    }
+    public override void ArenaSessionEnded(ArenaMode arena, On.ArenaSitting.orig_SessionEnded orig, ArenaSitting self, ArenaGameSession session, List<ArenaSitting.ArenaPlayer> list)
+    {
+        if (this.isTeamBattle && TeamBattleGamemode is TeamBattleMode teamBattleMode)
+        {
+            teamBattleMode.ArenaSessionEnded(arena, orig, self, session, list);
+            return;
+        }
+        base.ArenaSessionEnded(arena, orig, self, session, list);
+    }
+    public override void SpawnPlayer(ArenaMode arena, ArenaGameSession self, Room room, List<int> suggestedDens)
+    {
+        if (this.isTeamBattle && TeamBattleGamemode is TeamBattleMode teamBattleMode)
+        {
+            teamBattleMode.SpawnPlayer(arena, self, room, suggestedDens);
+            return;
+        }
+        base.SpawnPlayer(arena, self, room, suggestedDens);
+    }
 }
 
 public static class StockArenaModeHook
@@ -222,10 +338,55 @@ public static class StockArenaModeHook
     {
         new Hook(typeof(ArenaMode).GetConstructor(new[] { typeof(Lobby) }), SetUpNewGamemode);
         new Hook(typeof(ArenaRPCs).GetMethod(nameof(ArenaRPCs.Arena_RemovePlayerWhoQuit)), DismissLivesOfThoseWhoQuit);
+        new Hook(typeof(TeamBattleMode).GetMethod(nameof(TeamBattleMode.isTeamBattleMode)), StockTeamBattle);
+        new Hook(typeof(ArenaOnlineLobbyMenu).GetMethod(nameof(ArenaOnlineLobbyMenu.UpdateOnlineUI)), EnableStockTeamBattleUI);
+        new Hook(typeof(ArenaOnlineLobbyMenu).GetMethod(nameof(ArenaOnlineLobbyMenu.RemoveAndAddNewExtGameModeTab)), EnableStockTeamBattleUIOnStart);
         On.Menu.PauseMenu.Singal += ArenaMenu_OnArenaExit;
         On.Player.ctor += Player_AddArenaLivesFromSettings;
     }
 
+    private static void EnableStockTeamBattleUIOnStart(Action<ArenaOnlineLobbyMenu, ExternalArenaGameMode> orig, ArenaOnlineLobbyMenu self, ExternalArenaGameMode gameMode)
+    {
+        orig(self, gameMode);
+        if ((ArenaMode)OnlineManager.lobby?.gameMode is ArenaMode arenaOnline
+            && gameMode is StockArenaMode stockArenaMode
+            && stockArenaMode.isTeamBattle
+            && stockArenaMode.GetTeamBattleMode(arenaOnline) is TeamBattleMode teamBattleMode)
+        {
+            teamBattleMode.OnUIEnabled(self);
+        }
+    }
+    private static void EnableStockTeamBattleUI(Action<ArenaOnlineLobbyMenu> orig, ArenaOnlineLobbyMenu self)
+    {
+        orig(self);
+        if ((ArenaMode)OnlineManager.lobby?.gameMode is ArenaMode arenaOnline
+            && arenaOnline.IsStockArenaMode(out var stockArenaMode)
+            && stockArenaMode.GetTeamBattleMode(arenaOnline) is TeamBattleMode teamBattleMode)
+        {
+            if (stockArenaMode.isTeamBattle)
+            {
+                if (teamBattleMode.myTab == null)
+                {
+                    teamBattleMode.OnUIEnabled(self);
+                }
+                teamBattleMode.OnUIUpdate(self);
+            }
+            else if (!stockArenaMode.isTeamBattle && teamBattleMode.myTab != null)
+            {
+                teamBattleMode.OnUIDisabled(self);
+            }
+        }
+    }
+    private delegate bool isTeamBattleModeDelegate(ArenaMode arena, out TeamBattleMode tb);
+    private static bool StockTeamBattle(isTeamBattleModeDelegate orig, ArenaMode arena, out TeamBattleMode tb)
+    {
+        if (arena.IsStockArenaMode(out var stockArenaMode) && stockArenaMode.isTeamBattle)
+        {
+            tb = stockArenaMode.GetTeamBattleMode(arena);
+            return true;
+        }
+        return orig(arena, out tb);
+    }
     private static void ArenaMenu_OnArenaExit(On.Menu.PauseMenu.orig_Singal orig, PauseMenu self, MenuObject sender, string message)
     {
         if (message == "EXIT" && MeadowFunc.IsMeadowArena(out var arena)

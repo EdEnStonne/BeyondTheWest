@@ -82,6 +82,10 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
         public bool AL_KillProtection;
         [OnlineField(group = "ArenaLives")]
         public int AL_KillProtectionAmount;
+        [OnlineField(group = "ArenaLives")]
+        public int AL_RainTimerToSuddentDeath;
+        [OnlineField(group = "ArenaLives")]
+        public bool AL_IsTeamBattle;
         
         // Group: ArenaItems
         [OnlineField(group = "ArenaItems")]
@@ -155,6 +159,8 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
                 this.AL_KillLifeAmount = stockArenaMode.killAmountForLife;
                 this.AL_KillProtection = stockArenaMode.killGiveProtection;
                 this.AL_KillProtectionAmount = stockArenaMode.killAmountForProtection;
+                this.AL_RainTimerToSuddentDeath = stockArenaMode.rainTimerToSuddentDeath;
+                this.AL_IsTeamBattle = stockArenaMode.isTeamBattle;
             }
             
             this.AT_ItemSpawnDiversity = arenaSettings.ArenaItems_ItemSpawnDiversity;
@@ -213,6 +219,8 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
                     stockArenaMode.killAmountForLife = this.AL_KillLifeAmount;
                     stockArenaMode.killGiveProtection = this.AL_KillProtection;
                     stockArenaMode.killAmountForProtection = this.AL_KillProtectionAmount;
+                    stockArenaMode.rainTimerToSuddentDeath = this.AL_RainTimerToSuddentDeath;
+                    stockArenaMode.isTeamBattle = this.AL_IsTeamBattle;
                 }
 
                 arenaSettings.ArenaItems_ItemSpawnDiversity = this.AT_ItemSpawnDiversity;

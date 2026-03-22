@@ -226,6 +226,17 @@ public class EnergyCore : PhysicalObject, IDrawable
                     this.grayScale = 1f;
                 }  
             }
+            else
+            {
+                if (this.grayScale > 0.01f)
+                {
+                    this.grayScale = Mathf.Lerp(this.grayScale, 0f, 0.02f);
+                }
+                else
+                {
+                    this.grayScale = 0f;
+                } 
+            }
             sLeaser.sprites[1] = CoreMesh;
         }
     }

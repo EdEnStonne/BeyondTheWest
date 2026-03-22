@@ -24,6 +24,7 @@ public static class BTWMeow
         if (player.IsCore() && player.GetAEC()?.RealizedCore is EnergyCore energyCore)
         {
             energyCore.meowBlink = isShortMeow ? 9 : 11;
+            energyCore.grayScale = 0.75f;
         }
         else if (player.IsSpark() && player.room is Room room)
         {

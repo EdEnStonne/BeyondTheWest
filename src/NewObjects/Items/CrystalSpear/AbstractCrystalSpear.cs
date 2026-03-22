@@ -5,6 +5,8 @@ using BeyondTheWest.MeadowCompat;
 using System;
 using System.Linq;
 using System.Globalization;
+using MonoMod.Cil;
+using Mono.Cecil.Cil;
 
 namespace BeyondTheWest.Items;
 
@@ -93,6 +95,38 @@ public static class CrystalSpearHooks
     }
     public static void ApplyHooks()
     {
+        IL.Player.ThrowObject += Player_ThrewCrystalSpearTheBouncyWay;
         BTWPlugin.Log("VoidCrystalHooks ApplyHooks Done !");    
+    }
+
+    public static int GiveCrystalSpearMoreBounceFrames(int orig, Player player, int grasp)
+    {
+        if (player.grasps[grasp].grabbed is CrystalSpear) { return 60; }
+        return orig;
+    }
+    private static void Player_ThrewCrystalSpearTheBouncyWay(ILContext il)
+    {
+        BTWPlugin.Log("CrystalSpearHooks IL 1 starts");
+        try
+        {
+            BTWPlugin.Log("Trying to hook IL");
+            ILCursor cursor = new(il);
+            if (cursor.TryGotoNext(MoveType.Before,  x => x.MatchStfld<Weapon>(nameof(Weapon.floorBounceFrames))))
+            {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.Emit(OpCodes.Ldarg_1);
+                cursor.EmitDelegate(GiveCrystalSpearMoreBounceFrames);
+            }
+            else
+            {
+                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+            }
+            BTWPlugin.Log("IL hook ended");
+        }
+        catch (Exception ex)
+        {
+            BTWPlugin.logger.LogError(ex);
+        }
+        BTWPlugin.Log("CrystalSpearHooks IL 1 ends");
     }
 }

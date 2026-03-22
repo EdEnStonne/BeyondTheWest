@@ -254,7 +254,8 @@ public static class ArenaDeathTrackerHooks
         On.Creature.Violence += Creature_ViolenceDeathTracker;
         On.Lizard.Violence  += Lizard_ViolenceDeathTracker;
         
-        new ILHook(typeof(DeathMessage).GetMethod(nameof(DeathMessage.CreatureDeath)), DeathMessage_ChangeContextFromTracker);
+        new Hook(typeof(DeathMessage).GetMethod(nameof(DeathMessage.PvPRPC)), DeathMessage_ChangeContextFromTracker);
+        new Hook(typeof(RPCs).GetMethod(nameof(RPCs.KillFeedPvP)), DeathMessage_ChangeContextFromRPC);
         new ILHook(typeof(DeathMessage).GetMethod(nameof(DeathMessage.PlayerKillPlayer)), DeathMessage_GetNewDeathMessageFromTracker);
         new ILHook(typeof(DeathMessage).GetMethod(nameof(DeathMessage.PlayerKillCreature)), DeathMessage_GetNewDeathMessageFromTracker);
         
@@ -373,73 +374,68 @@ public static class ArenaDeathTrackerHooks
         orig(self, source, directionAndMomentum, hitChunk, hitAppendage, type, damage, stunBonus);
     }
 
-    private static int ChangeContext(int orig, Creature creature)
+    private static void DeathMessage_ChangeContextFromTracker(Action<Player, Creature, int> orig, Player killer, Creature target, int context)
     {
-        if (ArenaDeathTracker.TryGetTracker(creature.abstractCreature, out var deathTracker) 
+        if (context == 0
+            && ArenaDeathTracker.TryGetTracker(target.abstractCreature, out var deathTracker)
             && deathTracker.deathMessageCustom >= 10)
         {
-            BTWPlugin.Log($"[{creature}] death context changed to <{deathTracker.deathMessageCustom}> !");
-            return deathTracker.deathMessageCustom;
+            BTWPlugin.Log($"[{target}] death context changed to <{deathTracker.deathMessageCustom}> !");
+            orig(killer, target, deathTracker.deathMessageCustom);
         }
-        return orig;
+        orig(killer, target, context);
     }
-    private static void DeathMessage_ChangeContextFromTracker(ILContext il)
+    private static void DeathMessage_ChangeContextFromRPC(Action<OnlinePhysicalObject, OnlinePhysicalObject, int> orig, OnlinePhysicalObject killer, OnlinePhysicalObject target, int context)
     {
-        BTWPlugin.Log("MeadowCompat IL 1 starts");
-        try
+        if (context != 0
+            && target?.apo is AbstractCreature abstractCreature
+            && ArenaDeathTracker.TryGetTracker(abstractCreature, out var deathTracker))
         {
-            BTWPlugin.Log("Trying to hook IL");
-            ILCursor cursor = new(il);
-            if (cursor.TryGotoNext(MoveType.After,
-                x => x.MatchLdarg(0),
-                x => x.MatchLdfld<Creature>(nameof(Creature.killTag)),
-                x => x.MatchCallOrCallvirt(typeof(AbstractCreature).GetProperty(nameof(AbstractCreature.realizedCreature)).GetGetMethod()),
-                x => x.MatchIsinst(typeof(Player)),
-                x => x.MatchLdarg(0),
-                x => x.MatchLdcI4(0)
-            ))
-            {
-                cursor.Emit(OpCodes.Ldarg_0);
-                cursor.EmitDelegate(ChangeContext);
-            }
-            else
-            {
-                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
-                BTWPlugin.Log(il);
-            }
-            BTWPlugin.Log("IL hook ended");
+            BTWPlugin.Log($"[{target}] death context is getting changed to <{deathTracker.deathMessageCustom}> !");
+            deathTracker.SetDeathTrackerOfCreature(context, true, false);
+            context = 0;
         }
-        catch (Exception ex)
-        {
-            BTWPlugin.logger.LogError(ex);
-        }
-        BTWPlugin.Log("MeadowCompat IL 1 ends");
+        orig(killer, target, context);
     }
 
-    private static string ChangeContextPre(string orig, int context)
+    private static string ChangeContextPre(string orig, OnlinePhysicalObject target)
     {
-        BTWPlugin.Log($"[{orig}] death message detected (pre), with context <{context}>.");
-        if (ArenaDeathTracker.TryGetDeathMessage(context, out var deathMessage))
-        { 
-            string newText = deathMessage.deathMessagePre;
-            BTWPlugin.Log($"[{orig}] death message changed to <{newText}> !");
-            return newText; 
-        }
-        else if (context >= 10)
+        if (target?.apo is AbstractCreature abstractCreature
+            && ArenaDeathTracker.TryGetTracker(abstractCreature, out var deathTracker))
         {
-            BTWPlugin.Log("Couldn't find the custom message...?");
-            LogAllDeathMessages();
+            int context = deathTracker.deathMessageCustom;
+            BTWPlugin.Log($"[{orig}] death message detected (pre), with context <{context}>.");
+            if (ArenaDeathTracker.TryGetDeathMessage(context, out var deathMessage))
+            { 
+                string newText = deathMessage.deathMessagePre;
+                BTWPlugin.Log($"[{orig}] death message changed to <{newText}> !");
+                return newText; 
+            }
+            else if (context >= 10)
+            {
+                BTWPlugin.Log("Couldn't find the custom message...?");
+                LogAllDeathMessages();
+            }
         }
         return orig;
     }
-    private static string ChangeContextPost(string orig, int context)
+    private static string ChangeContextPost(string orig, OnlinePhysicalObject target)
     {
-        BTWPlugin.Log($"[{orig}] death message detected (pos), with context <{context}>.");
-        if (ArenaDeathTracker.TryGetDeathMessage(context, out var deathMessage))
-        { 
-            string newText = deathMessage.deathMessagePost;
-            BTWPlugin.Log($"[{orig}] death message changed to <{newText}> !");
-            return newText; 
+        if (target?.apo is AbstractCreature abstractCreature
+            && ArenaDeathTracker.TryGetTracker(abstractCreature, out var deathTracker))
+        {
+            int context = deathTracker.deathMessageCustom;
+            BTWPlugin.Log($"[{orig}] death message detected (pos), with context <{context}>.");
+            if (ArenaDeathTracker.TryGetDeathMessage(context, out var deathMessage))
+            { 
+                string newText = deathMessage.deathMessagePost;
+                BTWPlugin.Log($"[{orig}] death message changed to <{newText}> !");
+                return newText; 
+            }
+            else if (context >= 10)
+            {
+                BTWPlugin.Log("Couldn't find the custom message...?");
+            }
         }
         return orig;
     }
@@ -455,7 +451,7 @@ public static class ArenaDeathTrackerHooks
                 x => x.MatchLdstr("was slain by")
             ))
             {
-                cursor.Emit(OpCodes.Ldarg_2);
+                cursor.Emit(OpCodes.Ldarg_1);
                 cursor.EmitDelegate(ChangeContextPre);
             }
             else
@@ -467,7 +463,7 @@ public static class ArenaDeathTrackerHooks
                 x => x.MatchLdstr(".")
             ))
             {
-                cursor.Emit(OpCodes.Ldarg_2);
+                cursor.Emit(OpCodes.Ldarg_1);
                 cursor.EmitDelegate(ChangeContextPost);
             }
             else

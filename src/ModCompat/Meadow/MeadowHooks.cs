@@ -12,6 +12,7 @@ using RainMeadow.Arena.ArenaOnlineGameModes.TeamBattle;
 using BeyondTheWest.ArenaAddition;
 using BeyondTheWest.MeadowCompat.Gamemodes;
 using BeyondTheWest.MeadowCompat.BTWMenu;
+using System.Linq;
 
 namespace BeyondTheWest.MeadowCompat;
 public static class MeadowHookHelper
@@ -24,18 +25,75 @@ public static class MeadowHookHelper
         BTWVersionChecker.ApplyHooks();
         StockArenaModeHook.ApplyHooks();
 
-        // new ILHook(typeof(FFA).GetMethod(nameof(FFA.IsExitsOpen)), FFA_DontOpenExitIfPlayerIsReviving);
-        // new ILHook(typeof(TeamBattleMode).GetMethod(nameof(TeamBattleMode.IsExitsOpen)), TeamBattleMode_DontOpenExitIfPlayerIsReviving);
-        
+        new Hook (typeof(StoryOnlineMenu).GetMethod(nameof(StoryOnlineMenu.Update)), StoryOnlineMenu_LockWIPCampaigns);
+
         new Hook(typeof(ArenaOnlineGameMode).GetConstructor(new[] { typeof(Lobby) }), SetUpArenaDescription);
         
         On.ArenaGameSession.Initiate += ArenaGameSession_RequestAllItemSpawner;
         On.Creature.Blind += Player_GetBlindedInArena;
-        On.SporeCloud.Update += Player_GetSmokedInArena;
+        On.SporeCloud.Update += Player_GetDizzyInArena;
+        On.FirecrackerPlant.PopLump += Player_GetStunYeetedByFirePlantPop;
+        On.FirecrackerPlant.Explode += Player_GetStunYeetedByFirePlantExplode;
+
         BTWPlugin.Log("MeadowCompat ApplyHooks Done !");
     }
+    private static void StoryOnlineMenu_LockWIPCampaigns(Action<StoryOnlineMenu> orig, StoryOnlineMenu self)
+    {
+        orig(self);
+        if (WIPSlugLock.WIPLock.Contains(self.colorFromIndex(self.slugcatPageIndex).ToString()))
+        {
+	        self.startButton.menuLabel.text = self.Translate("WORK IN\nPROGRESS");
+            self.startButton.GetButtonBehavior.greyedOut = true;
+        }
+        foreach (SlugcatSelectMenu.SlugcatPage page in self.slugcatPages)
+        {
+            if (page is SlugcatSelectMenu.SlugcatPageNewGame newpage 
+                && newpage.infoLabel.label.color != Color.red
+                && WIPSlugLock.WIPLock.Contains(page.slugcatNumber.ToString()))
+            {
+                newpage.infoLabel.text = "This campaign is still a work in progress.\nYou can still play this slugcat in arena, with Jolly Co-op or in Meadow.";
+                newpage.infoLabel.label.color = Color.red;
+            }
+        }
+    }
 
-    private static void Player_GetSmokedInArena(On.SporeCloud.orig_Update orig, SporeCloud self, bool eu)
+    private static void Player_GetStunYeetedByFirePlantExplode(On.FirecrackerPlant.orig_Explode orig, FirecrackerPlant self)
+    {
+        orig(self);
+        if (BTWMeadowArenaSettings.TryGetSettings(out var arenaSettings)
+            && arenaSettings.ArenaBonus_ExtraItemUses)
+        {
+            var playerInRange = BTWFunc.GetAllObjectsInRadius(self.room, self.firstChunk.pos, 90f);
+            for (int i = 0; i < playerInRange.Count; i++)
+            {
+                if (playerInRange[i].physicalObject is Player player && player.Local())
+                {
+                    BTWFunc.CustomKnockback(player, playerInRange[i].vectorDistance, 20f);
+                    player.stun = Mathf.Max(player.stun, BTWFunc.FrameRate * 3);
+                }
+            }
+        }
+    }
+
+    private static void Player_GetStunYeetedByFirePlantPop(On.FirecrackerPlant.orig_PopLump orig, FirecrackerPlant self, int lmp)
+    {
+        orig(self, lmp);
+        if (BTWMeadowArenaSettings.TryGetSettings(out var arenaSettings)
+            && arenaSettings.ArenaBonus_ExtraItemUses)
+        {
+            var playerInRange = BTWFunc.GetAllObjectsInRadius(self.room, self.firstChunk.pos, 30f);
+            for (int i = 0; i < playerInRange.Count; i++)
+            {
+                if (playerInRange[i].physicalObject is Player player && player.Local())
+                {
+                    BTWFunc.CustomKnockback(playerInRange[i].closestBodyChunk, playerInRange[i].vectorDistance, 10f);
+                    player.stun = Mathf.Max(player.stun, BTWFunc.FrameRate * 1);
+                }
+            }
+        }
+    }
+
+    private static void Player_GetDizzyInArena(On.SporeCloud.orig_Update orig, SporeCloud self, bool eu)
     {
         orig(self, eu);
         int distortTime = (int)(self.lifeTime * self.life * 2);
@@ -50,12 +108,18 @@ public static class MeadowHookHelper
                 if (playerInRange[i].physicalObject is Player player
                     && player.Local()
                     && player.GetBTWPlayerData() is BTWPlayerData bTWPlayerData
-                    && bTWPlayerData.onlineDizzy <= 0)
+                    && !bTWPlayerData.sporecloudsHit.Contains(self))
                 {
-                    BTWPlugin.Log($"Making player [{player}] dissy for <{distortTime}> ticks !");
-                    bTWPlayerData.onlineDizzy = distortTime + 10;
-                    ScreenDistord screenDistord = new(10, (int)(distortTime * 1/4f), (int)(distortTime * 3/4f - 10));
-                    self.room.AddObject( screenDistord );
+                    bTWPlayerData.sporecloudsHit.Add(self);
+                    if (bTWPlayerData.dizzy <= 0)
+                    {
+                        BTWPlugin.Log($"Making player [{player}] dissy for <{distortTime}> ticks !");
+                        bTWPlayerData.dizzy = distortTime;
+                        player.exhausted = true;
+                        player.aerobicLevel = 1f;
+                        ScreenDistord screenDistord = new(10, (int)(distortTime * 1/4f), (int)(distortTime * 3/4f - 10));
+                        self.room.AddObject( screenDistord );
+                    }
                 }
             }
         }

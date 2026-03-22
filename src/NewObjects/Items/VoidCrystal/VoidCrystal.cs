@@ -45,7 +45,7 @@ public class VoidCrystal : Weapon, VoidSpark.IReactToVoidFlux
 			{
 				if (!this.exploded)
 				{
-					this.explodeCounter.Tick();
+					this.explodeCounter.TickUp();
 					if (this.explodeCounter.ended)
 					{
 						this.Explode();
@@ -225,7 +225,7 @@ public class VoidCrystal : Weapon, VoidSpark.IReactToVoidFlux
 				while (this.AVC.containedVoidEnergy > 0)
 				{
 					float energyDispensed = Mathf.Min(this.AVC.containedVoidEnergy, BTWFunc.Random(0.75f, 1.25f));
-					this.room.AddObject( new VoidSpark( this.firstChunk.pos , energyDispensed, (int)Mathf.Clamp(40 * 1f / energyDispensed, 10, 200) )
+					this.room.AddObject( new VoidSpark( this.firstChunk.pos , energyDispensed, (int)Mathf.Clamp(80 * 1f / energyDispensed, 10, 200) )
 					{
 						killTagHolder = this.thrownBy?.abstractCreature,
 						source = this,
@@ -236,7 +236,7 @@ public class VoidCrystal : Weapon, VoidSpark.IReactToVoidFlux
 			}
 			else
 			{
-				this.room.AddObject( new VoidSpark( this.firstChunk.pos , this.AVC.containedVoidEnergy, (int)Mathf.Clamp(40 * 1f/this.AVC.containedVoidEnergy, 10, 200))
+				this.room.AddObject( new VoidSpark( this.firstChunk.pos , this.AVC.containedVoidEnergy, (int)Mathf.Clamp(80 * 1f/this.AVC.containedVoidEnergy, 10, 200))
 					{
 						killTagHolder = this.thrownBy?.abstractCreature,
 						source = this,
