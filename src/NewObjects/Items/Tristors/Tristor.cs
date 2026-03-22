@@ -93,7 +93,7 @@ public class Tristor : Weapon, ElectricExplosion.IReactToElectricExplosion
 
 		if (BTWFunc.IsLocal(this) && this.mode == Mode.Thrown && this.Charged && this.Submersion == 1f && !this.submergedCount.ended)
 		{
-			this.submergedCount.Tick();
+			this.submergedCount.TickUp();
 			if (this.submergedCount.ended)
 			{
 				this.Explode();
@@ -534,7 +534,7 @@ public class Tristor : Weapon, ElectricExplosion.IReactToElectricExplosion
 				this.doNotTumbleAtLowSpeed = false;
 			}
 		}
-		this.bounceCooldown.Tick();
+		this.bounceCooldown.TickUp();
 	}
 	public void Explode(bool chargeless = false)
 	{
@@ -589,7 +589,7 @@ public class Tristor : Weapon, ElectricExplosion.IReactToElectricExplosion
 				this.repulseForce.active = false;
 				this.centralForce.active = false;
 
-				this.stateCounter.Tick();
+				this.stateCounter.TickUp();
 				if (this.stateCounter.ended && this.mode == Mode.Free)
 				{
 					ChangeState(State.Idle);
@@ -600,7 +600,7 @@ public class Tristor : Weapon, ElectricExplosion.IReactToElectricExplosion
 			{
 				if (this.mode == Mode.Free && velocity.magnitude < 2f)
 				{
-					this.stateCounter.Tick();
+					this.stateCounter.TickUp();
 				}
 				else
 				{
@@ -657,7 +657,7 @@ public class Tristor : Weapon, ElectricExplosion.IReactToElectricExplosion
 
 				if (tristorNear)
 				{
-					this.stateCounter.Tick();
+					this.stateCounter.TickUp();
 				}
 				else
 				{
@@ -810,7 +810,7 @@ public class Tristor : Weapon, ElectricExplosion.IReactToElectricExplosion
 
 				if (collapsing)
 				{
-					this.stateCounter.Tick();
+					this.stateCounter.TickUp();
 				}
 				else
 				{

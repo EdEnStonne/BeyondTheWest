@@ -24,7 +24,7 @@
 			}
 		},
 		"custom_colors": [
-			{ "name": "Body", "story": "a6c4ff", "arena": [ "FFFFFF", "fff780", "FF8080", "a6c4ff" ] },
+			{ "name": "Body", "story": "a6c4ff", "arena": [ "FFFFFF", "fff780", "FF8080", "17234f" ] },
 			{ "name": "Eyes", "story": "ffffff", "arena": [ "010101", "010101", "010101", "ffffff" ]}
 		],
 

@@ -472,7 +472,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
         Room room = player.room;
         if (player != null && room != null)
         {
-            this.poleLoopTick.Tick();
+            this.poleLoopTick.TickUp();
             float heightGained = 40f - (this.poleLoopCount.value - 1) * 5f;
             float loopLenght = 22.5f;
             float smoothing = 0.65f;
@@ -718,7 +718,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
                 }
                 else
                 {
-                    this.poleLoopExitTick.Tick();
+                    this.poleLoopExitTick.TickUp();
                 }
                 if (!this.poleLoopExitTick.ended)
                 {
@@ -755,7 +755,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
                 this.kickKaizo.Down();
             }
 
-            this.poleTechCooldown.Tick();
+            this.poleTechCooldown.TickUp();
 
             if (this.kickExhaustCount.reachedMax)
             {
@@ -796,7 +796,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
 
             if (this.kickActive.atZero)
             {
-                if (this.kickWhiff.reachedMax)
+                if (this.kickWhiff.reachedMax && (flipping || leaping || superJump))
                 {
                     Vector2 bodydir = (player.bodyChunks[0].pos - player.bodyChunks[1].pos).normalized;
                     kickExhaustCount.Add(BTWFunc.FrameRate * 2);

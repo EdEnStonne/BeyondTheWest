@@ -5,6 +5,7 @@ using BeyondTheWest.MeadowCompat;
 using System.Runtime.CompilerServices;
 using MonoMod.Cil;
 using Mono.Cecil.Cil;
+using BeyondTheWest.SimplifiedMovesetCompat;
 
 namespace BeyondTheWest;
 
@@ -412,6 +413,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
             bool specPressed = specHeld && !player.input[1].spec;
             bool ignorePoleToggle = BTWRemix.TrailseekerIgnorePoleToggle.Value;
             bool ignorePoleInvert = BTWRemix.TrailseekerIgnorePoleInvert.Value;
+            this.lastholdToPoles = this.holdToPoles;
 
             if (ignorePoleToggle)
             {
@@ -425,6 +427,11 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
             {
                 this.holdToPoles = ignorePoleInvert ? specHeld : !specHeld;
                 if (specPressed) { this.indicatorUI?.ShowPoleIcon(); }
+            }
+
+            if (BTWPlugin.simplifiedMovesetEnabled && this.lastholdToPoles && !this.holdToPoles)
+            {
+                BTWSimplifiedMoveset.DetatchFromBeam(player);
             }
 
             if (player.bodyMode == Player.BodyModeIndex.WallClimb)
@@ -518,6 +525,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
     public bool rocketJumpFromWallKick = false;
     public bool rocketJumpFromWallVerticalPounce = false;
     public bool holdToPoles = true;
+    public bool lastholdToPoles = true;
 
     public int MaxWallClimb = 3;
     public int MaxWallClimbCount = 20;

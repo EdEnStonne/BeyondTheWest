@@ -28,16 +28,23 @@ public class Counter
         this.max = max;
         ResetUp();
     }
-    public void Tick()
+    public void TickUp()
     {
         if (this._count < this._max)
         {
             this._count++;
         }
     }
+    public void TickDown()
+    {
+        if (this._count > 0)
+        {
+            this._count--;
+        }
+    }
     public void Add()
     {
-        Tick();
+        TickUp();
     }
     public void Add(int num)
     {

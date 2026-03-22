@@ -47,7 +47,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
             new(ObjectType.Rock, 0)
         },
         new(){
-            new(ObjectType.Spear, 4)
+            new(ObjectType.Spear, 5)
         },
     };
     public static List<ObjectData> GetRandomTestList()
@@ -84,24 +84,27 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
             Init();
         }
     }
-    public ArenaItemSpawn(Vector2 position, int spawnTime, ObjectType objectType, int intdata = 0, bool notifyMeadow = false)
+    public ArenaItemSpawn(Vector2 position, int spawnTime, ObjectType objectType, int intdata = 0, bool notifyMeadow = true)
         : this(position, spawnTime, new List<ObjectData>{ new(objectType, intdata) }, notifyMeadow) {}
-    public ArenaItemSpawn(Vector2 position, List<ObjectData> objectList, bool notifyMeadow = false)
+    public ArenaItemSpawn(Vector2 position, List<ObjectData> objectList, bool notifyMeadow = true)
         : this(position, (int)(3 * BTWFunc.FrameRate + BTWFunc.Random(7 * BTWFunc.FrameRate)), objectList, notifyMeadow) {}
-    public ArenaItemSpawn(Vector2 position, ObjectType objectType, int intdata = 0, bool notifyMeadow = false)
+    public ArenaItemSpawn(Vector2 position, ObjectType objectType, int intdata = 0, bool notifyMeadow = true)
         : this(position, new List<ObjectData>{ new(objectType, intdata) }, notifyMeadow) {}
-    public ArenaItemSpawn(Vector2 position, bool notifyMeadow = false)
+    public ArenaItemSpawn(Vector2 position, bool notifyMeadow = true)
         : this(position, ObjectType.Rock, 0, notifyMeadow) {}
     
     public void Init()
     {
-        if (!this.isInit && this.room != null)
+        if (!this.isMeadowInit && this.room != null)
         {
             if (BTWPlugin.meadowEnabled && this.notifyMeadow && !this.isFake)
             {
                 MeadowCalls.BTWArena_RPCAddItemSpawnerToAllInRoom(this);
             }
-            this.isInit = true;
+            else
+            {
+                this.isMeadowInit = true;
+            }
         }
     }
     public void SpawnItems()
@@ -157,11 +160,11 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
                             item.electric = true;
                             item.electricCharge = (int)(1 + BTWFunc.random * 4);
                         }
-                        else if (this.objectList[j].intData == 3)
+                        else if (this.objectList[j].intData == 3 && ModManager.MSC)
                         {
                             item.hue = BTWFunc.random;
                         }
-                        else if (this.objectList[j].intData == 4)
+                        else if (this.objectList[j].intData == 4 && ModManager.Watcher)
                         {
                             item.poison = 1 + BTWFunc.random;
                             item.poisonHue = BTWFunc.random;
@@ -262,7 +265,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
         base.Update(eu);
         if (this.room != null && !this.slatedForDeletetion)
         {
-            if (!this.isInit) { Init(); }
+            if (!this.isMeadowInit) { Init(); }
             if (this.spawnCount < this.spawnTime)
             {
                 this.spawnCount++;
@@ -411,7 +414,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
     public List<ObjectData> objectList = new();
     public Vector2 pos;
 
-    public bool isInit = false;
+    public bool isMeadowInit = false;
     private bool notifyMeadow = true;
 
     public Color baseColor = Color.gray;

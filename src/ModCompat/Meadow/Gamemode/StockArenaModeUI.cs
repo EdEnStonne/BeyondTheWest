@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using RainMeadow;
 using HUD;
 using RWCustom;
+using RainMeadow.Arena.ArenaOnlineGameModes.TeamBattle;
 
 
 namespace BeyondTheWest.MeadowCompat.Gamemodes;
@@ -54,6 +55,14 @@ public partial class StockArenaMode : ExternalArenaGameMode
     public bool killGiveLife = BTWRemix.MeadowArenaLivesKill1UP.Value;
     public int killAmountForLife = BTWRemix.MeadowArenaLivesKill1UPAmount.Value;
     public int rainTimerToSuddentDeath = BTWRemix.MeadowArenaLivesRainTimerToSuddentDeath.Value;
+    public bool isTeamBattle = BTWRemix.MeadowArenaStockTeam.Value;
+
+    public TeamBattleMode GetTeamBattleMode(ArenaMode arena)
+    {
+        return arena?.registeredGameModes.FirstOrDefault(x => x.Key == TeamBattleMode.TeamBattle.value).Value as TeamBattleMode;
+    }
+    private ArenaMode ArenaGamemode => (ArenaMode)OnlineManager.lobby?.gameMode;
+    private TeamBattleMode TeamBattleGamemode => GetTeamBattleMode(ArenaGamemode);
 
     private OnlinePlayer _selectedPlayer;
     public OnlinePlayer SelectedPlayer
@@ -170,6 +179,36 @@ public partial class StockArenaMode : ExternalArenaGameMode
     {
         base.OnUIShutDown(menu);
         myStockSettingInterface?.OnShutdown();
+        if (MeadowFunc.IsMeadowArena(out var arenaOnline) 
+            && isTeamBattle
+            && GetTeamBattleMode(arenaOnline) is TeamBattleMode teamBattleMode)
+        {
+            teamBattleMode.OnUIShutDown(menu);
+        }
+    }
+    public override Color GetPortraitColor(ArenaMode arena, OnlinePlayer player, Color origPortraitColor)
+    {
+        if (this.isTeamBattle && TeamBattleGamemode is TeamBattleMode teamBattleMode)
+        {
+            return teamBattleMode.GetPortraitColor(arena, player, origPortraitColor);
+        }
+        return base.GetPortraitColor(arena, player, origPortraitColor);
+    }
+    public override bool DidPlayerWinRainbow(ArenaMode arena, OnlinePlayer player)
+    {
+        if (this.isTeamBattle && TeamBattleGamemode is TeamBattleMode teamBattleMode)
+        {
+            return teamBattleMode.DidPlayerWinRainbow(arena, player);
+        }
+        return base.DidPlayerWinRainbow(arena, player);
+    }
+    public override Dialog AddGameModeInfo(ArenaMode arena, Menu.Menu menu)
+    {
+        if (this.isTeamBattle && TeamBattleGamemode is TeamBattleMode teamBattleMode)
+        {
+            new DialogNotify(menu.LongTranslate("A team battle with a second chance, or more."), new Vector2(500f, 400f), menu.manager, () => { menu.PlaySound(SoundID.MENU_Button_Standard_Button_Pressed); });
+        }
+        return new DialogNotify(menu.LongTranslate("A free for all with a second chance, or more."), new Vector2(500f, 400f), menu.manager, () => { menu.PlaySound(SoundID.MENU_Button_Standard_Button_Pressed); });
     }
 }
 

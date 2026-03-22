@@ -394,7 +394,7 @@ public class ArenaItemSpawnManager
 
         if (this.doRespawn)
         {
-            respawnCount.Tick();
+            respawnCount.TickUp();
             if (respawnCount.ended)
             {
                 respawnCount.Reset();

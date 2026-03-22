@@ -364,7 +364,7 @@ public static class MeadowCalls
     public static void BTWArena_RPCAddItemSpawnerToAllInRoom(ArenaItemSpawn itemSpawner)
     {
         if (itemSpawner?.room?.abstractRoom?.GetResource() is not RoomSession roomSession) { return; }
-
+        itemSpawner.isMeadowInit = true;
         foreach (var participant in roomSession.participants)
         {
             if (!participant.isMe)
@@ -577,4 +577,16 @@ public static class MeadowCalls
         }
     }
 
+    // BTW data
+    public static void BTWPlayerData_Init(BTWPlayerData bTWPlayerData)
+    {
+        if (MeadowFunc.IsMeadowLobby() && bTWPlayerData.abstractPlayer.IsLocal())
+        {
+            if (bTWPlayerData.abstractPlayer.GetOnlineCreature() is OnlineCreature onlineCreature 
+                && !onlineCreature.TryGetData<OnlineBTWPlayerData>(out _))
+            {
+                onlineCreature.AddData(new Data.OnlineBTWPlayerData());
+            }
+        }
+    }
 }

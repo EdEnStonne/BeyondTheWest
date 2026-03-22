@@ -57,7 +57,7 @@ public static class BTWVersionChecker
             RWCustom.Custom.rainWorld.processManager.RequestMainProcessSwitch(RainMeadow.RainMeadow.Ext_ProcessID.LobbySelectMenu);
         }
     }
-    public static void CompareVersion(ref LobbyBTWVersionData hostBTWVersionData)
+    public static void CompareVersion(LobbyBTWVersionData hostBTWVersionData)
     {
         BTWPlugin.Log($"Owner responded ! Here is their lobby version : ");
         hostBTWVersionData.Log();
@@ -78,41 +78,16 @@ public static class BTWVersionChecker
                 }
             }
 
-            int[] enumMisplaced = new int[3]{0, 0, 0};
-            for (int i = 0; i < hostBTWVersionData.SlugcatNameEnum.Length; i++)
-            {
-                if (hostBTWVersionData.SlugcatNameEnum[i] != myBTWVersionData.SlugcatNameEnum[i])
-                {
-                    BTWPlugin.logger.LogWarning($"id <{i}> of slugcat names doesn't match ! [{myBTWVersionData.SlugcatNameEnum[i]}] instead of [{hostBTWVersionData.SlugcatNameEnum[i]}]");
-                    enumMisplaced[0]++;
-                }
-            }
-            for (int i = 0; i < hostBTWVersionData.ItemsTypeEnum.Length; i++)
-            {
-                if (hostBTWVersionData.ItemsTypeEnum[i] != myBTWVersionData.ItemsTypeEnum[i])
-                {
-                    BTWPlugin.logger.LogWarning($"id <{i}> of object types doesn't match ! [{myBTWVersionData.ItemsTypeEnum[i]}] instead of [{hostBTWVersionData.ItemsTypeEnum[i]}]");
-                    enumMisplaced[1]++;
-                }
-            }
-            for (int i = 0; i < hostBTWVersionData.CreatureTypeEnum.Length; i++)
-            {
-                if (hostBTWVersionData.CreatureTypeEnum[i] != myBTWVersionData.CreatureTypeEnum[i])
-                {
-                    BTWPlugin.logger.LogWarning($"id <{i}> of creature types doesn't match ! [{myBTWVersionData.CreatureTypeEnum[i]}] instead of [{hostBTWVersionData.CreatureTypeEnum[i]}]");
-                    enumMisplaced[2]++;
-                }
-            }
-
-            if (!(enumMisplaced[0] == 0 && enumMisplaced[1] == 0 && enumMisplaced[2] == 0))
+            if (!hostBTWVersionData.IsEnumMatching())
             {
                 hostBTWVersionData.ReorganizeEnum();
-                errorMessageText = "Some enum have ben found misplaced !" 
-                    + Environment.NewLine + $"Slugcat enum misplaced : {enumMisplaced[0]}"
-                    + Environment.NewLine + $"Items enum misplaced : {enumMisplaced[1]}"
-                    + Environment.NewLine + $"Creature enum misplaced : {enumMisplaced[2]}"
+                myBTWVersionData.SaveCurrentEnumOrder();
+                myBTWVersionData.Log();
+                errorMessageText = "Some enum have been found misplaced (Oh no !)" 
+                    + Environment.NewLine + "That means that you might not interpret data sends by others correctly."
                     + Environment.NewLine + "To avoid desync issues, your enum order has been modified to the host's (WIP)."
-                    + Environment.NewLine + "Please restart your game if you encounter any issues.";
+                    + Environment.NewLine + "You should be safe from enum desync now (hooray!)."
+                    + Environment.NewLine + "(Please restart your game if you encounter any issues)";
                 leaveOnError = false;
                 return;
             }
@@ -144,6 +119,7 @@ public static class BTWVersionChecker
                     }
                     else
                     {
+                        // myBTWVersionData.Swap2EnumForTestingPurposes(50);
                         BTWPlugin.Log($"Lobby BTW version has to be checked ! Current version is :");
                         myBTWVersionData.Log();
                         OnlineManager.lobby.owner.InvokeRPC(MeadowRPCs.BTWVersionChecker_RequestVersionInfo);
@@ -157,69 +133,68 @@ public static class BTWVersionChecker
         }
     }
 
-    public struct LobbyBTWVersionData : ICustomSerializable
+    public class LobbyBTWVersionData : ICustomSerializable
     {
         public LobbyBTWVersionData()
         {
             this.BTWVersion = BTWPlugin.GetVersionIntArray();
-            this.SlugcatNameEnum = SlugcatStats.Name.values.entries.ToArray();
-            this.ItemsTypeEnum = AbstractPhysicalObject.AbstractObjectType.values.entries.ToArray();
-            this.CreatureTypeEnum = CreatureTemplate.Type.values.entries.ToArray();
+            this.RainWorldEnums = new string[SyncedEnumTypes.Count][];
+            SaveCurrentEnumOrder();
         }
-        public readonly void Log()
+        public void SaveCurrentEnumOrder()
+        {
+            for (int i = 0; i < this.RainWorldEnums.Length; i++)
+            {
+                this.RainWorldEnums[i] = GetArrayIndexOfEnumList(SyncedEnumTypes[i]);
+            }
+        }
+        private string[] GetArrayIndexOfEnumList(Type EnumType)
+        {
+            if (ExtEnumBase.GetExtEnumType(EnumType) is ExtEnumType enumType)
+            {
+                return enumType.entries.ToArray();
+            }
+            throw new ArgumentException($"enumType [{EnumType}] is not an ExtEnum type.");
+        }
+
+        public void Log()
         {
             BTWPlugin.Log($"Logging BTW lobby data :");
             BTWPlugin.Log($"    > Version of BTW is {BTWVersionString}");
-            BTWPlugin.Log($"    > Order of SlugcatStats.Name enum is :");
-            for (int i = 0; i < this.SlugcatNameEnum.Length; i++)
+            for (int i = 0; i < this.RainWorldEnums.Length; i++)
             {
-                BTWPlugin.Log($"        >> <{i}>[{this.SlugcatNameEnum[i]}]");
-            }
-            BTWPlugin.Log($"    > Order of AbstractPhysicalObject.AbstractObjectType enum is :");
-            for (int i = 0; i < this.ItemsTypeEnum.Length; i++)
-            {
-                BTWPlugin.Log($"        >> <{i}>[{this.ItemsTypeEnum[i]}]");
-            }
-            BTWPlugin.Log($"    > Order of CreatureTemplate.Type enum is :");
-            for (int i = 0; i < this.CreatureTypeEnum.Length; i++)
-            {
-                BTWPlugin.Log($"        >> <{i}>[{this.CreatureTypeEnum[i]}]");
+                BTWPlugin.Log($"    > Order of [{SyncedEnumTypes[i].Name}] enum is :");
+                for (int j = 0; j < this.RainWorldEnums[i].Length; j++)
+                {
+                    BTWPlugin.Log($"        >> <{j}>[{this.RainWorldEnums[i][j]}]");
+                }
             }
         }
-        public readonly void ReorganizeEnum()
+        public void ReorganizeEnum()
         {
             BTWPlugin.Log($"Changing the order of the enum according to the lobby data...");
             try
             {
-                List<string> names = this.SlugcatNameEnum.ToList();
-                for (int i = 0; i < SlugcatStats.Name.values.entries.Count; i++)
+                for (int en = 0; en < this.RainWorldEnums.Length; en++)
                 {
-                    if (this.SlugcatNameEnum.FirstOrDefault(x => x == SlugcatStats.Name.values.entries[i]) == null)
+                    if (ExtEnumBase.GetExtEnumType(SyncedEnumTypes[en]) is ExtEnumType enumType)
                     {
-                        names.Add(SlugcatStats.Name.values.entries[i]);
+                        List<string> newEnumOrder = this.RainWorldEnums[en].ToList();
+                        for (int i = 0; i < enumType.entries.Count; i++)
+                        {
+                            if (this.RainWorldEnums[en].FirstOrDefault(x => x == enumType.entries[i]) == null)
+                            {
+                                newEnumOrder.Add(enumType.entries[i]);
+                            }
+                        }
+                        enumType.entries = newEnumOrder;
+                        enumType.version++;
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"enumType [{SyncedEnumTypes[en]}] is not an ExtEnum type.");
                     }
                 }
-                SlugcatStats.Name.values.entries = names;
-
-                List<string> items = this.ItemsTypeEnum.ToList();
-                for (int i = 0; i < AbstractPhysicalObject.AbstractObjectType.values.entries.Count; i++)
-                {
-                    if (this.ItemsTypeEnum.FirstOrDefault(x => x == AbstractPhysicalObject.AbstractObjectType.values.entries[i]) == null)
-                    {
-                        items.Add(AbstractPhysicalObject.AbstractObjectType.values.entries[i]);
-                    }
-                }
-                AbstractPhysicalObject.AbstractObjectType.values.entries = items;
-
-                List<string> creatures = this.CreatureTypeEnum.ToList();
-                for (int i = 0; i < CreatureTemplate.Type.values.entries.Count; i++)
-                {
-                    if (this.CreatureTypeEnum.FirstOrDefault(x => x == CreatureTemplate.Type.values.entries[i]) == null)
-                    {
-                        creatures.Add(CreatureTemplate.Type.values.entries[i]);
-                    }
-                }
-                CreatureTemplate.Type.values.entries = creatures;
             }
             catch (Exception ex)
             {
@@ -227,28 +202,100 @@ public static class BTWVersionChecker
             }
             BTWPlugin.Log($"Done without issues ! For now...");
         }
+        public bool IsEnumMatching()
+        {
+            BTWPlugin.Log($"Checking if enum matches");
+            bool match = true;
+            try
+            {
+                for (int en = 0; en < this.RainWorldEnums.Length; en++)
+                {
+                    if (ExtEnumBase.GetExtEnumType(SyncedEnumTypes[en]) is ExtEnumType enumType)
+                    {
+                        if (this.RainWorldEnums[en].Length != enumType.entries.Count)
+                        {
+                            BTWPlugin.logger.LogWarning($"Lenght of enum [{SyncedEnumTypes[en].Name}] doesn't match ! [{enumType.entries.Count}] instead of [{this.RainWorldEnums[en].Length}]");
+                            return false;
+                        }
+                        for (int i = 0; i < enumType.entries.Count; i++)
+                        {
+                            if (this.RainWorldEnums[en][i] != enumType.entries[i])
+                            {
+                                BTWPlugin.logger.LogWarning($"id <{i}> of enum [{SyncedEnumTypes[en].Name}] doesn't match ! [{enumType.entries[i]}] instead of [{this.RainWorldEnums[en][i]}]");
+                                match = false;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"enumType [{SyncedEnumTypes[en]}] is not an ExtEnum type.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                BTWPlugin.logger.LogError("Error while changing the order of the enums ! " + ex);
+            }
+            return match;
+        }
+        internal void Swap2EnumForTestingPurposes(int swaps = 1)
+        {
+            BTWPlugin.Log($"Swapping two enum order (x{swaps}) for testing purposes...");
+            for (int s = 1; s <= swaps; s++)
+            {
+                try
+                {
+                    int en = BTWFunc.RandInt(this.RainWorldEnums.Length - 1);
+                    int i = BTWFunc.RandInt(this.RainWorldEnums[en].Length - 1);
+                    int j = BTWFunc.RandInt(this.RainWorldEnums[en].Length - 1);
+                    if (ExtEnumBase.GetExtEnumType(SyncedEnumTypes[en]) is ExtEnumType enumType)
+                    {
+                        (enumType.entries[j], enumType.entries[i]) = (enumType.entries[i], enumType.entries[j]);
+                        (this.RainWorldEnums[en][j], this.RainWorldEnums[en][i]) = (this.RainWorldEnums[en][i], this.RainWorldEnums[en][j]);
+                        enumType.version++;
+                        BTWPlugin.Log($"Swapped <{i}>[{enumType.entries[j]}] and <{j}>[{enumType.entries[i]}] of enum [{SyncedEnumTypes[en].Name}]");
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"enumType [{SyncedEnumTypes[en]}] is not an ExtEnum type.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    BTWPlugin.logger.LogError("Error while changing the order of the enums ! " + ex);
+                }
+            }
+            BTWPlugin.Log($"Done without issues ! For now...");
+        }
         public int[] BTWVersion;
-        public string[] SlugcatNameEnum;
-        public string[] ItemsTypeEnum;
-        public string[] CreatureTypeEnum;
+        public string[][] RainWorldEnums;
+        public static List<Type> SyncedEnumTypes = new()
+        {
+            typeof(SlugcatStats.Name),
+            typeof(AbstractPhysicalObject.AbstractObjectType),
+            typeof(CreatureTemplate.Type),
+            typeof(OnlineState.StateType)
+        };
 
-        public readonly string BTWVersionString => string.Join(".", BTWVersion);
+        public string BTWVersionString => string.Join(".", BTWVersion);
 
         public void CustomSerialize(Serializer serializer)
         {
             if (serializer.IsWriting)
             {  
                 serializer.Serialize(ref this.BTWVersion);
-                serializer.Serialize(ref this.SlugcatNameEnum);
-                serializer.Serialize(ref this.ItemsTypeEnum);
-                serializer.Serialize(ref this.CreatureTypeEnum);
+                for (int i = 0; i < RainWorldEnums.Length; i++)
+                {
+                    serializer.Serialize(ref this.RainWorldEnums[i]);
+                }
             }
             else if (serializer.IsReading)
             {
                 serializer.Serialize(ref this.BTWVersion);
-                serializer.Serialize(ref this.SlugcatNameEnum);
-                serializer.Serialize(ref this.ItemsTypeEnum);
-                serializer.Serialize(ref this.CreatureTypeEnum);
+                for (int i = 0; i < RainWorldEnums.Length; i++)
+                {
+                    serializer.Serialize(ref this.RainWorldEnums[i]);
+                }
             }
         }
     }

@@ -31,13 +31,16 @@ public class CrystalSpear : Spear, VoidSpark.IReactToVoidFlux
             if (this.throwDir.x == 0)
             {
                 this.firstChunk.vel.x += Mathf.Sign(this.firstChunk.vel.x) * 12f;
-                this.firstChunk.vel.y *= 0.65f;
+                this.firstChunk.vel.y = Mathf.Max(this.exitThrownModeSpeed, Mathf.Abs(this.firstChunk.vel.y) * 0.675f)
+                    * Mathf.Sign(this.firstChunk.vel.y);
             }
             else if (this.throwDir.y == 0)
             {
                 this.firstChunk.vel.y += Mathf.Sign(this.firstChunk.vel.y) * 12f;
-                this.firstChunk.vel.x *= 0.65f;
+                this.firstChunk.vel.x = Mathf.Max(this.exitThrownModeSpeed, Mathf.Abs(this.firstChunk.vel.x) * 0.675f)
+                    * Mathf.Sign(this.firstChunk.vel.x);
             }
+            this.throwModeFrames += 30;
             Pop();
             if (BTWPlugin.meadowEnabled)
             {
@@ -191,7 +194,23 @@ public class CrystalSpear : Spear, VoidSpark.IReactToVoidFlux
 		this.room.AddObject(new ShockWave(this.firstChunk.pos, 60f, 0.045f, 5, false));
         this.room.PlaySound(SoundID.Fire_Spear_Pop, this.firstChunk, false, 0.8f, BTWFunc.Random(1.8f, 1.9f));
         VoidSpark.MakeDraggedSparks(this.room, 40f, this.firstChunk.pos, 
-            (byte)BTWFunc.RandInt(20, 30), this.baseColor, 0.2f);
+            (byte)BTWFunc.RandInt(15, 20), this.baseColor, 0.2f);
+        
+        if (this.Local())
+        {
+            VoidSpark spark = new(this.firstChunk.lastLastPos, 0.5f, BTWFunc.FrameRate)
+            {
+                killTagHolder = this.thrownBy?.abstractCreature,
+                source = this,
+                momentum = new Vector2(this.firstChunk.vel.x * (1 - this.throwDir.x) * 2, this.firstChunk.vel.y * (1 - this.throwDir.y) * 2)
+            };
+            if (this.thrownBy != null)
+            {
+                spark.sparedList.Add(this.thrownBy);
+            }
+            spark.sparedList.Add(this);
+            this.room.AddObject( spark );
+        }
     }
     public void Explode(Creature creatureHit = null, Vector2 pos = default)
 	{
@@ -259,7 +278,7 @@ public class CrystalSpear : Spear, VoidSpark.IReactToVoidFlux
                     spear.thrownPos = this.firstChunk.lastPos;
                     spear.floorBounceFrames = 20;
                     spear.throwDir = new IntVector2(-this.throwDir.x, -this.throwDir.y);
-                    spear.throwModeFrames = Mathf.Max(this.throwModeFrames, 40);
+                    spear.throwModeFrames = Mathf.Max(this.throwModeFrames, 60);
                     spear.overrideExitThrownSpeed = 12f;
 
                     spear.firstChunk.vel = new Vector2(

@@ -11,7 +11,7 @@ namespace BeyondTheWest
     class BTWPlugin : BaseUnityPlugin
     {
         private const string MOD_ID = "edenstonne.beyondthewest";
-        public const string MOD_VERSION = "1.4.5";
+        public const string MOD_VERSION = "1.4.6";
         private static bool isInit = false;
         private static bool ressourceInit = false;
         public static bool ressourceFullyEnded = false;
@@ -25,6 +25,8 @@ namespace BeyondTheWest
         public static bool oldInputConfigEnabled = false;
         public static bool inputConfigEnabled = false;
         public static bool pushToMeowEnabled = false;
+        public static bool simplifiedMovesetEnabled = false;
+        public static bool DMSEnabled = false;
 
         public static void Log(object data)
         {
@@ -178,6 +180,16 @@ namespace BeyondTheWest
                     Log("Found push to meow !");
                     pushToMeowEnabled = true;
                 }
+                else if (mod.id == "SimplifiedMoveset")
+                {
+                    Log("Found simplified moveset !");
+                    simplifiedMovesetEnabled = true;
+                }
+                else if (mod.id == "dressmyslugcat")
+                {
+                    Log("Found DMS !");
+                    DMSEnabled = true;
+                }
             }
 
             Log("Checking Mods initialized !");
@@ -200,6 +212,14 @@ namespace BeyondTheWest
             if (pushToMeowEnabled)
             {
                 ApplyPushToMeowHooks();
+            }
+            if (simplifiedMovesetEnabled)
+            {
+                ApplySimplifiedMovesetHooks();
+            }
+            if (DMSEnabled)
+            {
+                ApplyDMSHooks();
             }
             logger.LogInfo("Soft Hooks initialized !");
         }
@@ -227,6 +247,18 @@ namespace BeyondTheWest
             Log("PushToMeow Hooks start !");
             PushToMeowCompat.BTWMeow.ApplyHooks();
             Log("PushToMeow Hooks initialized !");
+        } 
+        public static void ApplySimplifiedMovesetHooks()
+        {
+            Log("SimplifiedMoveset Hooks start !");
+            SimplifiedMovesetCompat.BTWSimplifiedMoveset.ApplyHooks();
+            Log("SimplifiedMoveset Hooks initialized !");
+        }  
+        public static void ApplyDMSHooks()
+        {
+            Log("DMS Hooks start !");
+            DressMySlugcatCompat.BTWDMSDressing.ApplyHooks();
+            Log("DMS Hooks initialized !");
         }  
 
         private void PostModsLoad(On.RainWorld.orig_PostModsInit orig, RainWorld self)

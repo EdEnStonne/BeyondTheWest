@@ -24,8 +24,8 @@
 			}
 		},
 		"custom_colors": [
-			{ "name": "Body", "story": "cc7b52", "arena": [ "FFFFFF", "fff780", "FF8080", "cc7b52" ] },
-			{ "name": "Eyes", "story": "010101", "arena": [ "010101", "010101", "010101", "010101" ] }
+			{ "name": "Body", "story": "cc7b52", "arena": [ "FFFFFF", "ffff73", "FF7373", "17234f" ] },
+			{ "name": "Eyes", "story": "010101", "arena": [ "010101", "010101", "010101", "FFFFFF" ] }
 		],
 
 		"auto_grab_batflies": true,

@@ -9,12 +9,9 @@ using Mono.Cecil.Cil;
 public class BTWSkins
 {
     public static ConditionalWeakTable<AbstractCreature, List<FSprite>> cwtPlayerSpriteInfo = new();
-    private static bool skinloaded = false;
     public static void ApplyHooks()
     {
         On.PlayerGraphics.DrawSprites += Player_Sprite;
-        // IL.PlayerGraphics.InitiateSprites += Modify_Player_Sprite;
-        // IL.Player.ctor += Player_ModifyPlayerHeight;
         BTWPlugin.Log("BTWSkins ApplyHooks Done !");
     }
 
@@ -39,7 +36,6 @@ public class BTWSkins
         //     Plugin.Log(value.name);
         // }
         BTWPlugin.Log("BTWSkins LoadSkin Done !");
-        skinloaded = true;
     }
 
     // Hooks
@@ -89,7 +85,7 @@ public class BTWSkins
         }
         else if (SparkFunc.IsSpark(self.player))
         {
-            if (skinloaded)
+            // if (!BTWPlugin.DMSEnabled)
             {
                 if (!sLeaser.sprites[3].element.name.Contains("HeadASpark"))
                 {
@@ -131,7 +127,7 @@ public class BTWSkins
             sLeaser.sprites[1].scaleX += -0.15f + 0.25f * bonusfluff;
 
         }
-        else if (TrailseekerFunc.IsTrailseeker(self.player))
+        else if (TrailseekerFunc.IsTrailseeker(self.player)) //&& !BTWPlugin.DMSEnabled
         {
             if (sLeaser.sprites[9].scaleX > 0f)
             {
@@ -142,116 +138,5 @@ public class BTWSkins
                 sLeaser.sprites[9].element = Futile.atlasManager.GetElementWithName("TrailseekerG" + sLeaser.sprites[9].element.name);
             }
         }
-    }
-
-    private static float ChangeSlugHeight(float orig, Player player)
-    {
-        BTWPlugin.Log($"Ay player height is <{orig}>, is it Spark ? [{player.SlugCatClass}]<{player.IsSpark()}>");
-        if (player.IsSpark())
-        {
-            return 35f;
-        }
-        return orig;
-    }
-    private static void Player_ModifyPlayerHeight(ILContext il)
-    {
-        BTWPlugin.Log("BTWSkins IL 2 starts");
-        try
-        {
-            BTWPlugin.Log("Trying to hook IL");
-            ILCursor cursor = new(il);
-            if (cursor.TryGotoNext(MoveType.After,
-                x => x.MatchLdarg(0),
-                x => x.MatchLdcI4(1),
-                x => x.MatchNewarr<PhysicalObject.BodyChunkConnection>(),
-                x => x.MatchStfld<PhysicalObject>(nameof(PhysicalObject.bodyChunkConnections)),
-                x => x.MatchLdarg(0),
-                x => x.MatchLdfld<PhysicalObject>(nameof(PhysicalObject.bodyChunkConnections)),
-                x => x.MatchLdcI4(0),
-                x => x.MatchLdarg(0),
-                x => x.MatchCall(typeof(PhysicalObject).GetProperty(nameof(PhysicalObject.bodyChunks)).GetGetMethod()),
-                x => x.MatchLdcI4(0),
-                x => x.MatchLdelemRef(),
-                x => x.MatchLdarg(0),
-                x => x.MatchCall(typeof(PhysicalObject).GetProperty(nameof(PhysicalObject.bodyChunks)).GetGetMethod()),
-                x => x.MatchLdcI4(1),
-                x => x.MatchLdelemRef(),
-                x => x.MatchLdcR4(17)
-            ))
-            {
-                cursor.Emit(OpCodes.Ldarg_0);
-                cursor.EmitDelegate(ChangeSlugHeight);
-            }
-            else
-            {
-                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
-            }
-            BTWPlugin.Log("IL hook ended");
-        }
-        catch (Exception ex)
-        {
-            BTWPlugin.logger.LogError(ex);
-        }
-        BTWPlugin.Log("BTWSkins IL 2 ends");
-        // BTWPlugin.Log(il);
-    }
-    private static void Modify_Player_Sprite(ILContext il) // blatandly copied from MagicaJaphet : Extended Slugbase Features. Sorry I really don't get IL atm...
-    {
-        BTWPlugin.Log("BTWSkins IL 1 starts");
-        try
-        {
-            BTWPlugin.Log("Trying to hook IL");
-            ILCursor cursor = new(il);
-            // gown.InitiateSprite(this.gownIndex, sLeaser, rCam);
-            if (cursor.TryGotoNext(MoveType.Before, 
-                x => x.MatchLdarg(0),
-                x => x.MatchLdarg(1),
-                x => x.MatchLdarg(2),
-                x => x.MatchCallOrCallvirt<GraphicsModule>(nameof(GraphicsModule.AddToContainer)),
-                x => x.MatchBr(out _)
-                ))
-            {
-                cursor.Emit(OpCodes.Ldarg_0);
-                cursor.Emit(OpCodes.Ldarg_1);
-                cursor.Emit(OpCodes.Ldarg_2);
-                static void InitiateSprites(PlayerGraphics self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
-                {
-                    // Load skin if failed
-                    if (!skinloaded)
-                    {
-                        BTWPlugin.logger.LogError("Skin not loaded ! Loading them now...");
-                        LoadSkins();
-                    }
-                    if (SparkFunc.IsSpark(self.player))
-                    {
-                        if (Futile.atlasManager.DoesContainAtlas("BodyASpark") 
-                            && Futile.atlasManager.DoesContainAtlas("HipsASpark"))
-                        {
-                            sLeaser.sprites[0].SetElementByName("BodyASpark");
-                            sLeaser.sprites[1].SetElementByName("HipsASpark");
-                        }
-                        if (ModManager.MSC)
-                        {
-                            sLeaser.sprites[3].SetElementByName("HeadB0");
-                        }
-                    }
-                    else if (TrailseekerFunc.IsTrailseeker(self.player))
-                    {
-                        
-                    }
-                }
-                cursor.EmitDelegate(InitiateSprites);
-            }
-            else
-            {
-                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
-            }
-            BTWPlugin.Log("IL hook ended");
-        }
-        catch (Exception ex)
-        {
-            BTWPlugin.logger.LogError(ex);
-        }
-        BTWPlugin.Log("BTWSkins IL 1 ends");
     }
 } 

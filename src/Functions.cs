@@ -74,6 +74,14 @@ public static class BTWFunc
         }
         return true;
     }
+    public static bool IsLocal(VoidSpark voidSpark)
+    {
+        if (BTWPlugin.meadowEnabled && voidSpark != null)
+        {
+            return IsLocal(voidSpark);
+        }
+        return true;
+    }
     public static bool OnlineArenaTimerOn()
     {
         if (BTWPlugin.meadowEnabled)
