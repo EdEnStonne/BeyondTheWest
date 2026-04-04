@@ -22,6 +22,8 @@ public class OnlineBTWPlayerData : OnlineEntity.EntityData
         public int dizzy = 0;
         [OnlineField]
         public int onlineBlind = 0;
+        [OnlineField]
+        public int exhausted = 0;
         
 
         //--------- ctor
@@ -38,6 +40,7 @@ public class OnlineBTWPlayerData : OnlineEntity.EntityData
 
             dizzy = bTWPlayerData.dizzy;
             onlineBlind = bTWPlayerData.onlineBlind;
+            exhausted = bTWPlayerData.exhausted;
         }
         //--------- Functions
         public override void ReadTo(OnlineEntity.EntityData data, OnlineEntity onlineEntity)
@@ -50,6 +53,7 @@ public class OnlineBTWPlayerData : OnlineEntity.EntityData
 
             bTWPlayerData.dizzy = dizzy;
             bTWPlayerData.onlineBlind = onlineBlind;
+            bTWPlayerData.exhausted = exhausted;
         }
         public override Type GetDataType()
         {

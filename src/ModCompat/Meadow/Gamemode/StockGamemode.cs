@@ -180,18 +180,17 @@ public partial class StockArenaMode : ExternalArenaGameMode
     {
         aPlayer.AddSandboxScore(self.GameTypeSetup.spearHitScore);
     }
-    public override string AddIcon(ArenaMode arena, PlayerSpecificOnlineHud owner, SlugcatCustomization customization, OnlinePlayer player)
+    public override string AddIcon(ArenaMode arena, OnlinePlayerDisplay display, PlayerSpecificOnlineHud owner, SlugcatCustomization customization, OnlinePlayer player)
     {
-        if (this.isTeamBattle && TeamBattleGamemode is TeamBattleMode teamBattleMode)
+       if (this.isTeamBattle && TeamBattleGamemode is TeamBattleMode teamBattleMode)
         {
-            return teamBattleMode.AddIcon(arena, owner, customization, player);
+            return teamBattleMode.AddIcon(arena, display, owner, customization, player);
         }
         if (owner.clientSettings.owner == OnlineManager.lobby.owner)
         {
             return "ChieftainA";
         }
-        return base.AddIcon(arena, owner, customization, player);
-
+        return base.AddIcon(arena, display, owner, customization, player);
     }
 
     public override Color IconColor(ArenaMode arena, OnlinePlayerDisplay display, PlayerSpecificOnlineHud owner, SlugcatCustomization customization, OnlinePlayer player)
@@ -213,7 +212,7 @@ public partial class StockArenaMode : ExternalArenaGameMode
         return base.IconColor(arena, display, owner, customization, player);
     }
 
-    public override void Killing(ArenaMode arena, On.ArenaGameSession.orig_Killing orig, ArenaGameSession self, Player killer, Creature killedCrit, int playerIndex)
+    public override void Killing(ArenaMode arena, On.ArenaGameSession.orig_Killing orig, ArenaGameSession self, Player killer, Creature killedCrit)
     {
         if (killedCrit is Player killedPlayer && killedPlayer != killer)
         {
@@ -250,7 +249,7 @@ public partial class StockArenaMode : ExternalArenaGameMode
                 killedArenaLives.killChain = 0;
             }
         }
-        base.Killing(arena, orig, self, killer, killedCrit, playerIndex);
+        base.Killing(arena, orig, self, killer, killedCrit);
     }
     [RPCMethod]
     public static void GetKillCredit(RPCEvent rpc, OnlineCreature onlineKiller)
@@ -312,14 +311,14 @@ public partial class StockArenaMode : ExternalArenaGameMode
         }
         return base.PlayerSessionResultSort(arena, orig, self, A, B);
     }
-    public override void ArenaSessionEnded(ArenaMode arena, On.ArenaSitting.orig_SessionEnded orig, ArenaSitting self, ArenaGameSession session, List<ArenaSitting.ArenaPlayer> list)
+    public override void ArenaSessionEnded(ArenaMode arena, On.ArenaSitting.orig_SessionEnded orig, ArenaSitting self, ArenaGameSession session)
     {
         if (this.isTeamBattle && TeamBattleGamemode is TeamBattleMode teamBattleMode)
         {
-            teamBattleMode.ArenaSessionEnded(arena, orig, self, session, list);
+            teamBattleMode.ArenaSessionEnded(arena, orig, self, session);
             return;
         }
-        base.ArenaSessionEnded(arena, orig, self, session, list);
+        base.ArenaSessionEnded(arena, orig, self, session);
     }
     public override void SpawnPlayer(ArenaMode arena, ArenaGameSession self, Room room, List<int> suggestedDens)
     {
@@ -329,6 +328,10 @@ public partial class StockArenaMode : ExternalArenaGameMode
             return;
         }
         base.SpawnPlayer(arena, self, room, suggestedDens);
+    }
+    public override void ArenaSessionNextLevel(ArenaMode arena, On.ArenaSitting.orig_NextLevel orig, ArenaSitting self, ProcessManager process)
+    {
+        base.ArenaSessionNextLevel(arena, orig, self, process);
     }
 }
 

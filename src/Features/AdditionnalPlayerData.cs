@@ -81,6 +81,12 @@ public class BTWPlayerData : AdditionnalTechManager<BTWPlayerData>
                 this.onlineBlind--;
                 player.Blink(5);
             }
+            if (this.exhausted > 0)
+            {
+                this.exhausted--;
+                player.slowMovementStun = 5;
+                player.Blink(5);
+            }
         }
     }
     
@@ -91,6 +97,7 @@ public class BTWPlayerData : AdditionnalTechManager<BTWPlayerData>
     public float slugHeight = 17f;
     public bool local = true;
     public int dizzy = 0;
+    public int exhausted = 0;
     public List<SporeCloud> sporecloudsHit = new();
     public int onlineBlind = 0;
 }
@@ -99,11 +106,54 @@ public static class BTWPlayerDataHooks
     public static void ApplyHooks()
     {
         IL.Player.ctor += Player_BTWPlayerData_Init; //So it starts first garanteed
-        On.Player.Update += Player_BTWPlayerData_Update; //Same here
+        On.Player.Update += Player_BTWPlayerData_Update; 
         On.Player.Jump += Player_BTWPlayerData_OnJump;
+        On.Player.ThrownSpear += Player_SpearingExhaust;
+        IL.Player.ThrowObject += Player_WeaponExhaust;
         BTWPlugin.Log("BTWPlayerDataHooks ApplyHooks Done !");
     }
 
+    public static bool IsExhausted(bool orig, Player player)
+    {
+        return orig || (player.GetBTWPlayerData() is BTWPlayerData bTWPlayerData && bTWPlayerData.exhausted > 0);
+    }
+    private static void Player_WeaponExhaust(ILContext il)
+    {
+        BTWPlugin.Log("BTWPlayerData IL 2 starts");
+        try
+        {
+            BTWPlugin.Log("Trying to hook IL");
+            ILCursor cursor = new(il);
+            if (cursor.TryGotoNext(MoveType.After,  
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>(nameof(Player.gourmandExhausted))))
+            {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate(IsExhausted);
+            }
+            else
+            {
+                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+            }
+            BTWPlugin.Log("IL hook ended");
+        }
+        catch (Exception ex)
+        {
+            BTWPlugin.logger.LogError(ex);
+        }
+        BTWPlugin.Log("BTWPlayerData IL 2 ends");
+    }
+
+    private static void Player_SpearingExhaust(On.Player.orig_ThrownSpear orig, Player self, Spear spear)
+    {
+        orig(self, spear);
+        if (self == null || self.room == null) { return; }
+        if (spear == null || spear.bugSpear) { return; }
+        if (self.GetBTWPlayerData() is BTWPlayerData bTWPlayerData && bTWPlayerData.exhausted > 0)
+        {
+            spear.spearDamageBonus = Mathf.Min(0.1f + self.slugcatStats.throwingSkill * 0.1f, spear.spearDamageBonus);
+        }
+    }
     private static void AddNewManager(AbstractCreature abstractPlayer)
     {
         if (!BTWPlayerData.TryGetManager(abstractPlayer, out _))

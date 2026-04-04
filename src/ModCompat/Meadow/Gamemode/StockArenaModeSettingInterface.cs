@@ -53,8 +53,8 @@ public class OnlineStockArenaModeSettingsInterface : RectangularMenuObject, Chec
         StrictAt0Lives_CheckBox,
         RespawnShield_CheckBox,
         KarmaFlowerProtection_CheckBox, KarmaFlower1UP_CheckBox,
-        KillKarmaProtection_CheckBox, Kill1UP_CheckBox, 
-        Team_CheckBox;
+        KillKarmaProtection_CheckBox, Kill1UP_CheckBox;
+        // Team_CheckBox;
     public MultipleChoiceArray LifeAmount_MultipleChoiceArray;
     public StockButton LifeButton;
     public MenuTabWrapper tabWrapper;
@@ -232,8 +232,8 @@ public class OnlineStockArenaModeSettingsInterface : RectangularMenuObject, Chec
             stockMode.rainTimerToSuddentDeath = RainTimerToSuddentDeath_TextBox.cfgEntry.ClampValue(RainTimerToSuddentDeath_TextBox.valueInt);
         };
 
-        CreateCheckBox(ref Team_CheckBox, BTWRemix.MeadowArenaStockTeam,
-            "Team Battle :", TEAMBATTLE, new(25, size.y - 440), size.x * 2/3 - 35);
+        // CreateCheckBox(ref Team_CheckBox, BTWRemix.MeadowArenaStockTeam,
+        //     "Team Battle :", TEAMBATTLE, new(25, size.y - 440), size.x * 2/3 - 35);
 
         this.SafeAddSubobjects(
             tabWrapper,
@@ -241,7 +241,7 @@ public class OnlineStockArenaModeSettingsInterface : RectangularMenuObject, Chec
 
             EveryoneCanModifyTheirLifeAmount_CheckBox, StrictAt0Lives_CheckBox, BlockWin_CheckBox, RespawnShield_CheckBox,
             KarmaFlowerProtection_CheckBox, KarmaFlower1UP_CheckBox, KillKarmaProtection_CheckBox, Kill1UP_CheckBox,
-            Team_CheckBox,
+            // Team_CheckBox,
 
             LifeAmount_Label, LifeAmountOfPlayer_Label, ReviveTime_Label, AdditionalReviveTime_Label, RainTimerToSuddentDeath_Label,
 
@@ -292,7 +292,7 @@ public class OnlineStockArenaModeSettingsInterface : RectangularMenuObject, Chec
         BTWRemix.MeadowArenaLivesKarmaFlower1UP.Value = this.KarmaFlower1UP_CheckBox.Checked;
         BTWRemix.MeadowArenaLivesKillKarmaProtection.Value = this.KillKarmaProtection_CheckBox.Checked;
         BTWRemix.MeadowArenaLivesKill1UP.Value = this.Kill1UP_CheckBox.Checked;
-        BTWRemix.MeadowArenaStockTeam.Value = this.Team_CheckBox.Checked;
+        // BTWRemix.MeadowArenaStockTeam.Value = this.Team_CheckBox.Checked;
         
         BTWRemix.instance._SaveConfigFile();
     }
@@ -393,7 +393,7 @@ public class OnlineStockArenaModeSettingsInterface : RectangularMenuObject, Chec
         if (id == FLOWERKARMA1UP) { return this.stockMode.karmaFlowerGiveLife; }
         if (id == KILLKARMAPROTECTION) { return this.stockMode.killGiveProtection; }
         if (id == KILL1UP) { return this.stockMode.killGiveLife; }
-        if (id == TEAMBATTLE) { return this.stockMode.isTeamBattle; }
+        // if (id == TEAMBATTLE) { return this.stockMode.isTeamBattle; }
         return false;
     }
     public void SetChecked(CheckBox box, bool c)
@@ -407,7 +407,7 @@ public class OnlineStockArenaModeSettingsInterface : RectangularMenuObject, Chec
         else if (id == FLOWERKARMA1UP) { this.stockMode.karmaFlowerGiveLife = c; }
         else if (id == KILLKARMAPROTECTION) { this.stockMode.killGiveProtection = c; }
         else if (id == KILL1UP) { this.stockMode.killGiveLife = c; }
-        else if (id == TEAMBATTLE) { this.stockMode.isTeamBattle = c; }
+        // else if (id == TEAMBATTLE) { this.stockMode.isTeamBattle = c; }
     }
 
     public int GetSelected(MultipleChoiceArray array)

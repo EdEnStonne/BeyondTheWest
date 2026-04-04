@@ -325,6 +325,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                     {
                         slideUpBoost = true;
                         this.player.slideUpPole = (int)Mathf.Min(pow / 4 + 10, 60);
+                        this.player.slowMovementStun = Mathf.Max(this.player.slowMovementStun, this.player.slideUpPole / 10);
                         this.player.Blink(this.player.slideUpPole / 3);
                         this.room.PlaySound(SoundID.Slugcat_From_Vertical_Pole_Jump, this.player.mainBodyChunk, false, 0.8f, 1f);
                     }
@@ -336,7 +337,28 @@ public class EnergyCore : PhysicalObject, IDrawable
                         this.player.animation = Player.AnimationIndex.None;
                     }
                 }
-                else
+                else if (this.player.bodyMode == Player.BodyModeIndex.CorridorClimb)
+                {
+                    boostJump = false;
+                    if (intInput.y == -1 
+                        && this.EffectiveRoomGravity > 0f 
+                        && !this.player.IsTileSolid(0, 0, -1) && !this.player.IsTileSolid(1, 0, -1))
+                    {
+                        this.player.corridorDrop = true;
+                        this.player.canCorridorJump = 0;
+                    }
+                    else
+                    {
+                        slideUpBoost = true;
+                        this.player.shootUpCounter = (int)Mathf.Min(pow / 2 + 20, 80);
+                        this.player.verticalCorridorSlideCounter = this.player.shootUpCounter * 3 / 4;
+                        this.player.horizontalCorridorSlideCounter = this.player.verticalCorridorSlideCounter;
+                        this.player.slowMovementStun = Mathf.Max(this.player.slowMovementStun, this.player.shootUpCounter / 20);
+                        this.player.Blink(this.player.shootUpCounter / 4);
+                        this.room.PlaySound(SoundID.Slugcat_Corridor_Horizontal_Slide_Success, this.player.mainBodyChunk);
+                    }
+                }
+                else if (this.player.bodyMode != Player.BodyModeIndex.CorridorClimb)
                 {
                     this.allowJumpException = true;
                     this.player.Jump();
@@ -431,7 +453,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                         b.vel.y = intInput.y != 0 && b.vel.y * intInput.y > Math.Abs(leapBoost.y) ? 
                             b.vel.y + scaleBoost.y * penaltyMultiplier.y : leapBoost.y;
                     }
-                    if (!boostJump && intInput.y == -1 && pow > 40)
+                    if (!boostJump && intInput.y == -1 && pow > 10 && this.player.mainBodyChunk.vel.y < -24f)
                     {
                         this.canSlam = true;
                     }
@@ -704,7 +726,14 @@ public class EnergyCore : PhysicalObject, IDrawable
             if (this.AEC.energy <= 0f && this.AEC.repairCount <= 0)
             {
                 this.AEC.energy--;
-                this.player.slowMovementStun = 40;
+                if (this.player.GetBTWPlayerData() is BTWPlayerData bTWPlayerData)
+                {
+                    bTWPlayerData.exhausted = Mathf.Max(bTWPlayerData.exhausted, 40);
+                }
+                else
+                {
+                    player.slowMovementStun = 40;
+                }
                 this.room.AddObject(new Spark(this.firstChunk.pos, BTWFunc.RandomCircleVector(10f), Color.red, null, 3, 10));
                 this.room.PlaySound(SoundID.Centipede_Shock, this.firstChunk.pos, 0.15f, UnityEngine.Random.Range(0.75f, 0.9f));
             }
@@ -762,7 +791,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                 this.AEC.repairCount = 0;
             }
 
-            if (this.AEC.repairCount >= 100)
+            if (this.AEC.repairCount >= AbstractEnergyCore.FullRepairCount)
             {
                 this.AEC.repairCount = 0;
                 this.AEC.energy = this.AEC.CoreMaxEnergy / 4f;
@@ -825,6 +854,7 @@ public class EnergyCore : PhysicalObject, IDrawable
             this.firstChunk.pos = corePos + new Vector2(7.5f, 0) * this.player.input[0].x;
 
             float eRatio = Mathf.Clamp01(this.AEC.energy / this.AEC.CoreMaxEnergy);
+            float repRatio = Mathf.Clamp01((float)this.AEC.repairCount / AbstractEnergyCore.FullRepairCount);
 
             SetCoreMesh(sLeaser);
 
@@ -864,7 +894,12 @@ public class EnergyCore : PhysicalObject, IDrawable
             sLeaser.sprites[2].scale = this.scale * (2f + 6f * eRatio);
             sLeaser.sprites[2].color = this.color;
 
-            if (this.AEC.state == 5)
+            if (this.AEC.state == 10 && this.AEC.repairCount > 0)
+            {
+                sLeaser.sprites[3].alpha = Mathf.Lerp(sLeaser.sprites[3].alpha, 0.1f + 0.90f * repRatio, 0.40f);
+                sLeaser.sprites[3].scale = Mathf.Lerp(sLeaser.sprites[3].scale, 6f + 1f * repRatio, 0.40f);
+            }
+            else if (this.AEC.state == 5)
             {
                 sLeaser.sprites[3].alpha = Mathf.Lerp(sLeaser.sprites[3].alpha, 0.30f + 0.30f * eRatio, 0.20f);
                 sLeaser.sprites[3].scale = Mathf.Lerp(sLeaser.sprites[3].scale, 6f * this.AEC.CoreAntiGravity, 0.20f);
@@ -983,9 +1018,11 @@ public class EnergyCore : PhysicalObject, IDrawable
                         {
                             if (this.BoostAllowed)
                             {
+                                this.player.corridorDrop = false;
                                 this.AEC.boostingCount += (this.AEC.IsBetaBoost && this.player.input[0].spec ? 3 : 1) 
                                     * (player.superLaunchJump > 0 && BTWFunc.CanSuperJump(this.player) ? 2 : 1);
-                                this.player.slowMovementStun = 10;
+                                
+                                if (this.AEC.boostingCount > 10) { this.player.slowMovementStun = Mathf.Max(10, this.player.slowMovementStun); }
                                 if (this.AEC.boostingCount > 400)
                                 {
                                     if (this.AEC.isShockwaveEnabled) { ShockWave(true); }
@@ -1000,12 +1037,29 @@ public class EnergyCore : PhysicalObject, IDrawable
                     }
                     else if (!this.ShouldZeroG && this.AEC.boostingCount > 0)
                     {
-                        if (this.AEC.boostingCount < 5 && this.AEC.IsBetaBoost && this.player.canJump > 0)
+                        if (this.AEC.boostingCount < 5 
+                            && this.AEC.IsBetaBoost 
+                            && (this.player.canJump > 0 
+                                || this.player.animation == Player.AnimationIndex.ClimbOnBeam
+                                || this.player.bodyMode == Player.BodyModeIndex.CorridorClimb))
                         {
                             this.AEC.boostingCount = -20;
-                            this.allowJumpException = true;
-                            this.player.Jump();
-                            this.allowJumpException = false;
+                            if (this.player.bodyMode == Player.BodyModeIndex.CorridorClimb)
+                            {
+                                if (this.player.input[0].y == -1
+                                    && this.EffectiveRoomGravity > 0f 
+                                    && !this.player.IsTileSolid(0, 0, -1) && !this.player.IsTileSolid(1, 0, -1))
+                                {
+                                    this.player.corridorDrop = true;
+                                    this.player.canCorridorJump = 0;
+                                }
+                            }
+                            else
+                            {
+                                this.allowJumpException = true;
+                                this.player.Jump();
+                                this.allowJumpException = false;
+                            }
                         }
                         else
                         {
@@ -1029,7 +1083,7 @@ public class EnergyCore : PhysicalObject, IDrawable
         else
         {
             BTWPlugin.Log($"[{this}] is not in the same room as player ! AEC : [{this.AEC}], Room : [{this.room}], Player Room : [{this.player?.room}]. Deleting...");
-            this.AbstractEnergyCore.Abstractize(this.player != null ? this.player.abstractCreature.pos : this.AbstractEnergyCore.pos);
+            this.AEC.Abstractize(this.player != null ? this.player.abstractCreature.pos : this.AEC.pos);
         }
     }
     public override void Grabbed(Creature.Grasp grasp)
@@ -1107,18 +1161,11 @@ public class EnergyCore : PhysicalObject, IDrawable
             return new Vector2Int(x, y);
         }
     }
-    public AbstractEnergyCore AbstractEnergyCore
-    {
-        get
-        {
-            return (AbstractEnergyCore)this.abstractPhysicalObject;
-        }
-    }
     public AbstractEnergyCore AEC
     {
         get
         {
-            return this.AbstractEnergyCore;
+            return (AbstractEnergyCore)this.abstractPhysicalObject;
         }
     }
     public Vector2 PlayerMiddleSpritePos
@@ -1173,8 +1220,8 @@ public class EnergyCore : PhysicalObject, IDrawable
         {
             if (this.player != null)
             {
-                return this.player.animation != Player.AnimationIndex.GetUpOnBeam && 
-                    // this.player.animation != Player.AnimationIndex.GetUpToBeamTip && 
+                return this.player.animation != Player.AnimationIndex.CorridorTurn && 
+                    this.player.animation != Player.AnimationIndex.GetUpOnBeam && 
                     this.player.animation != Player.AnimationIndex.HangFromBeam;
             }
             return false;

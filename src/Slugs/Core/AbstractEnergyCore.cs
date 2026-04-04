@@ -186,6 +186,7 @@ public class AbstractEnergyCore : AbstractPhysicalObject
     public float energy = 100.0f;
     public int boostingCount = 0;
     public int repairCount = 0;
+    public const int FullRepairCount = 100;
     public int antiGravityCount = 0;
     public int oxygenCount = 0;
     public int slowModeCount = 0;
@@ -291,10 +292,13 @@ public static class AbstractEnergyCoreHooks
     public static bool DoNotDeflect(Weapon weapon, SharedPhysics.CollisionResult result)
     {
         // Plugin.Log("Testing spear deflect with " + weapon + " by " + weapon.thrownBy + " hitting " + result.obj);
-        if (weapon != null && 
-            result.obj != null && weapon.thrownBy != null &&
-            weapon.thrownBy is Player player && player != null && result.obj is EnergyCore core
-            && player == core.player)
+        if (weapon != null && weapon.room is Room room && 
+            weapon.thrownBy is Player player && result.obj is EnergyCore core
+            && (
+                player == core.player
+                || (room.game.GetArenaGameSession is ArenaGameSession arena && !arena.GameTypeSetup.spearsHitPlayers)
+                || (room.game.IsStorySession && !Custom.rainWorld.options.friendlyFire)
+            ))
         {
             BTWPlugin.Log("Allowed spear to go through core");
             return true;
