@@ -33,7 +33,7 @@ public abstract class AdditionnalTechManager<TSelf> : BTWManager<TSelf> where TS
         base.Update();
         if (this.RealizedPlayer is Player player && player.room is Room room)
         {
-            if (BTWPlugin.meadowEnabled)
+            if (Plugin.meadowEnabled)
             {
                 if (player != null
                     && MeadowFunc.TryGetBottomPlayer(player, out Player pupeter))
@@ -85,6 +85,7 @@ public abstract class AdditionnalTechManager<TSelf> : BTWManager<TSelf> where TS
                 WCM.flipFromWallKick = false;
                 WCM.rocketJumpFromWallKick = false;
                 WCM.rocketJumpFromWallVerticalPounce = false;
+                WCM.canWallKickFlip = false;
             }
             if (this is not PoleKickManager && PoleKickManager.TryGetManager(player.abstractCreature, out var PKM))
             {

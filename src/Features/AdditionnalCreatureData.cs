@@ -39,7 +39,7 @@ public static class BTWCreatureDataHooks
     {
         IL.Creature.ctor += Creature_BTWCreatureData_Init; //So it starts first garanteed
         On.Creature.Update += Creature_BTWCreatureData_Update; //Same here
-        BTWPlugin.Log("BTWCreatureDataHooks ApplyHooks Done !");
+        Plugin.Log("BTWCreatureDataHooks ApplyHooks Done !");
     }
     
     private static void AddNewManager(AbstractCreature abstractCreature)
@@ -47,15 +47,15 @@ public static class BTWCreatureDataHooks
         if (!BTWCreatureData.TryGetManager(abstractCreature, out _))
         {
             BTWCreatureData.AddManager(abstractCreature);
-            BTWPlugin.Log($"BTWCreatureData created for [{abstractCreature}] !");
+            Plugin.Log($"BTWCreatureData created for [{abstractCreature}] !");
         }
     }
     private static void Creature_BTWCreatureData_Init(ILContext il)
     {
-        BTWPlugin.Log("BTWCreatureData IL 1 starts");
+        Plugin.Log("BTWCreatureData IL 1 starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             cursor.Goto(il.Body.Instructions.Count - 1, MoveType.After);
             if (cursor.TryGotoPrev(MoveType.Before,  x => x.MatchRet()))
@@ -65,15 +65,15 @@ public static class BTWCreatureDataHooks
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                Plugin.logger.LogError("Couldn't find IL hook :<");
             }
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("BTWCreatureData IL 1 ends");
+        Plugin.Log("BTWCreatureData IL 1 ends");
     }
 
     private static void Creature_BTWCreatureData_Update(On.Creature.orig_Update orig, Creature self, bool eu)

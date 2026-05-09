@@ -22,12 +22,36 @@ public static class NewObjectsHooks
     public static Color PoisonSpearIconColor = new Color(0.35f, 0.15f, 0.85f);
     public static void LoadIcons()
     {
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW-icon", "icons/minusicon", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW0icon", "icons/0icon", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW1icon", "icons/1icon", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW2icon", "icons/2icon", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW3icon", "icons/3icon", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW4icon", "icons/4icon", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW5icon", "icons/5icon", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW6icon", "icons/6icon", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW7icon", "icons/7icon", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW8icon", "icons/8icon", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW9icon", "icons/9icon", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW-iconS", "icons/minusiconS", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW0iconS", "icons/0iconS", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW1iconS", "icons/1iconS", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW2iconS", "icons/2iconS", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW3iconS", "icons/3iconS", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW4iconS", "icons/4iconS", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW5iconS", "icons/5iconS", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW6iconS", "icons/6iconS", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW7iconS", "icons/7iconS", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW8iconS", "icons/8iconS", "");
+        // Futile.atlasManager.ActuallyLoadAtlasOrImage("BTW9iconS", "icons/9iconS", "");
+
         TristorHooks.Register();
         VoidCrystalHooks.Register();
         CrystalSpearHooks.Register();
         Futile.atlasManager.ActuallyLoadAtlasOrImage("SpearPoisonIcon", "icons/icon_SpearPoison", "");
         PoisonSpearIconData = new(CreatureTemplate.Type.StandardGroundCreature, ObjectType.Spear, 4);
-        BTWPlugin.Log("NewObjectsHooks LoadIcons Done !");
+
+        Plugin.Log("NewObjectsHooks LoadIcons Done !");
     }
     
     public static void ApplyHooks()
@@ -35,6 +59,8 @@ public static class NewObjectsHooks
         TristorHooks.ApplyHooks();
         VoidCrystalHooks.ApplyHooks();
         CrystalSpearHooks.ApplyHooks();
+
+        RegisterPOMObjects();
 
         // On.Menu.SandboxEditorSelector.ctor += SandboxEditorSelector_LogAllUnlocks;
 
@@ -53,7 +79,11 @@ public static class NewObjectsHooks
         IL.ScavengerAI.CollectScore_PhysicalObject_bool += ScavengerAI_ScoreOfCustomItems;
         IL.ScavengerAI.SeeThrownWeapon += ScavengerAI_GetScaredOfWeapon;
 
-        BTWPlugin.Log("NewObjectsHooks ApplyHooks Done !");
+        Plugin.Log("NewObjectsHooks ApplyHooks Done !");
+    }
+    public static void RegisterPOMObjects()
+    {
+        // NumberDisplay.POMRegister();
     }
 
     public static bool ShouldBeScared(PhysicalObject obj)
@@ -67,10 +97,10 @@ public static class NewObjectsHooks
     }
     private static void ScavengerAI_GetScaredOfWeapon(ILContext il)
     {
-        BTWPlugin.Log("NewObjectsHooks IL 2 starts");
+        Plugin.Log("NewObjectsHooks IL 2 starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             ILLabel label = cursor.DefineLabel();
             if (cursor.TryGotoNext(MoveType.Before,
@@ -92,15 +122,15 @@ public static class NewObjectsHooks
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                Plugin.logger.LogError("Couldn't find IL hook :<");
             }
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("NewObjectsHooks IL 2 ends");
+        Plugin.Log("NewObjectsHooks IL 2 ends");
     }
 
     public static bool DoesGiveCustomScore(PhysicalObject obj)
@@ -122,10 +152,10 @@ public static class NewObjectsHooks
     }
     private static void ScavengerAI_ScoreOfCustomItems(ILContext il)
     {
-        BTWPlugin.Log("NewObjectsHooks IL 1 starts");
+        Plugin.Log("NewObjectsHooks IL 1 starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchLdarg(0),
@@ -146,15 +176,15 @@ public static class NewObjectsHooks
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                Plugin.logger.LogError("Couldn't find IL hook :<");
             }
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("NewObjectsHooks IL 1 ends");
+        Plugin.Log("NewObjectsHooks IL 1 ends");
     }
 
     private static int ScavengerAI_ScoreWeaponOfCustomItems(On.ScavengerAI.orig_WeaponScore orig, ScavengerAI self, PhysicalObject obj, bool pickupDropInsteadOfWeaponSelection, bool reallyWantsSpear)
@@ -229,7 +259,7 @@ public static class NewObjectsHooks
             string type = data[1];
             if (SaveHelper.Supported(type))
             {
-                BTWPlugin.Log($"Found custom object to load : {type}");
+                Plugin.Log($"Found custom object to load : {type}");
                 AbstractPhysicalObject result = SaveHelper.GetCustomObject(world, objString);
                 if (result is not null)
                 {
@@ -239,7 +269,7 @@ public static class NewObjectsHooks
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError("Error while trying to get type of object : "+ ex);
+            Plugin.logger.LogError("Error while trying to get type of object : "+ ex);
         }
         return orig(world, objString);
     }
@@ -361,10 +391,10 @@ public static class NewObjectsHooks
     {
         orig(self, menu, owner, overlayOwner);
         
-        BTWPlugin.Log("Logging all Unlocks :");
+        Plugin.Log("Logging all Unlocks :");
         foreach (MultiplayerUnlocks.SandboxUnlockID unlockID in MultiplayerUnlocks.ItemUnlockList)
         {
-            BTWPlugin.Log($"    > <{unlockID.index}>[{unlockID}] : {self.unlocks.SandboxItemUnlocked(unlockID)}");
+            Plugin.Log($"    > <{unlockID.index}>[{unlockID}] : {self.unlocks.SandboxItemUnlocked(unlockID)}");
         }
     }
 

@@ -34,9 +34,10 @@ public static class MeadowHookHelper
         On.SporeCloud.Update += Player_GetDizzyInArena;
         On.FirecrackerPlant.PopLump += Player_GetStunYeetedByFirePlantPop;
         On.FirecrackerPlant.Explode += Player_GetStunYeetedByFirePlantExplode;
-
-        BTWPlugin.Log("MeadowCompat ApplyHooks Done !");
+        
+        Plugin.Log("MeadowCompat ApplyHooks Done !");
     }
+
     private static void StoryOnlineMenu_LockWIPCampaigns(Action<StoryOnlineMenu> orig, StoryOnlineMenu self)
     {
         orig(self);
@@ -113,7 +114,7 @@ public static class MeadowHookHelper
                     bTWPlayerData.sporecloudsHit.Add(self);
                     if (bTWPlayerData.dizzy <= 0)
                     {
-                        BTWPlugin.Log($"Making player [{player}] dissy for <{distortTime}> ticks !");
+                        Plugin.Log($"Making player [{player}] dissy for <{distortTime}> ticks !");
                         bTWPlayerData.dizzy = distortTime;
                         player.exhausted = true;
                         player.aerobicLevel = 1f;
@@ -136,7 +137,7 @@ public static class MeadowHookHelper
             && BTWMeadowArenaSettings.TryGetSettings(out var arenaSettings)
             && arenaSettings.ArenaBonus_ExtraItemUses)
         {
-            BTWPlugin.Log($"Blinding player [{self}] for <{blnd}> ticks !");
+            Plugin.Log($"Blinding player [{self}] for <{blnd}> ticks !");
             bTWPlayerData.onlineBlind = blnd / 2;
             ScreenBlind screenBlind = new(5, (int)(blnd * 1/4f), (int)(blnd * 3/4f - 5), Color.white);
             self.room.AddObject( screenBlind );;
@@ -192,10 +193,10 @@ public static class MeadowHookHelper
     }
     private static void FFA_DontOpenExitIfPlayerIsReviving(ILContext il)
     {
-        BTWPlugin.Log("MeadowCompat IL 3 starts");
+        Plugin.Log("MeadowCompat IL 3 starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
 
             if (cursor.TryGotoNext(MoveType.Before,
@@ -211,16 +212,16 @@ public static class MeadowHookHelper
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                Plugin.logger.LogError("Couldn't find IL hook :<");
             }
 
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("MeadowCompat IL 3 ends");
+        Plugin.Log("MeadowCompat IL 3 ends");
     }
     
     private static bool CheckPlayerAsAlive(bool orig, AbstractCreature abstractCreature, ExitManager exitManager)
@@ -233,10 +234,10 @@ public static class MeadowHookHelper
     }
     private static void TeamBattleMode_DontOpenExitIfPlayerIsReviving(ILContext il)
     {
-        BTWPlugin.Log("MeadowCompat IL 4 starts");
+        Plugin.Log("MeadowCompat IL 4 starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
 
             if (cursor.TryGotoNext(MoveType.Before,
@@ -252,7 +253,7 @@ public static class MeadowHookHelper
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook 1 :<");
+                Plugin.logger.LogError("Couldn't find IL hook 1 :<");
             }
 
             if (cursor.TryGotoNext(MoveType.After,
@@ -268,15 +269,15 @@ public static class MeadowHookHelper
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook 2 :<");
+                Plugin.logger.LogError("Couldn't find IL hook 2 :<");
             }
 
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("MeadowCompat IL 4 ends");
+        Plugin.Log("MeadowCompat IL 4 ends");
     }
 }

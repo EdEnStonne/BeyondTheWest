@@ -8,17 +8,18 @@ namespace BeyondTheWest
 {
     [BepInPlugin(MOD_ID, "Beyond The West", MOD_VERSION)]
     [BepInDependency("slime-cubed.slugbase")]
-    class BTWPlugin : BaseUnityPlugin
+    [BepInDependency("rwmodding.coreorg.pom")]
+    [BepInDependency("edenstonne.beyondthewest.tutorial")]
+
+    class Plugin : BaseUnityPlugin
     {
         private const string MOD_ID = "edenstonne.beyondthewest";
-        public const string MOD_VERSION = "1.4.6";
+        public const string MOD_VERSION = "1.5.0";
         private static bool isInit = false;
         private static bool ressourceInit = false;
-        public static bool ressourceFullyEnded = false;
         private static bool compatInit = false;
-        public static bool compatFullyEnded = false;
         private static bool hooksInit = false;
-        public static bool hooksFullyEnded = false;
+        internal static List<string> ErrorContext {get; private set;} = new();
         static readonly bool debug = true;
         public static ManualLogSource logger; // Logger from glebi574
         public static bool meadowEnabled = false;
@@ -49,6 +50,13 @@ namespace BeyondTheWest
             {
                 FAtlasElement value = keyValuePair.Value;
                 Log($"    >{value.name}");
+            }
+        }public static void LogAllRegisteredSlugcats()
+        {
+            Log("Logging all registered slugcat with SlugBase :");
+            foreach (var name in SlugBase.SlugBaseCharacter.Registry.Keys)
+            {
+                Log($"    >{name}");
             }
         }
         public static string[] GetVersionArray()
@@ -114,12 +122,11 @@ namespace BeyondTheWest
                 BTWPlayerDataHooks.ApplyHooks();
 
                 ArenaAddition.ArenaHookHelper.ApplyHooks();
-                
-                hooksFullyEnded = true;
             }
             catch (Exception e)
             {
                 logger.LogError("Error while starting BTW hooks !\n"+e);
+                ErrorContext.Add("Main hooks");
             }
 
             logger.LogInfo("Hooks initialized !");
@@ -138,15 +145,15 @@ namespace BeyondTheWest
 
                 BTWSkins.LoadSkins();
                 NewObjectsHooks.LoadIcons();
-
-                ressourceFullyEnded = true;
+                Tutorial.TutorialHook.LoadTexture();
             }
             catch (Exception e)
             {
-                Logger.LogError(e);
+                logger.LogError("Error while loading BTW ressources !\n"+e);
+                ErrorContext.Add("Ressources");
             } 
 
-            Log("LoadResources initialized !");
+            logger.LogInfo("LoadResources initialized !");
         }
         
         
@@ -197,67 +204,121 @@ namespace BeyondTheWest
         public static void ApplySoftDependiesHooks()
         {
             logger.LogInfo("Soft Hooks start !");
-            if (meadowEnabled)
+
+            try
             {
-                ApplyMeadowHooks();
+                CheckMods();
+            
+                if (ModManager.MSC) { ApplyMSCHooks(); }
+                if (ModManager.Watcher) { ApplyWatcherHooks(); }
+                if (meadowEnabled) { ApplyMeadowHooks(); }
+                if (pushToMeowEnabled) { ApplyPushToMeowHooks(); }
+                if (simplifiedMovesetEnabled) { ApplySimplifiedMovesetHooks(); }
+                if (DMSEnabled) { ApplyDMSHooks(); }
             }
-            if (ModManager.MSC)
+            catch (Exception e)
             {
-                ApplyMSCHooks();
-            }
-            if (ModManager.Watcher)
-            {
-                ApplyWatcherHooks();
-            }
-            if (pushToMeowEnabled)
-            {
-                ApplyPushToMeowHooks();
-            }
-            if (simplifiedMovesetEnabled)
-            {
-                ApplySimplifiedMovesetHooks();
-            }
-            if (DMSEnabled)
-            {
-                ApplyDMSHooks();
-            }
+                logger.LogError("Error while applying BTW generic mod compat !\n"+e);
+                ErrorContext.Add("Compatibility");
+            } 
+            // LogAllRegisteredSlugcats();
             logger.LogInfo("Soft Hooks initialized !");
         }
         public static void ApplyMeadowHooks()
         {
             Log("Meadow Hooks start !");
-            MeadowCompat.MeadowHookHelper.ApplyHooks();
+
+            try
+            {
+                MeadowCompat.MeadowHookHelper.ApplyHooks();
+            }
+            catch (Exception e)
+            {
+                logger.LogError("Error while applying Rain Meadow compat !\n"+e);
+                ErrorContext.Add("Meadow Compat");
+            } 
+
             Log("Meadow Hooks initialized !");
         }
         public static void ApplyMSCHooks()
         {
             Log("MSC Hooks start !");
-            MSCCompat.CraftHooks.ApplyHooks();
-            MSCCompat.SpawnMSCPool.ApplyHooks();
+
+            try
+            {
+                MSCCompat.CraftHooks.ApplyHooks();
+                MSCCompat.SpawnMSCPool.ApplyHooks();
+            }
+            catch (Exception e)
+            {
+                logger.LogError("Error while applying MSC compat !\n"+e);
+                ErrorContext.Add("MSC Compat");
+            } 
+            
             Log("MSC Hooks initialized !");
         }
         public static void ApplyWatcherHooks()
         {
             Log("Watcher Hooks start !");
-            WatcherCompat.SpawnWatcherPool.ApplyHooks();
+
+            try
+            {
+                WatcherCompat.SpawnWatcherPool.ApplyHooks();
+            }
+            catch (Exception e)
+            {
+                logger.LogError("Error while applying Watcher compat !\n"+e);
+                ErrorContext.Add("Watcher Compat");
+            } 
+            
             Log("Watcher Hooks initialized !");
         }  
         public static void ApplyPushToMeowHooks()
         {
             Log("PushToMeow Hooks start !");
-            PushToMeowCompat.BTWMeow.ApplyHooks();
+
+            try
+            {
+                PushToMeowCompat.BTWMeow.ApplyHooks();
+            }
+            catch (Exception e)
+            {
+                logger.LogError("Error while applying Push To Meow compat !\n"+e);
+                ErrorContext.Add("Meow Compat");
+            } 
+            
             Log("PushToMeow Hooks initialized !");
         } 
         public static void ApplySimplifiedMovesetHooks()
         {
             Log("SimplifiedMoveset Hooks start !");
-            SimplifiedMovesetCompat.BTWSimplifiedMoveset.ApplyHooks();
+
+            try
+            {
+                SimplifiedMovesetCompat.BTWSimplifiedMoveset.ApplyHooks();
+            }
+            catch (Exception e)
+            {
+                logger.LogError("Error while applying Simplified Moveset compat !\n"+e);
+                ErrorContext.Add("Moveset Compat");
+            } 
+            
             Log("SimplifiedMoveset Hooks initialized !");
         }  
         public static void ApplyDMSHooks()
         {
             Log("DMS Hooks start !");
-            DressMySlugcatCompat.BTWDMSDressing.ApplyHooks();
+
+            try
+            {
+                DressMySlugcatCompat.BTWDMSDressing.ApplyHooks();
+            }
+            catch (Exception e)
+            {
+                logger.LogError("Error while applying Dress My Slugcat compat !\n"+e);
+                ErrorContext.Add("DMS Compat");
+            } 
+            
             Log("DMS Hooks initialized !");
         }  
 
@@ -275,12 +336,12 @@ namespace BeyondTheWest
                 CheckMods();
                 ApplySoftDependiesHooks();
                 ArenaAddition.ArenaHookHelper.ApplyPostHooks();
-
-                compatFullyEnded = true;
+                Tutorial.TutorialHook.ApplyHooks();
             }
             catch (Exception e)
             {
-                Logger.LogError(e);
+                logger.LogError("Error while loading BTW post-load hooks !\n"+e);
+                ErrorContext.Add("Post Hooks");
             } 
             
             logger.LogInfo("Post Mods Load initialized");

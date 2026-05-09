@@ -24,7 +24,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
     public WallClimbManager(AbstractCreature abstractCreature) : base(abstractCreature)
     {
         this.abstractPlayer = abstractCreature;
-        if (BTWPlugin.meadowEnabled)
+        if (Plugin.meadowEnabled)
         {
             MeadowCalls.WallClimbMeadow_Init(this);
         }
@@ -33,7 +33,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
     // ------ Local Functions
 
     // WallClimb
-    void InitWallClimb()
+    public void InitWallClimb()
     {
         Player player = this.RealizedPlayer;
         Room room = player.room;
@@ -63,7 +63,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
             }
         }
     }
-    void UpdateWallClimb()
+    private void UpdateWallClimb()
     {
         Player player = this.RealizedPlayer;
         Room room = player.room;
@@ -88,7 +88,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
                 player.Blink(24);
                 player.stun = 8;
                 this.wallClimbCount = 0;
-                this.wallGrip = -10f;
+                this.wallGrip = -2f;
                 return;
             }
             this.wallClimbCount--;
@@ -111,7 +111,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
     }
 
     // WallKick
-    void InitWallKick(bool flip = false)
+    public void InitWallKick(bool flip = false)
     {
         Player player = this.RealizedPlayer;
         Room room = player.room;
@@ -133,6 +133,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
             {
                 player.animation = Player.AnimationIndex.Flip;
                 this.flipFromWallKick = true;
+                player.flipFromSlide = true;
             }
             else
             {
@@ -140,10 +141,11 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
                 this.rocketJumpFromWallKick = true;
             }
 
-            player.rollDirection = this.wallKickDirection;
-            player.slideDirection = this.wallKickDirection;
             player.wantToJump = 0;
             player.canJump = 0;
+            player.jumpStun = this.wallKickDirection * 20;
+            player.rollDirection = 0;
+            // player.rollDirection = this.wallKickDirection;
 
             if (!flip)
             {
@@ -183,7 +185,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
             }
         }
     }
-    void UpdateWallKickPounce()
+    private void UpdateWallKickPounce()
     {
         Player player = this.RealizedPlayer;
         Room room = player.room;
@@ -198,7 +200,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
     }
 
     // WallVerticalPounce
-    void InitWallVerticalPounce()
+    public void InitWallVerticalPounce()
     {
         Player player = this.RealizedPlayer;
         Room room = player.room;
@@ -214,20 +216,18 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
             this.wallClimbCount = 0;
             this.wallVerticalPounceDirection = -wallJumpDir;
             this.canWallClimb = true;
+            this.canWallKickFlip = true;
             this.canWallKick = 0;
-            this.wallVerticalPounceCount = 0;
-            this.wantToJumpFromWVP = -10;
 
             player.animation = Player.AnimationIndex.RocketJump;
             player.rollDirection = this.wallVerticalPounceDirection;
-            player.slideDirection = this.wallVerticalPounceDirection;
 
             player.bodyChunks[1].pos = player.bodyChunks[0].pos;
             player.bodyChunks[0].pos += new Vector2(this.wallVerticalPounceDirection * 5f, 15f);
 
             foreach (BodyChunk bodyChunk in player.bodyChunks)
             {
-                bodyChunk.vel.x = -this.wallVerticalPounceDirection * 20f;
+                bodyChunk.vel.x = -this.wallVerticalPounceDirection * WallVerticalPounceForce;
                 bodyChunk.vel.y = this.WallVerticalPounceForce + player.g;
             }
 
@@ -242,36 +242,36 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
                     new Color(1f, 1f, 1f, 0.25f)));
         }
     }
-    void UpdateWallVerticalPounce()
+    private void UpdateWallVerticalPounce()
     {
         Player player = this.RealizedPlayer;
         Room room = player.room;
         if (player != null && room != null)
         {
-            wallVerticalPounceCount++;
-            if (this.wantToJumpFromWVP > -this.WallVerticalPounceBufferPenalityFrames - 1) 
-                { this.wantToJumpFromWVP--; }
-            if (this.wantToJumpFromWVP < -this.WallVerticalPounceBufferPenalityFrames && player.input[0].jmp && !player.input[1].jmp) 
-                { this.wantToJumpFromWVP = this.WallVerticalPounceBufferFrames; }
-            if ((player.bodyChunks[0].ContactPoint.x == this.wallVerticalPounceDirection || player.bodyChunks[1].ContactPoint.x == this.lastWallJumpDirection)
-                && this.wantToJumpFromWVP > 0)
-            {
-                IntVector2 intDir = this.IntDirectionalInput;
-                // if (intDir.y == 1)
-                // {
-                //     this.rocketJumpFromWallVerticalPounce = false;
-                //     player.bodyMode = Player.BodyModeIndex.WallClimb;
-                //     InitWallClimb();
-                //     return;
-                // }
-                // else
-                if (intDir.x == -this.wallVerticalPounceDirection)
-                {
-                    this.rocketJumpFromWallVerticalPounce = false;
-                    InitWallKick(true);
-                    return;
-                }
-            }
+            // wallVerticalPounceCount++;
+            // if (this.wantToJumpFromWVP > -this.WallVerticalPounceBufferPenalityFrames - 1) 
+            //     { this.wantToJumpFromWVP--; }
+            // if (this.wantToJumpFromWVP < -this.WallVerticalPounceBufferPenalityFrames && player.input[0].jmp && !player.input[1].jmp) 
+            //     { this.wantToJumpFromWVP = this.WallVerticalPounceBufferFrames; }
+            // if ((player.bodyChunks[0].ContactPoint.x == this.wallVerticalPounceDirection || player.bodyChunks[1].ContactPoint.x == this.lastWallJumpDirection)
+            //     && this.wantToJumpFromWVP > 0)
+            // {
+            //     IntVector2 intDir = this.IntDirectionalInput;
+            //     // if (intDir.y == 1)
+            //     // {
+            //     //     this.rocketJumpFromWallVerticalPounce = false;
+            //     //     player.bodyMode = Player.BodyModeIndex.WallClimb;
+            //     //     InitWallClimb();
+            //     //     return;
+            //     // }
+            //     // else
+            //     if (intDir.x == -this.wallVerticalPounceDirection)
+            //     {
+            //         this.rocketJumpFromWallVerticalPounce = false;
+            //         InitWallKick(true);
+            //         return;
+            //     }
+            // }
             if (player.bodyChunks[0].ContactPoint.y == 1)
             {
                 this.rocketJumpFromWallVerticalPounce = false;
@@ -284,12 +284,14 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
                 this.rocketJumpFromWallVerticalPounce = false;
                 return;
             }
-            player.bodyChunks[0].pos = player.bodyChunks[1].pos + new Vector2(player.bodyChunks[0].vel.x / 2f, 1).normalized * 10f;
-            foreach (BodyChunk bodyChunk in player.bodyChunks)
-            {
-                bodyChunk.vel.x = Mathf.Min(20f, this.wallVerticalPounceDirection * (wallVerticalPounceCount - 10f));
-                // bodyChunk.vel.y = this.WallVerticalPounceForce + player.g;
-            }
+            player.bodyChunks[0].vel.x += this.wallVerticalPounceDirection * 1f;
+            player.bodyChunks[1].vel.x += this.wallVerticalPounceDirection * 0.5f;
+            // player.bodyChunks[0].pos = player.bodyChunks[1].pos + new Vector2(player.bodyChunks[0].vel.x * 5f, 1).normalized * 10f;
+            // foreach (BodyChunk bodyChunk in player.bodyChunks)
+            // {
+            //     bodyChunk.vel.x = Mathf.Min(20f, this.wallVerticalPounceDirection * (wallVerticalPounceCount - 10f));
+            //     // bodyChunk.vel.y = this.WallVerticalPounceForce + player.g;
+            // }
         }
     }
 
@@ -299,6 +301,11 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
         Player player = this.RealizedPlayer;
         if (player != null)
         {
+            if (this.shouldWallKickFlip)
+            {
+                this.shouldWallKickFlip = false;
+                InitWallKick(true);
+            }
             if (this.flipFromWallKick && player.animation != Player.AnimationIndex.Flip)
             {
                 this.flipFromWallKick = false;
@@ -314,6 +321,10 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
             if (this.rocketJumpFromWallVerticalPounce && player.animation != Player.AnimationIndex.RocketJump)
             {
                 this.rocketJumpFromWallVerticalPounce = false;
+            }
+            if (this.canWallKickFlip && player.animation != Player.AnimationIndex.RocketJump)
+            {
+                this.canWallKickFlip = false;
             }
             if (player.bodyMode == Player.BodyModeIndex.WallClimb)
             {
@@ -377,6 +388,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
             this.flipFromWallKick = false;
             this.rocketJumpFromWallKick = false;
             this.rocketJumpFromWallVerticalPounce = false;
+            this.canWallKickFlip = false;
             this.canWallKick = 0;
             this.wallClimbCount = 0;
             this.wallGrip = 0f;
@@ -429,7 +441,7 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
                 if (specPressed) { this.indicatorUI?.ShowPoleIcon(); }
             }
 
-            if (BTWPlugin.simplifiedMovesetEnabled && this.lastholdToPoles && !this.holdToPoles)
+            if (Plugin.simplifiedMovesetEnabled && this.lastholdToPoles && !this.holdToPoles)
             {
                 BTWSimplifiedMoveset.DetatchFromBeam(player);
             }
@@ -512,14 +524,14 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
     public float wallGrip = 0f;
     public int wallGripCount = 0;
     public int wallClimbCount = 0;
-    public int wallVerticalPounceCount = 0;
     public int wallClimbLeft = 3;
     public int canWallKick = 0;
     public int wallKickDirection = 0;
     public int lastWallJumpDirection = 0;
     public int wallVerticalPounceDirection = 0;
-    public int wantToJumpFromWVP = 0;
     public bool canWallClimb = true;
+    public bool canWallKickFlip = false;
+    public bool shouldWallKickFlip = false;
     public bool wallClimbExtend = false;
     public bool flipFromWallKick = false;
     public bool rocketJumpFromWallKick = false;
@@ -577,6 +589,7 @@ public static class WallClimbManagerHooks
 
         On.Player.WallJump += Player_WallClimbManager_CancelWallJump;
         IL.Player.TerrainImpact += Player_WallClimbManager_CancelTechOnWallPounce;
+        On.Player.TerrainImpact += Player_WallClimbManager_WallPounceToKick;
         IL.Player.ThrowObject += Player_WallClimbManager_WallClimbExtend;
         IL.Player.Update += Player_WallClimbManager_StopLoopSoundOnGrip;
 
@@ -586,9 +599,28 @@ public static class WallClimbManagerHooks
         IL.Player.Update += Player_WallClimbManager_StopGrippingPoles;
         IL.Player.MovementUpdate += Player_WallClimbManager_StopGrippingPoles;
         
-        BTWPlugin.Log("WallClimbManagerHooks ApplyHooks Done !");
+        Plugin.Log("WallClimbManagerHooks ApplyHooks Done !");
     }
 
+    private static void Player_WallClimbManager_WallPounceToKick(On.Player.orig_TerrainImpact orig, Player self, int chunk, IntVector2 direction, float speed, bool firstContact)
+    {
+        orig(self, chunk, direction, speed, firstContact);
+        if (WallClimbManager.TryGetManager(self.abstractCreature, out var WCM)
+            && WCM.canWallKickFlip 
+            && firstContact
+            && self.bodyMode != Player.BodyModeIndex.CorridorClimb 
+            && self.wantToJump > 0 
+            && speed > 7f
+            && direction.x != 0 
+            && RWInput.PlayerInput(BTWFunc.GetPlayerNumber(self)).x == -direction.x // set rolldir be like :
+            && !self.standing)
+        {
+            WCM.canWallKickFlip = false;
+            WCM.rocketJumpFromWallVerticalPounce = false;
+            self.rollDirection = 0;
+            WCM.shouldWallKickFlip = true;
+        }
+    }
 
     private static void Player_Trailseeker_WallClimbManager_Update(On.Player.orig_Update orig, Player self, bool eu)
     {
@@ -601,10 +633,10 @@ public static class WallClimbManagerHooks
     
     private static void Player_WallClimbManager_StopGrippingPoles(ILContext il)
     {
-        BTWPlugin.Log("WallClimbManager IL 5 starts");
+        Plugin.Log("WallClimbManager IL 5 starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             Instruction start = cursor.Next;
 
@@ -630,13 +662,13 @@ public static class WallClimbManagerHooks
                 cursor.EmitDelegate(CheckPoleGrab);
             }
 
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("WallClimbManager IL 5 ends");
+        Plugin.Log("WallClimbManager IL 5 ends");
     }
     private static void Player_WallClimbManager_CancelWallJump(On.Player.orig_WallJump orig, Player self, int direction)
     {
@@ -655,10 +687,10 @@ public static class WallClimbManagerHooks
     
     private static void Player_WallClimbManager_CancelTechOnWallPounce(ILContext il)
     {
-        BTWPlugin.Log("WallClimbManager IL 2 starts");
+        Plugin.Log("WallClimbManager IL 2 starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchLdsfld<MoreSlugcats.MMF>(nameof(MoreSlugcats.MMF.cfgWallpounce)),
@@ -682,23 +714,23 @@ public static class WallClimbManagerHooks
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                Plugin.logger.LogError("Couldn't find IL hook :<");
             }
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("WallClimbManager IL 2 ends");
+        Plugin.Log("WallClimbManager IL 2 ends");
     }
     
     private static void Player_WallClimbManager_WallClimbExtend(ILContext il)
     {
-        BTWPlugin.Log("WallClimbManager IL 3 starts");
+        Plugin.Log("WallClimbManager IL 3 starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.Before,
                 x => x.MatchLdarg(0),
@@ -734,7 +766,7 @@ public static class WallClimbManagerHooks
                                     player.room, player.bodyChunks[1].pos + new Vector2(0f, -40f),
                                     6, 5.5f, 4f, 4.5f, 21f, new Color(1f, 1f, 1f, 0.25f)));
 				            player.room.PlaySound(SoundID.Slugcat_Rocket_Jump, player.mainBodyChunk, false, 1f, 1f);
-                            BTWPlugin.Log("Wall Climb Extend !!");
+                            Plugin.Log("Wall Climb Extend !!");
                         }
                     }
                 }
@@ -758,22 +790,22 @@ public static class WallClimbManagerHooks
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                Plugin.logger.LogError("Couldn't find IL hook :<");
             }
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("WallClimbManager IL 3 ends");
+        Plugin.Log("WallClimbManager IL 3 ends");
     }
     private static void Player_WallClimbManager_StopLoopSoundOnGrip(ILContext il)
     {
-        BTWPlugin.Log("WallClimbManager IL 4 starts");
+        Plugin.Log("WallClimbManager IL 4 starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchLdsfld<SoundID>(nameof(SoundID.None)),
@@ -799,15 +831,15 @@ public static class WallClimbManagerHooks
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                Plugin.logger.LogError("Couldn't find IL hook :<");
             }
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("WallClimbManager IL 4 ends");
+        Plugin.Log("WallClimbManager IL 4 ends");
     }
 
 }

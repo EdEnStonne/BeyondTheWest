@@ -162,7 +162,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
                         }
                     }
                     
-                    if (BTWPlugin.meadowEnabled)
+                    if (Plugin.meadowEnabled)
                     {
                         ArenaDeathTracker.SetDeathTrackerOfCreature(creature.abstractCreature, 56, false, true);
                     }
@@ -267,7 +267,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
     {
         float score = updatable != null ? updatable.VoidConductiveScore() : 0;
 
-        if (updatable == this.source || this.sparedList.Exists(x => x == updatable))
+        if (updatable == this.source || this.sparedList.Contains(updatable))
         {
             return 0;
         }
@@ -309,7 +309,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
                 
                 if (finalScore > this.damage)
                 {
-                    BTWPlugin.Log($"VoidSpark <{this.ID}> found [{target}] with the highest score of <{finalScore}>. Targetting with <{this.damage}> dmg.");
+                    Plugin.Log($"VoidSpark <{this.ID}> found [{target}] with the highest score of <{finalScore}>. Targetting with <{this.damage}> dmg.");
                     return target;
                 }
             }
@@ -321,7 +321,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
         MakeDraggedSparks(this.room, 25f + 10f * this.damage, this.position, 
             (byte)(BTWFunc.RandInt(15, 25) + this.damage), this.color, 0.2f);
         
-        BTWPlugin.Log($"VoidSpark hit [{this.target}] for <{this.damage}> dmg !");
+        Plugin.Log($"VoidSpark hit [{this.target}] for <{this.damage}> dmg !");
 
         if (target.Local() && target is IReactToVoidFlux reactToVoidFlux)
         {
@@ -351,7 +351,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
         }
 
 
-        if (BTWPlugin.meadowEnabled && !this.fake)
+        if (Plugin.meadowEnabled && !this.fake)
         {
             MeadowCalls.BTWItems_VoidSparkHitSomething(this);
         }
@@ -363,7 +363,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
         this.lifetime.value = 0;
         MakeDraggedSparks(this.room, 15f, this.position, (byte)BTWFunc.RandInt(12, 17), this.color, 0.2f);
         
-        if (BTWPlugin.meadowEnabled && !this.fake)
+        if (Plugin.meadowEnabled && !this.fake)
         {
             MeadowCalls.BTWItems_VoidSparkExplode(this);
         }
@@ -376,7 +376,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
         this.destructionTime.value = 1;
         MakeDraggedSparks(this.room, 7f, this.position, (byte)BTWFunc.RandInt(4, 7), this.color, 0.2f);
         
-        if (BTWPlugin.meadowEnabled && !this.fake)
+        if (Plugin.meadowEnabled && !this.fake)
         {
             MeadowCalls.BTWItems_VoidSparkDissipate(this);
         }
@@ -395,7 +395,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
         {
             if (!this.fake)
             {
-                if (BTWPlugin.meadowEnabled && !this.meadowInit)
+                if (Plugin.meadowEnabled && !this.meadowInit)
                 {
                 MeadowCalls.BTWItems_VoidSparkEnterRoom(this);
                 }
@@ -471,7 +471,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
     }
     public override void Destroy()
     {
-        if (BTWPlugin.meadowEnabled && this.meadowInit)
+        if (Plugin.meadowEnabled && this.meadowInit)
         {
             MeadowCalls.BTWItems_VoidSparkLeaveRoom(this);
         }

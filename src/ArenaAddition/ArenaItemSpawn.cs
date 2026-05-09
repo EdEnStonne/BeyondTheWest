@@ -35,7 +35,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
             this.diversity = BTWRemix.ItemSpawnDiversity.Value;
             this.noSpears = BTWRemix.ArenaNoSpears.Value;
 
-            if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+            if (Plugin.meadowEnabled && MeadowFunc.IsMeadowArena())
             {
                 MeadowFunc.SetArenaItemSpawnSettings(ref this);
             }
@@ -56,14 +56,14 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
     }
     public static void LogAllPools(string cause = "[???]")
     {
-        BTWPlugin.Log($"Printing pools after {cause}");
-        BTWPlugin.Log("- Spear pool : ");
+        Plugin.Log($"Printing pools after {cause}");
+        Plugin.Log("- Spear pool : ");
         spearPool.LogPool();
-        BTWPlugin.Log("- Rock pool : ");
+        Plugin.Log("- Rock pool : ");
         rockPool.LogPool();
-        BTWPlugin.Log("- Others pool : ");
+        Plugin.Log("- Others pool : ");
         othersPool.LogPool();
-        BTWPlugin.Log("- All pool : ");
+        Plugin.Log("- All pool : ");
         allPool.LogPool();
     }
     
@@ -97,7 +97,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
     {
         if (!this.isMeadowInit && this.room != null)
         {
-            if (BTWPlugin.meadowEnabled && this.notifyMeadow && !this.isFake)
+            if (Plugin.meadowEnabled && this.notifyMeadow && !this.isFake)
             {
                 MeadowCalls.BTWArena_RPCAddItemSpawnerToAllInRoom(this);
             }
@@ -113,7 +113,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
         {
             World world = this.room.world;
             WorldCoordinate coords = this.room.GetWorldCoordinate(this.pos);
-            BTWPlugin.Log($"Spawning items at [{pos}]/[{coords}] !");
+            Plugin.Log($"Spawning items at [{pos}]/[{coords}] !");
             for (int j = 0; j < this.objectList.Count; j++)
             {
                 EntityID newID = world.game.GetNewID();
@@ -250,11 +250,11 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
                             item.RealizeInRoom();
                         }
                     }
-                    BTWPlugin.Log($"   > Spawned [{this.objectList[j].objectType}]<{this.objectList[j].intData}> at [{this.pos}] !");
+                    Plugin.Log($"   > Spawned [{this.objectList[j].objectType}]<{this.objectList[j].intData}> at [{this.pos}] !");
                 }
                 catch (Exception ex)
                 {
-                    BTWPlugin.logger.LogError($"   > Countn't spawn [{this.objectList[j].objectType}]<{this.objectList[j].intData}> at [{this.pos}] ! Maybe item not supported ? \n >Error : {ex}");
+                    Plugin.logger.LogError($"   > Countn't spawn [{this.objectList[j].objectType}]<{this.objectList[j].intData}> at [{this.pos}] ! Maybe item not supported ? \n >Error : {ex}");
                 }
             }
         }
@@ -282,7 +282,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
                 }
                 if (this.spawnCount == this.spawnTime || (this.forceSpawnCount.ended && i != -1))
                 {
-                    if (this.forceSpawnCount.ended && i != -1) { BTWPlugin.Log($"Forced Spawn event ! Triggered by [{radiusCheck[i].physicalObject}] at dist <{radiusCheck[i].distance}>"); }
+                    if (this.forceSpawnCount.ended && i != -1) { Plugin.Log($"Forced Spawn event ! Triggered by [{radiusCheck[i].physicalObject}] at dist <{radiusCheck[i].distance}>"); }
                     this.spawnCount = this.spawnTime;
                     this.room.PlaySound(SoundID.HUD_Pause_Game, this.pos, 0.35f, 0.65f + BTWFunc.random * 0.25f);
                     if (!this.isFake)
@@ -452,7 +452,7 @@ public static class ArenaItemSpawnHooks
         InitPools();
         IL.ArenaGameSession.SpawnItem += ArenaGameSession_NewSpawnSystem;
         IL.Room.Loaded += Room_NewSpawnSystem;
-        BTWPlugin.Log("ArenaItemSpawnHooks ApplyHooks Done !");
+        Plugin.Log("ArenaItemSpawnHooks ApplyHooks Done !");
     }
 
 
@@ -523,7 +523,7 @@ public static class ArenaItemSpawnHooks
             int playersCount = arena.arenaSitting.players.Count;
             int spawnCount = 0;
 
-            if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+            if (Plugin.meadowEnabled && MeadowFunc.IsMeadowArena())
             {
                 if (!MeadowFunc.IsMeadowHost()) { return 0; }
                 playersCount = MeadowFunc.GetPlayersInLobby();
@@ -559,7 +559,7 @@ public static class ArenaItemSpawnHooks
     }
     private static void ArenaGameSession_NewSpawnSystem(ILContext il)
     {
-        BTWPlugin.Log("ArenaItemSpawnHooks IL 1 starts");
+        Plugin.Log("ArenaItemSpawnHooks IL 1 starts");
         try
         {
             ILCursor cursor = new(il);
@@ -571,7 +571,7 @@ public static class ArenaItemSpawnHooks
             body.Variables.Add(spawnCount);
             body.InitLocals = true;
 
-            BTWPlugin.Log($"Added new variable [{spawnCount}] to IL");
+            Plugin.Log($"Added new variable [{spawnCount}] to IL");
             
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchCall(typeof(UnityEngine.Random).GetProperty(nameof(UnityEngine.Random.value)).GetGetMethod()),
@@ -589,8 +589,8 @@ public static class ArenaItemSpawnHooks
             }
             else
             {
-                BTWPlugin.logger.LogError("IL hook 1 not found :<");
-                BTWPlugin.Log(il);
+                Plugin.logger.LogError("IL hook 1 not found :<");
+                Plugin.Log(il);
             }
             
             if (cursor.TryGotoNext(MoveType.Before,
@@ -623,17 +623,17 @@ public static class ArenaItemSpawnHooks
             }
             else
             {
-                BTWPlugin.logger.LogError("IL hook 2 not found :<");
-                BTWPlugin.Log(il);
+                Plugin.logger.LogError("IL hook 2 not found :<");
+                Plugin.Log(il);
             }
             
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
-            BTWPlugin.Log(il);
+            Plugin.logger.LogError(ex);
+            Plugin.Log(il);
         }
-        BTWPlugin.Log("ArenaItemSpawnHooks IL 1 ended !");
+        Plugin.Log("ArenaItemSpawnHooks IL 1 ended !");
     }
 
     private static bool IsNewSpawningSystem(Room room)
@@ -646,7 +646,7 @@ public static class ArenaItemSpawnHooks
     }
     private static void Room_NewSpawnSystem(ILContext il)
     {
-        BTWPlugin.Log("ArenaItemSpawnHooks IL 2 starts");
+        Plugin.Log("ArenaItemSpawnHooks IL 2 starts");
         try
         {
             ILCursor cursor = new(il);
@@ -689,16 +689,16 @@ public static class ArenaItemSpawnHooks
             }
             else
             {
-                BTWPlugin.logger.LogError("IL hook not found :<");
-                BTWPlugin.Log(il);
+                Plugin.logger.LogError("IL hook not found :<");
+                Plugin.Log(il);
             }
             
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
-            BTWPlugin.Log(il);
+            Plugin.logger.LogError(ex);
+            Plugin.Log(il);
         }
-        BTWPlugin.Log("ArenaItemSpawnHooks IL 2 ended !");
+        Plugin.Log("ArenaItemSpawnHooks IL 2 ended !");
     }
 }

@@ -36,7 +36,7 @@ public class AbstractCrystalSpear : AbstractSpear
     {
         base.Update(time);
         
-        if (BTWPlugin.meadowEnabled && !this.isMeadowInit)
+        if (Plugin.meadowEnabled && !this.isMeadowInit)
         {
             MeadowCalls.BTWItems_AbstractCrystalSpearInit(this);
         }
@@ -91,12 +91,12 @@ public static class CrystalSpearHooks
         AbstractCrystalSpear.CrystalSpearIconData = new(CreatureTemplate.Type.StandardGroundCreature, AbstractPhysicalObject.AbstractObjectType.Spear, 5);
         MultiplayerUnlocks.ItemUnlockList.Add(AbstractCrystalSpear.CrystalSpearUnlock);
         
-        BTWPlugin.Log($"Registered AbstractCrystalSpear ! Type : [{AbstractPhysicalObject.AbstractObjectType.Spear}], Unlock [{AbstractCrystalSpear.CrystalSpearUnlock}]");   
+        Plugin.Log($"Registered AbstractCrystalSpear ! Type : [{AbstractPhysicalObject.AbstractObjectType.Spear}], Unlock [{AbstractCrystalSpear.CrystalSpearUnlock}]");   
     }
     public static void ApplyHooks()
     {
         IL.Player.ThrowObject += Player_ThrewCrystalSpearTheBouncyWay;
-        BTWPlugin.Log("VoidCrystalHooks ApplyHooks Done !");    
+        Plugin.Log("VoidCrystalHooks ApplyHooks Done !");    
     }
 
     public static int GiveCrystalSpearMoreBounceFrames(int orig, Player player, int grasp)
@@ -106,10 +106,10 @@ public static class CrystalSpearHooks
     }
     private static void Player_ThrewCrystalSpearTheBouncyWay(ILContext il)
     {
-        BTWPlugin.Log("CrystalSpearHooks IL 1 starts");
+        Plugin.Log("CrystalSpearHooks IL 1 starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.Before,  x => x.MatchStfld<Weapon>(nameof(Weapon.floorBounceFrames))))
             {
@@ -119,14 +119,14 @@ public static class CrystalSpearHooks
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                Plugin.logger.LogError("Couldn't find IL hook :<");
             }
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("CrystalSpearHooks IL 1 ends");
+        Plugin.Log("CrystalSpearHooks IL 1 ends");
     }
 }

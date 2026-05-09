@@ -158,6 +158,12 @@ public static class BTWExtensions
         
         return end;
     }
+
+    public static HSLColor ToHSL(this Color c) // from Rain Meadow Extensions
+    {
+        var cv = Custom.RGB2HSL(c);
+        return new HSLColor(cv[0], cv[1], cv[2]);
+    }
 }
 
 public static class BTWExtensionsHook
@@ -261,10 +267,10 @@ public static class BTWExtensionsHook
     }
     private static void Weapon_BounceFix(ILContext il)
     {
-        BTWPlugin.Log("BTWExtensions IL 1 starts");
+        Plugin.Log("BTWExtensions IL 1 starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
                 
             if (cursor.TryGotoNext(MoveType.Before,
@@ -284,7 +290,7 @@ public static class BTWExtensionsHook
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook 1 :<");
+                Plugin.logger.LogError("Couldn't find IL hook 1 :<");
             }
                 
             if (cursor.TryGotoNext(MoveType.Before,
@@ -344,13 +350,13 @@ public static class BTWExtensionsHook
                 }
                 else
                 {
-                    BTWPlugin.logger.LogError("Couldn't find IL hook 2.5 :<");
+                    Plugin.logger.LogError("Couldn't find IL hook 2.5 :<");
                 }
 
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook 2 :<");
+                Plugin.logger.LogError("Couldn't find IL hook 2 :<");
             }
                 
             if (cursor.TryGotoNext(MoveType.After,
@@ -365,16 +371,16 @@ public static class BTWExtensionsHook
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook 3 :<");
+                Plugin.logger.LogError("Couldn't find IL hook 3 :<");
             }
 
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("BTWExtensions IL 1 ends");
+        Plugin.Log("BTWExtensions IL 1 ends");
         // BTWPlugin.Log(il);
     }
 }

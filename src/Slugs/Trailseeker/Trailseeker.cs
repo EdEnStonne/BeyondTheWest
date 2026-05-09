@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace BeyondTheWest;
 public class TrailseekerFunc
@@ -11,13 +12,15 @@ public class TrailseekerFunc
         PoleKickManagerHooks.ApplyHooks();
         On.Player.ctor += Player_Trailseeker_WallClimbManagerInit;
 
-        BTWPlugin.Log("TrailseekerFunc ApplyHooks Done !");
+        Plugin.Log("TrailseekerFunc ApplyHooks Done !");
     }
 
     public static bool IsTrailseeker(Player player)
     {
         return player.SlugCatClass.ToString() == TrailseekerID;
     }
+    public static SlugcatStats.Name Trailseeker => 
+        SlugBase.SlugBaseCharacter.Registry.Keys.First(x => x.value == TrailseekerID);
     // Hooks
     
     private static void Player_Trailseeker_WallClimbManagerInit(On.Player.orig_ctor orig, Player self, AbstractCreature abstractCreature, World world)
@@ -27,15 +30,15 @@ public class TrailseekerFunc
         {
             if (!WallClimbManager.TryGetManager(self.abstractCreature, out _))
             {
-                BTWPlugin.Log("Trailseeker WallClimbManager initiated");
+                Plugin.Log("Trailseeker WallClimbManager initiated");
                 WallClimbManager.AddManager(abstractCreature);
-                BTWPlugin.Log("Trailseeker WallClimbManager created !");
+                Plugin.Log("Trailseeker WallClimbManager created !");
             }
             if (!ModifiedTechManager.TryGetManager(self.abstractCreature, out _))
             {
-                BTWPlugin.Log("Trailseeker ModifiedTech initiated");
+                Plugin.Log("Trailseeker ModifiedTech initiated");
                 ModifiedTechManager.AddManager(abstractCreature);
-                BTWPlugin.Log("Trailseeker ModifiedTech created !");
+                Plugin.Log("Trailseeker ModifiedTech created !");
             }
         }
     }

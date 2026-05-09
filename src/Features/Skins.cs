@@ -12,7 +12,7 @@ public class BTWSkins
     public static void ApplyHooks()
     {
         On.PlayerGraphics.DrawSprites += Player_Sprite;
-        BTWPlugin.Log("BTWSkins ApplyHooks Done !");
+        Plugin.Log("BTWSkins ApplyHooks Done !");
     }
 
     // Functions
@@ -35,7 +35,7 @@ public class BTWSkins
         //     FAtlasElement value = keyValuePair.Value;
         //     Plugin.Log(value.name);
         // }
-        BTWPlugin.Log("BTWSkins LoadSkin Done !");
+        Plugin.Log("BTWSkins LoadSkin Done !");
     }
 
     // Hooks

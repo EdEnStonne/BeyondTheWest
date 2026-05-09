@@ -23,7 +23,7 @@ public class BTWPlayerData : AdditionnalTechManager<BTWPlayerData>
     public BTWPlayerData(AbstractCreature abstractCreature) : base(abstractCreature)
     {
         this.local = BTWFunc.IsLocal(abstractCreature);
-        if (BTWPlugin.meadowEnabled)
+        if (Plugin.meadowEnabled)
         {
             MeadowCalls.BTWPlayerData_Init(this);
         }
@@ -101,23 +101,66 @@ public static class BTWPlayerDataHooks
         IL.Player.ctor += Player_BTWPlayerData_Init; //So it starts first garanteed
         On.Player.Update += Player_BTWPlayerData_Update; //Same here
         On.Player.Jump += Player_BTWPlayerData_OnJump;
-        BTWPlugin.Log("BTWPlayerDataHooks ApplyHooks Done !");
+        On.Player.ThrownSpear += Player_SpearingExhaust;
+        IL.Player.ThrowObject += Player_WeaponExhaust;
+        Plugin.Log("BTWPlayerDataHooks ApplyHooks Done !");
     }
 
+    public static bool IsExhausted(bool orig, Player player)
+    {
+        return orig || (player.GetBTWPlayerData() is BTWPlayerData bTWPlayerData && bTWPlayerData.exhausted > 0);
+    }
+    private static void Player_WeaponExhaust(ILContext il)
+    {
+        Plugin.Log("BTWPlayerData IL 2 starts");
+        try
+        {
+            Plugin.Log("Trying to hook IL");
+            ILCursor cursor = new(il);
+            if (cursor.TryGotoNext(MoveType.After,  
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>(nameof(Player.gourmandExhausted))))
+            {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate(IsExhausted);
+            }
+            else
+            {
+                Plugin.logger.LogError("Couldn't find IL hook :<");
+            }
+            Plugin.Log("IL hook ended");
+        }
+        catch (Exception ex)
+        {
+            Plugin.logger.LogError(ex);
+        }
+        Plugin.Log("BTWPlayerData IL 2 ends");
+    }
+
+    private static void Player_SpearingExhaust(On.Player.orig_ThrownSpear orig, Player self, Spear spear)
+    {
+        orig(self, spear);
+        if (self == null || self.room == null) { return; }
+        if (spear == null || spear.bugSpear) { return; }
+        if (self.GetBTWPlayerData() is BTWPlayerData bTWPlayerData && bTWPlayerData.exhausted > 0)
+        {
+            spear.spearDamageBonus = Mathf.Min(0.1f + self.slugcatStats.throwingSkill * 0.1f, spear.spearDamageBonus);
+        }
+    }
     private static void AddNewManager(AbstractCreature abstractPlayer)
     {
         if (!BTWPlayerData.TryGetManager(abstractPlayer, out _))
         {
             BTWPlayerData.AddManager(abstractPlayer);
-            BTWPlugin.Log($"BTWPlayerData created for [{abstractPlayer}] class [{(abstractPlayer.realizedCreature as Player).SlugCatClass}]<{(abstractPlayer.realizedCreature as Player).IsTrailseeker()}><{(abstractPlayer.realizedCreature as Player).IsCore()}><{(abstractPlayer.realizedCreature as Player).IsSpark()}> !");
+            Plugin.Log($"BTWPlayerData created for [{abstractPlayer}] class [{(abstractPlayer.realizedCreature as Player).SlugCatClass}]<{(abstractPlayer.realizedCreature as Player).IsTrailseeker()}><{(abstractPlayer.realizedCreature as Player).IsCore()}><{(abstractPlayer.realizedCreature as Player).IsSpark()}> !");
         }
     }
     private static void Player_BTWPlayerData_Init(ILContext il)
     {
-        BTWPlugin.Log("BTWPlayerData IL 1 starts");
+        Plugin.Log("BTWPlayerData IL 1 starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             cursor.Goto(il.Body.Instructions.Count - 1, MoveType.After);
             if (cursor.TryGotoPrev(MoveType.Before,  x => x.MatchRet()))
@@ -127,15 +170,15 @@ public static class BTWPlayerDataHooks
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                Plugin.logger.LogError("Couldn't find IL hook :<");
             }
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("BTWPlayerData IL 1 ends");
+        Plugin.Log("BTWPlayerData IL 1 ends");
     }
     private static void Player_BTWPlayerData_Update(On.Player.orig_Update orig, Player self, bool eu)
     {
@@ -154,7 +197,7 @@ public static class BTWPlayerDataHooks
             if (CanSuperJump && oldChargedJump >= 20 && self.superLaunchJump == 0 && self.simulateHoldJumpButton == 6)
             {
                 BTWdata.isSuperLaunchJump = true;
-                BTWPlugin.Log($"[{self}] did a super Jump !");
+                Plugin.Log($"[{self}] did a super Jump !");
             }
         }
     }

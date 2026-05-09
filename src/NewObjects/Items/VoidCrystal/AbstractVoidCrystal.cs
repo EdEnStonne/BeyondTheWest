@@ -39,7 +39,7 @@ public class AbstractVoidCrystal : AbstractPhysicalObject
     {
         base.Update(time);
         
-        if (BTWPlugin.meadowEnabled && !this.isMeadowInit)
+        if (Plugin.meadowEnabled && !this.isMeadowInit)
         {
             MeadowCalls.BTWItems_AbstractVoidCrystalInit(this);
         }
@@ -310,10 +310,10 @@ public static class VoidCrystalHooks
         AbstractVoidCrystal.VoidCrystalIconData = new(CreatureTemplate.Type.StandardGroundCreature, AbstractVoidCrystal.VoidCrystalType, 0);
         MultiplayerUnlocks.ItemUnlockList.Add(AbstractVoidCrystal.VoidCrystalUnlock);
         
-        BTWPlugin.Log($"Registered AbstractVoidCrystal ! Type : [{AbstractVoidCrystal.VoidCrystalType}], Unlock [{AbstractVoidCrystal.VoidCrystalUnlock}]");   
+        Plugin.Log($"Registered AbstractVoidCrystal ! Type : [{AbstractVoidCrystal.VoidCrystalType}], Unlock [{AbstractVoidCrystal.VoidCrystalUnlock}]");   
     }
     public static void ApplyHooks()
     {
-        BTWPlugin.Log("VoidCrystalHooks ApplyHooks Done !");    
+        Plugin.Log("VoidCrystalHooks ApplyHooks Done !");    
     }
 }

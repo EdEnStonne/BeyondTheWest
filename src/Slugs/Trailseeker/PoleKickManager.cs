@@ -23,7 +23,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
     public PoleKickManager(AbstractCreature abstractCreature, bool isFake = false) : base(abstractCreature)
     {
         this.isFake = isFake;
-        if (BTWPlugin.meadowEnabled)
+        if (Plugin.meadowEnabled)
         {
             MeadowCalls.PoleKickManager_Init(this);
         }
@@ -295,7 +295,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
             this.poleTechCooldown.Reset(9);
             room.PlaySound(SoundID.Slugcat_Rocket_Jump, player.mainBodyChunk, false, 1.25f, BTWFunc.Random(1.3f,1.5f));
             
-            BTWPlugin.Log($"WOW ! [{player}] kicked [{target}] with a knockback of [{knockback}] and a boost of [{boost}] !");
+            Plugin.Log($"WOW ! [{player}] kicked [{target}] with a knockback of [{knockback}] and a boost of [{boost}] !");
             
             HitCreatureWithKick(player, chuckHit, knockback, knockbackBonus);
         }
@@ -308,7 +308,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
         {
             Color playerColor = kicker.ShortCutColor();
             bool exhausted = kicker.exhausted || (PoleKickManager.TryGetManager(kicker.abstractCreature, out var PKM) && PKM.kickExhausted);
-            if (BTWFunc.IsLocal(target.abstractCreature) && !(BTWPlugin.meadowEnabled && MeadowFunc.ShouldHoldFireFromOnlineArenaTimer()))
+            if (BTWFunc.IsLocal(target.abstractCreature) && !(Plugin.meadowEnabled && MeadowFunc.ShouldHoldFireFromOnlineArenaTimer()))
             {
                 BTWFunc.CustomKnockback(chuckHit, knockback);
                 
@@ -336,7 +336,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
                     null, Creature.DamageType.Blunt,
                     dmg, stun
                 );
-                if (BTWPlugin.meadowEnabled)
+                if (Plugin.meadowEnabled)
                 {
                     ArenaDeathTracker.SetDeathTrackerOfCreature(target.abstractCreature, BTWFunc.random > 0.25 ? 25 : 26);
                 }
@@ -348,10 +348,10 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
                         player.Die();
                     }
                 }
-                BTWPlugin.Log($"Kick of [{kicker}] on [{target}] dealt <{dmg}> damage and <{stun}> stun ! (WR of <{knockbackBonus}>) !");
+                Plugin.Log($"Kick of [{kicker}] on [{target}] dealt <{dmg}> damage and <{stun}> stun ! (WR of <{knockbackBonus}>) !");
                 
             }
-            if (BTWPlugin.meadowEnabled && BTWFunc.IsLocal(kicker.abstractCreature) && MeadowFunc.IsMeadowLobby())
+            if (Plugin.meadowEnabled && BTWFunc.IsLocal(kicker.abstractCreature) && MeadowFunc.IsMeadowLobby())
             {
                 MeadowCalls.PoleKickManager_RPCKick(kicker, chuckHit, knockback, knockbackBonus);
             }
@@ -381,7 +381,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
             Color playerColor = kicker.ShortCutColor();
             bool exhausted = kicker.exhausted || (PoleKickManager.TryGetManager(kicker.abstractCreature, out var PKM) && PKM.kickExhausted);
 
-            if (BTWPlugin.meadowEnabled && BTWFunc.IsLocal(kicker.abstractCreature) && MeadowFunc.IsMeadowLobby())
+            if (Plugin.meadowEnabled && BTWFunc.IsLocal(kicker.abstractCreature) && MeadowFunc.IsMeadowLobby())
             {
                 MeadowCalls.PoleKickManager_RPCKickWhiff(kicker, position);
             }
@@ -428,7 +428,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
             this.kickActive.Reset();
             if (this.lastPoleLoopTileX == poleLoopTileX)
             {
-                if (this.poleLoopCount.reachedMax) { BTWPlugin.Log("Maxuimum Pole Loop reached !"); return; }
+                if (this.poleLoopCount.reachedMax) { Plugin.Log("Maxuimum Pole Loop reached !"); return; }
                 this.poleLoopCount.Add();
             }
             else
@@ -440,7 +440,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
             // Plugin.Log("Pole Loop Init !");
             this.poleLoopTick.Reset();
             this.poleLoopExitTick.Reset();
-            this.poleLoop = true;
+            this.IsPoleLooping = true;
             this.poleLoopDir = -this.MovementDirection;
             this.lastPoleLoopY = player.bodyChunks[0].pos.y;
 
@@ -539,13 +539,13 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
                 }
                 else if (this.jumpLoopBuffered) // loop jump buffered
                 {
-                    this.poleLoop = false;
+                    this.IsPoleLooping = false;
                     this.poleLoopDir = 0;
                     InitPoleHop();
                 }
                 else if (this.nextLoopBuffered && room.GetTile(PoleTile).verticalBeam) // loop buffered
                 {
-                    this.poleLoop = false;
+                    this.IsPoleLooping = false;
                     InitPoleLoop(this.lastPoleLoopTileX, -this.poleLoopDir);
                 }
                 else 
@@ -569,7 +569,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
         Room room = player.room;
         if (player != null && room != null)
         {
-            BTWPlugin.Log($"Pole loop flip exit !");
+            Plugin.Log($"Pole loop flip exit !");
 
             Vector2 boost = new (this.poleLoopDir * 5f, 10f);
             if (ModManager.MSC && player.isRivulet)
@@ -600,7 +600,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
                     player.bodyChunks[1].pos + new Vector2(0f, -player.bodyChunks[1].rad),
                     7, 10f, 5f, 7.5f, 30f, new Color(1f, 1f, 1f, 0.5f)));
 
-            this.poleLoop = false;
+            this.IsPoleLooping = false;
             this.poleLoopDir = 0;
             this.poleLoopExitTick.ResetUp();
         }
@@ -631,7 +631,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
                 MTM.ApplyJumpTechBoost();
             }
 
-            this.poleLoop = false;
+            this.IsPoleLooping = false;
             this.poleLoopDir = 0;
         }
     }
@@ -675,7 +675,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
         this.poleLoopExitTick.ResetUp();
         this.poleLoopDir = 0;
         this.lastPoleLoopTileX = -1;
-        this.poleLoop = false;
+        this.IsPoleLooping = false;
         this.nextLoopBuffered = false;
         this.slideUpLoopBuffered = false;
         this.jumpLoopBuffered = false;
@@ -695,11 +695,11 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
             if ((leaping || flipping || superJump) && this.HoldToPoles)
             {
                 // Plugin.Log($"<{intinput.y}>/<{intinput.x}>, <{dir}>, <{jumpHeld}>/<{jumpPressed}>, <{this.polePounceKaizoTick.valueDown}>/<{player.wantToJump}>, <{IsTileBeam(0)}>/<{IsTileBeam(1)}>, <{player.jumpStun * dir}>");
-                if (this.poleLoop)
+                if (this.IsPoleLooping)
                 {
                     if (this.IntDirectionalInput.y > 0)
                     {
-                        BTWPlugin.Log($"Pole loop canceled because player held upward !");
+                        Plugin.Log($"Pole loop canceled because player held upward !");
                         EndPoleLoopSlideUp();
                     }
                     else
@@ -711,7 +711,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
                             {
                                 CancelPoolLoop();
                                 player.animation = Player.AnimationIndex.None;
-                                BTWPlugin.Log($"Pole loop canceled because [{chuck}] has contact point [{contact}] !");
+                                Plugin.Log($"Pole loop canceled because [{chuck}] has contact point [{contact}] !");
                             }
                         }
                     }
@@ -737,9 +737,9 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
                 }
                 this.isPolePounce = false;
                 this.bodyInFrontOfPole = false;
-                if (this.IntDirectionalInput.y > 0 && this.poleLoop)
+                if (this.IntDirectionalInput.y > 0 && this.IsPoleLooping)
                 {
-                    BTWPlugin.Log($"Pole loop canceled because player held upward ! Detected after cancelling.");
+                    Plugin.Log($"Pole loop canceled because player held upward ! Detected after cancelling.");
                     EndPoleLoopSlideUp();
                 }
                 CancelPoolLoop();
@@ -844,7 +844,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
 
             // this.bodyInFrontOfPole = player.input[0].spec;
             
-            if (this.poleLoop)
+            if (this.IsPoleLooping)
             {
                 UpdatePoolLoop();
             }
@@ -949,7 +949,7 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
                         && ((IsTileBeam(0) && player.bodyChunks[0].pos.x * dir < GetTilePos(0).x * dir) 
                             || (IsTileBeam(0, new(dir, 0), out dist) && dist < 20f)
                         )
-                        && (flipping || leaping || superJump)
+                        && ((flipping && polePounceFromFlipEnabled) || leaping || superJump)
                     )
                     {
                         InitPolePounce();
@@ -1014,6 +1014,8 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
 
     public bool isPolePounce = false;
 
+    public bool polePounceFromFlipEnabled = false;
+
     public bool kickEnabled = false;
     public bool poleKickEnabled = false;
     public bool kickExhausted = false;
@@ -1026,10 +1028,10 @@ public class PoleKickManager : AdditionnalTechManager<PoleKickManager>
     public BodyChunk kickingChuck;
     public float kickingRadius;
 
-    public bool poleLoop = false;
-    public int lastPoleLoopTileX = -1;
-    public float lastPoleLoopY = -1;
-    public int poleLoopDir = 0;
+    public bool IsPoleLooping {get; private set;} = false;
+    private int lastPoleLoopTileX = -1;
+    private float lastPoleLoopY = -1;
+    private int poleLoopDir = 0;
     public Counter poleLoopCount = new(2);
     public Counter poleLoopTick = new(8);
     public Counter poleLoopExitTick = new(7);
@@ -1080,13 +1082,13 @@ public static class PoleKickManagerHooks
         On.Player.ctor += Player_PoleKickManager_Init;
         On.Player.Update += Player_PoleKickManager_Update;
         On.Player.Collide += Player_PoleKickManager_CancelPoleLoop;
-        BTWPlugin.Log("PoleKickManagerHooks ApplyHooks Done !");
+        Plugin.Log("PoleKickManagerHooks ApplyHooks Done !");
     }
 
     private static void Player_PoleKickManager_CancelPoleLoop(On.Player.orig_Collide orig, Player self, PhysicalObject otherObject, int myChunk, int otherChunk)
     {
         orig(self, otherObject, myChunk, otherChunk);
-        if (PoleKickManager.TryGetManager(self.abstractCreature, out var PKM) && PKM.poleLoop)
+        if (PoleKickManager.TryGetManager(self.abstractCreature, out var PKM) && PKM.IsPoleLooping)
         {
             PKM.CancelPoolLoop();
         }
@@ -1103,7 +1105,7 @@ public static class PoleKickManagerHooks
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError($"PoleKickManager had an error on update : {ex}");
+            Plugin.logger.LogError($"PoleKickManager had an error on update : {ex}");
         }
     }
     private static void Player_PoleKickManager_Init(On.Player.orig_ctor orig, Player self, AbstractCreature abstractCreature, World world)
@@ -1112,7 +1114,7 @@ public static class PoleKickManagerHooks
         bool local = BTWFunc.IsLocal(self);
         bool trailseeker = TrailseekerFunc.IsTrailseeker(self);
         bool toEveryone;
-        if (BTWPlugin.meadowEnabled)
+        if (Plugin.meadowEnabled)
         {
             toEveryone = MeadowFunc.ShouldGiveNewPoleTechToEveryone();
         }
@@ -1124,7 +1126,7 @@ public static class PoleKickManagerHooks
         {
             if (!PoleKickManager.TryGetManager(self.abstractCreature, out _))
             {
-                BTWPlugin.Log("PoleKickManager initiated");
+                Plugin.Log("PoleKickManager initiated");
 
                 PoleKickManager.AddManager(abstractCreature, out var PKM);
                 if (ModManager.MSC && MSCFunc.IsRivulet(self))
@@ -1132,16 +1134,18 @@ public static class PoleKickManagerHooks
                     PKM.poleLoopCount = new(15);
                     PKM.poleLoopTick = new(6);
                     PKM.poleLoopExitTick = new(5);
+                    PKM.polePounceFromFlipEnabled = true;
                 }
                 else if (trailseeker)
                 {
                     PKM.poleLoopCount = new(4);
                     PKM.kickEnabled = true;
                     PKM.poleKickEnabled = true;
+                    PKM.polePounceFromFlipEnabled = true;
                 }
                 PKM.isFake = !local;
 
-                BTWPlugin.Log("PoleKickManager created !");
+                Plugin.Log("PoleKickManager created !");
             }
         }
     }

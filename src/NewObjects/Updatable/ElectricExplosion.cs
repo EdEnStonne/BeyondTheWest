@@ -78,13 +78,13 @@ public class ElectricExplosion : UpdatableAndDeletable
                     {
                         targettedPlayer.Die();
                     }
-                    targettedPlayer.playerState.permanentDamageTracking += (damage / targettedPlayer.Template.baseDamageResistance) * 0.25f;
-                    BTWPlugin.Log($"Player Shocked <{targettedPlayer.Local()}> ! Took <{damage}> damage and has perma damage <{targettedPlayer.playerState.permanentDamageTracking}> (added +<{(damage / targettedPlayer.Template.baseDamageResistance) * 0.25f}>) !");
+                    targettedPlayer.playerState.permanentDamageTracking += (damage / targettedPlayer.Template.baseDamageResistance) * 0.35f;
+                    Plugin.Log($"Player Shocked ! Took <{damage}> damage and has perma damage <{targettedPlayer.playerState.permanentDamageTracking}> (added +<{(damage / targettedPlayer.Template.baseDamageResistance) * 0.25f}>) !");
                 }
             }
         }
 
-        if (BTWPlugin.meadowEnabled && notifyMeadow)
+        if (Plugin.meadowEnabled && notifyMeadow)
         {
             MeadowCalls.SparMeadow_ShockCreatureRPC(target, closestBodyChunk, sourceObject, 
                 killTagHolder, killTagHolderDmgFactor, damage, stun, color, doSpams);
@@ -126,7 +126,7 @@ public class ElectricExplosion : UpdatableAndDeletable
         this.doSpams = doSpams;
         this.notifyMeadow = notifyMeadow;
 
-        if (BTWPlugin.meadowEnabled && notifyMeadow)
+        if (Plugin.meadowEnabled && notifyMeadow)
         {
             MeadowCalls.SparMeadow_ElectricExplosionRPC(this);
         }
@@ -210,7 +210,7 @@ public class ElectricExplosion : UpdatableAndDeletable
                         && (!this.passThroughObjects.Exists(x => x == obj))
                         && (this.sourceObject == null || BTWFunc.CanTwoObjectsInteract(this.sourceObject, obj))
                         && BTWFunc.IsObjectInRadius(obj, this.pos, this.rad, out result)
-                        && !(BTWPlugin.meadowEnabled 
+                        && !(Plugin.meadowEnabled 
                             && MeadowFunc.IsMeadowArena() 
                             && this.killTagHolder != null 
                             && this.killTagHolder is Player pl && pl != null 
@@ -236,9 +236,9 @@ public class ElectricExplosion : UpdatableAndDeletable
 
                         if (obj is Creature creature)
                         {
-                            BTWPlugin.Log("Ouch ! Creature ["+ creature +"] got shocked by ["+ this.killTagHolder 
+                            Plugin.Log("Ouch ! Creature ["+ creature +"] got shocked by ["+ this.killTagHolder 
                                 +"] using ["+ this.sourceObject +"] !");
-                            BTWPlugin.Log("Took <"+ dmg +"/"+ this.maxDamage +"> damage and <"
+                            Plugin.Log("Took <"+ dmg +"/"+ this.maxDamage +"> damage and <"
                                 + stun +"/"+ this.maxStun +"> stun (reach ratio is <"+ ratioDist +">).");
                             
                             BTWFunc.CustomKnockback(result.closestBodyChunk, knockbackDir, force, notifyMeadow);

@@ -3,6 +3,7 @@ using UnityEngine;
 using System;
 using MonoMod.Cil;
 using Mono.Cecil.Cil;
+using System.Linq;
 
 namespace BeyondTheWest;
 public class SparkFunc
@@ -18,13 +19,15 @@ public class SparkFunc
         On.Player.ctor += Player_Electric_Charge_Init;
         On.Player.ThrownSpear += Player_Spear_Elec_Modifier;
         IL.Player.UpdateBodyMode += Player_SparkCrawlSpeed;
-        BTWPlugin.Log("SparkFunc ApplyHooks Done !");
+        Plugin.Log("SparkFunc ApplyHooks Done !");
     }
 
     public static bool IsSpark(Player player)
     {
         return player.SlugCatClass.ToString() == SparkID;
     }
+    public static SlugcatStats.Name Spark => 
+        SlugBase.SlugBaseCharacter.Registry.Keys.First(x => x.value == SparkID);
 
     // Hooks
     private static void Player_Electric_Charge_Init(On.Player.orig_ctor orig, Player self, AbstractCreature abstractCreature, World world)
@@ -33,18 +36,18 @@ public class SparkFunc
         if (IsSpark(self) && self.GetBTWData() is BTWCreatureData bTWCreatureData)
         {
             bTWCreatureData.electricExplosionImmune = true;
-            BTWPlugin.Log("Registered Spark as electricExplosionImmune");
+            Plugin.Log("Registered Spark as electricExplosionImmune");
         }
         if (IsSpark(self) && !StaticChargeManager.TryGetManager(self.abstractCreature, out _))
         {
-            BTWPlugin.Log("Spark StaticChargeManager initiated");
+            Plugin.Log("Spark StaticChargeManager initiated");
             StaticChargeManager.AddManager(abstractCreature);
-            BTWPlugin.Log("Spark StaticChargeManager created !");
+            Plugin.Log("Spark StaticChargeManager created !");
         }
         if (IsSpark(self) && self.GetBTWPlayerData() is BTWPlayerData bTWPlayerData)
         {
             bTWPlayerData.slugHeight = 15f;
-            BTWPlugin.Log("Changed Spark Height to 15 !");
+            Plugin.Log("Changed Spark Height to 15 !");
         }
     }
     private static void Player_Spear_Elec_Modifier(On.Player.orig_ThrownSpear orig, Player self, Spear spear)
@@ -110,10 +113,10 @@ public class SparkFunc
     }
     private static void Player_SparkCrawlSpeed(ILContext il)
     {
-        BTWPlugin.Log("Spark IL 1 starts");
+        Plugin.Log("Spark IL 1 starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             
             if (cursor.TryGotoNext(MoveType.After,
@@ -133,13 +136,12 @@ public class SparkFunc
                 cursor.EmitDelegate(BoostSparkCrawl);
             }
 
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("Spark IL 1 ends");
-        // BTWPlugin.Log(il);
+        Plugin.Log("Spark IL 1 ends");
     }
 }

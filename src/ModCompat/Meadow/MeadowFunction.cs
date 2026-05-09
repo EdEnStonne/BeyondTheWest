@@ -54,7 +54,7 @@ public static class MeadowFunc
         
         if (!(StaticChargeManager.TryGetManager(player.abstractCreature, out var SCM) && SCM.init))
         {
-            BTWPlugin.logger.LogError("No StaticChargeManager detected on " + player.ToString());
+            Plugin.logger.LogError("No StaticChargeManager detected on " + player.ToString());
             return null;
         }
 
@@ -67,7 +67,7 @@ public static class MeadowFunc
 
         if (!AbstractEnergyCore.TryGetCore(player.abstractCreature, out var AEC))
         {
-            BTWPlugin.logger.LogError("No AbstractEnergyCore detected on " + player.ToString());
+            Plugin.logger.LogError("No AbstractEnergyCore detected on " + player.ToString());
             
             return null;
         }
@@ -81,7 +81,7 @@ public static class MeadowFunc
 
         if (AEC.realizedObject == null || AEC.realizedObject is not EnergyCore core)
         {
-            BTWPlugin.logger.LogError("No EnergyCore detected on " + playerOE.ToString());
+            Plugin.logger.LogError("No EnergyCore detected on " + playerOE.ToString());
             return null;
         }
         return core;
@@ -277,18 +277,18 @@ public static class MeadowFunc
     }
     public static void ReviveOnlinePlayer(ArenaGameSession arenaGame, AbstractCreature abstractPlayer, int exit = 0)
     {
-        if (!IsMeadowArena(out var arenaOnlineGameMode)) { BTWPlugin.logger.LogError($"uh the online arena is not here to revive on...?"); return; }
-        BTWPlugin.Log($"Reviving [{abstractPlayer}] in room [{arenaGame.room}], pipe <{exit}>, in meadow lobby !");
+        if (!IsMeadowArena(out var arenaOnlineGameMode)) { Plugin.logger.LogError($"uh the online arena is not here to revive on...?"); return; }
+        Plugin.Log($"Reviving [{abstractPlayer}] in room [{arenaGame.room}], pipe <{exit}>, in meadow lobby !");
 
 
         // abstractPlayer.Room.AddEntity(abstractPlayer);
 
         Room room = arenaGame.room;
-        if (room == null) { BTWPlugin.logger.LogError($"uh the room is not here...?"); return; }
-        if (room.abstractRoom.GetResource() == null) { BTWPlugin.logger.LogError($"uh the online room is not here...?"); }
+        if (room == null) { Plugin.logger.LogError($"uh the room is not here...?"); return; }
+        if (room.abstractRoom.GetResource() == null) { Plugin.logger.LogError($"uh the online room is not here...?"); }
         OnlineCreature onlineCreature = abstractPlayer.GetOnlineCreature();
-        if (onlineCreature == null) { BTWPlugin.logger.LogError($"uh the onlineCreature is not here...?"); return; }
-        if (!onlineCreature.isMine) { BTWPlugin.logger.LogError($"uh the onlineCreature is not yours..."); return; }
+        if (onlineCreature == null) { Plugin.logger.LogError($"uh the onlineCreature is not here...?"); return; }
+        if (!onlineCreature.isMine) { Plugin.logger.LogError($"uh the onlineCreature is not yours..."); return; }
         abstractPlayer.Move(room.ToWorldCoordinate(BTWFunc.ExitPos(arenaGame, exit)));
         abstractPlayer.pos.room = room.abstractRoom.index;
         abstractPlayer.pos.abstractNode = room.ShortcutLeadingToNode(exit).destNode;
@@ -300,7 +300,7 @@ public static class MeadowFunc
         if (abstractPlayer.GetOnlineObject(out var oe) && oe.TryGetData<SlugcatCustomization>(out var customization))
         {
             abstractPlayer.state = new PlayerState(abstractPlayer, 0, customization.playingAs, isGhost: false);
-            BTWPlugin.Log($"Gave customization to slugcat !");  
+            Plugin.Log($"Gave customization to slugcat !");  
         }
         else
         {
@@ -311,7 +311,7 @@ public static class MeadowFunc
         abstractPlayer.Realize();
         onlineCreature.realized = true;
         room.abstractRoom.GetResource()?.ApoEnteringRoom(abstractPlayer, abstractPlayer.pos);
-        BTWPlugin.Log($"Realized Creature !");
+        Plugin.Log($"Realized Creature !");
         
         ShortcutHandler.ShortCutVessel shortCutVessel = new(room.ShortcutLeadingToNode(exit).DestTile, 
             abstractPlayer.realizedCreature, arenaGame.game.world.GetAbstractRoom(0), 0)
@@ -374,7 +374,7 @@ public static class MeadowFunc
             (abstractPlayer.realizedCreature as Player).enterIntoCamoDuration = 40;
         }
 
-        BTWPlugin.Log($"Player [{abstractPlayer.realizedCreature}] fully revived !");
+        Plugin.Log($"Player [{abstractPlayer.realizedCreature}] fully revived !");
         // arenaGame.AddPlayer(abstractPlayer);
     }
     public static void RemoveRestrictedItemsInArenaFromPool(ref ObjectDataPool itemPool)

@@ -247,7 +247,7 @@ public class OnlineVoidSpark : OnlineEntity // mostly copied from OnlinePhysical
         VoidSpark. MakeDraggedSparks(room, 25f + 10f * damage, position, 
             (byte)(BTWFunc.RandInt(15, 25) + damage), VoidSpark.defaultColor, 0.2f);
         
-        BTWPlugin.Log($"VoidSpark (that was too quick to realize) hit [{target}] for <{damage}> dmg !");
+        Plugin.Log($"VoidSpark (that was too quick to realize) hit [{target}] for <{damage}> dmg !");
 
         if (ModManager.MSC)
         {

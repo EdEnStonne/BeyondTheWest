@@ -26,7 +26,7 @@ public class ArenaForcedDeath : UpdatableAndDeletable, IDrawable
                 this.pos = this.CreatureMainChunk.pos;
             }
         }
-        if (!fake && BTWPlugin.meadowEnabled && MeadowFunc.IsMine(abstractCreature) && MeadowFunc.IsMeadowLobby())
+        if (!fake && Plugin.meadowEnabled && MeadowFunc.IsMine(abstractCreature) && MeadowFunc.IsMeadowLobby())
         {
             MeadowCalls.BTWArena_RPCArenaForcedDeathEffect(this);
         }
@@ -62,7 +62,7 @@ public class ArenaForcedDeath : UpdatableAndDeletable, IDrawable
                     BTWFunc.CustomKnockback(creature, BTWFunc.RandomCircleVector(20f));
                 }
                 if (this.killTagHolder != null) { creature.SetKillTag(this.killTagHolder); }
-                if (BTWPlugin.meadowEnabled)
+                if (Plugin.meadowEnabled)
                 {
                     ArenaDeathTracker.SetDeathTrackerOfCreature(creature.abstractCreature, 40, true);
                 }

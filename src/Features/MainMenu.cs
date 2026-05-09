@@ -15,29 +15,15 @@ public static class BTWMenu
     {
         orig(self, manager, showRegionSpecificBkg);
         
-        List<string> errorContext = new();
-        if (!BTWPlugin.ressourceFullyEnded)
-        {
-            errorContext.Add("ressource");
-        }
-        if (!BTWPlugin.hooksFullyEnded)
-        {
-            errorContext.Add("main");
-        }
-        if (!BTWPlugin.compatFullyEnded)
-        {
-            errorContext.Add("compatibility");
-        }
-        
-        if (errorContext.Count > 0)
+        if (Plugin.ErrorContext.Count > 0)
         {
             self.manager.ShowDialog(new DialogNotify(
                 self.Translate("Beyond The West failed to load correctly !" 
-                    + Environment.NewLine + $"({string.Join(", ",errorContext)})"), 
+                    + Environment.NewLine + $"({string.Join(", ", Plugin.ErrorContext)})"), 
                 self.manager, null));
         }
 
-        if (BTWPlugin.oldInputConfigEnabled)
+        if (Plugin.oldInputConfigEnabled)
         {
             self.manager.ShowDialog(new DialogNotify(
                 self.Translate("It seems that you have installed the original \"Improved Input Config\" mod." 

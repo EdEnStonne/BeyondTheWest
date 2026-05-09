@@ -173,8 +173,8 @@ public class VoidCrystal : Weapon, VoidSpark.IReactToVoidFlux
 		{
 			if (this.floorBounceFrames == 0)
 			{
-				this.Explode();
 				this.target = creature;
+				this.Explode();
 			}
 			else
 			{

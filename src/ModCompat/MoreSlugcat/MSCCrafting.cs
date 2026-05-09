@@ -32,7 +32,7 @@ public static class CraftHooks
         On.Player.GraspsCanBeCrafted += Player_StaticChargeManager_GraspsCanBeCrafted;
         On.Player.SpitUpCraftedObject += Player_BTW_SpitUpCraftedObject;
         IL.Player.GrabUpdate += Player_CanCraftObject;
-        BTWPlugin.Log("CraftHooks ApplyHooks Done !");
+        Plugin.Log("CraftHooks ApplyHooks Done !");
     }
 
     private static AbstractPhysicalObject GourmandCombos_SpitOutCustomCrafts(On.MoreSlugcats.GourmandCombos.orig_CraftingResults orig, PhysicalObject crafter, Creature.Grasp graspA, Creature.Grasp graspB)
@@ -66,7 +66,7 @@ public static class CraftHooks
     //----------- Hooks
     private static void GourmandCombos_InitCustomCrafts()
     {
-        BTWPlugin.Log($"Trying to extend GourmandCombos librairy.");
+        Plugin.Log($"Trying to extend GourmandCombos librairy.");
         int oldObjectLenght = GourmandCombos.craftingGrid_ObjectsOnly.GetLength(0);
         int oldCreatureLenght = GourmandCombos.craftingGrid_CrittersOnly.GetLength(0);
         int ObjectLenght = oldObjectLenght;
@@ -81,7 +81,7 @@ public static class CraftHooks
         var newGridCritterObjects = new GourmandCombos.CraftDat[CreatureLenght, ObjectLenght];
         var newGridCrittersOnly = new GourmandCombos.CraftDat[CreatureLenght, CreatureLenght];
 
-        BTWPlugin.Log($"GourmandCombos librairy old size was <{oldCreatureLenght}/{oldObjectLenght}>, aiming to extend to <{CreatureLenght}/{ObjectLenght}>.");
+        Plugin.Log($"GourmandCombos librairy old size was <{oldCreatureLenght}/{oldObjectLenght}>, aiming to extend to <{CreatureLenght}/{ObjectLenght}>.");
 
         for (int x = 0; x < oldObjectLenght; x++)
         {
@@ -110,7 +110,7 @@ public static class CraftHooks
         GourmandCombos.craftingGrid_CrittersOnly = newGridCrittersOnly;
 
         // Add new crafts
-        BTWPlugin.Log($"GourmandCombos librairy extended to <{GourmandCombos.craftingGrid_CritterObjects.GetLength(0)}/{GourmandCombos.craftingGrid_CritterObjects.GetLength(1)}> ! Adding new craft...");
+        Plugin.Log($"GourmandCombos librairy extended to <{GourmandCombos.craftingGrid_CritterObjects.GetLength(0)}/{GourmandCombos.craftingGrid_CritterObjects.GetLength(1)}> ! Adding new craft...");
         bool oldShowdebug = GourmandCombos.showDebug;
         GourmandCombos.showDebug = true;
 
@@ -197,15 +197,15 @@ public static class CraftHooks
         GourmandCombos.SetLibraryData(GourmandCombos.objectsLibrary[MSCObjectType.FireEgg], GourmandCombos.objectsLibrary[DLCObjectType.SingularityBomb], 0, AbstractVoidCrystal.VoidCrystalType, null);
 
         GourmandCombos.showDebug = oldShowdebug;
-        BTWPlugin.Log($"GourmandCombos librairy extended from <{oldCreatureLenght}/{oldObjectLenght}> to <{GourmandCombos.craftingGrid_CritterObjects.GetLength(0)}/{GourmandCombos.craftingGrid_CritterObjects.GetLength(1)}> ! Testing result of latest combo... [{GourmandCombos.GetLibraryData(AbstractTristor.TristorType, AbstractVoidCrystal.VoidCrystalType).type}]");
+        Plugin.Log($"GourmandCombos librairy extended from <{oldCreatureLenght}/{oldObjectLenght}> to <{GourmandCombos.craftingGrid_CritterObjects.GetLength(0)}/{GourmandCombos.craftingGrid_CritterObjects.GetLength(1)}> ! Testing result of latest combo... [{GourmandCombos.GetLibraryData(AbstractTristor.TristorType, AbstractVoidCrystal.VoidCrystalType).type}]");
     }
 
     private static void Player_CanCraftObject(ILContext il)
     {
-        BTWPlugin.Log("MSC IL 1 starts");
+        Plugin.Log("MSC IL 1 starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchLdsfld<ModManager>(nameof(ModManager.MSC)),
@@ -238,15 +238,15 @@ public static class CraftHooks
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+                Plugin.logger.LogError("Couldn't find IL hook :<");
             }
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("MSC IL 1 ends");
+        Plugin.Log("MSC IL 1 ends");
     }
     private static bool ElectricSpear_SparkIsElectric(On.MoreSlugcats.ElectricSpear.orig_CheckElectricCreature orig, ElectricSpear self, Creature otherObject)
     {

@@ -68,7 +68,7 @@ public static class SaveHelper
                 }
                 WorldCoordinate coord = WorldCoordinate.FromString(data[2]);
                 string[] customData = data.Length > 3 ? data.Skip(3).ToArray() : new string[0]{};
-                BTWPlugin.Log($"Loading custom item with : type [{type}], id [{id}], coords {coord}, data [{string.Join(", ", customData)}]");
+                Plugin.Log($"Loading custom item with : type [{type}], id [{id}], coords {coord}, data [{string.Join(", ", customData)}]");
 
                 if (type == AbstractTristor.TristorType.ToString())
                 {
@@ -87,7 +87,7 @@ public static class SaveHelper
                             float.TryParse(customData[8], out var r2) ? r2 : BTWFunc.Random(360)
                         },
                     };
-                    BTWPlugin.Log($"Loaded custom AbstractTristor from [{objString}] !");
+                    Plugin.Log($"Loaded custom AbstractTristor from [{objString}] !");
                 }
                 else if (type == AbstractVoidCrystal.VoidCrystalType.ToString())
                 {
@@ -99,7 +99,7 @@ public static class SaveHelper
                         red = int.TryParse(customData[3], out var r) ? r / 100f : 1f,
                     };
                     (result as AbstractVoidCrystal).appearance.abstractVoidCrystal = result as AbstractVoidCrystal;
-                    BTWPlugin.Log($"Loaded custom AbstractVoidCrystal from [{objString}] !");
+                    Plugin.Log($"Loaded custom AbstractVoidCrystal from [{objString}] !");
                 }
                 else if (type == AbstractPhysicalObject.AbstractObjectType.Spear.ToString())
                 {
@@ -112,7 +112,7 @@ public static class SaveHelper
                             blue = int.TryParse(data[6], out var b) ? b / 100f : 0.5f,
                             red = int.TryParse(data[7], out var r) ? r / 100f : 1f,
                         };
-                        BTWPlugin.Log($"Loaded custom AbstractCrystalSpear from [{objString}] !");
+                        Plugin.Log($"Loaded custom AbstractCrystalSpear from [{objString}] !");
                     }
                     else
                     {
@@ -122,19 +122,19 @@ public static class SaveHelper
                 }
                 else 
                 {
-                    BTWPlugin.logger.LogError($"Attempted to load custom object [{objString}], which wasn't detected properly..?");
+                    Plugin.logger.LogError($"Attempted to load custom object [{objString}], which wasn't detected properly..?");
                     result = null;
                 }
             }
             else
             {
-                BTWPlugin.logger.LogError($"Attempted to load custom object [{objString}], which is NOT SUPPORTED BY BTW !");
+                Plugin.logger.LogError($"Attempted to load custom object [{objString}], which is NOT SUPPORTED BY BTW !");
                 result = null;
             }
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError($"[EXCEPTION] Couldn't load custom BTW object from string ! " +
+            Plugin.logger.LogError($"[EXCEPTION] Couldn't load custom BTW object from string ! " +
                 "\n" +
                 objString +
                 "\n" +

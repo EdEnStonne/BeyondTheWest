@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/EdEnStonne/Documents/SlugBase/SlugTemplate-master/BeyondTheWest/src",
-      "program": "c:/Users/EdEnStonne/Documents/SlugBase/SlugTemplate-master/BeyondTheWest/src/build/Debug/outDebug",
+      "cwd": "c:/Users/EdEnStonne/Documents/SlugBase/Rain World Modding/Beyond The West/src",
+      "program": "c:/Users/EdEnStonne/Documents/SlugBase/Rain World Modding/Beyond The West/src/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

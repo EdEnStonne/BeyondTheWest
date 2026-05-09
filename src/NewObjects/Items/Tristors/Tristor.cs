@@ -520,7 +520,7 @@ public class Tristor : Weapon, ElectricExplosion.IReactToElectricExplosion
 							this.firstChunk, originalPos, skid ? 0.25f : 0.5f, skid ? 0.5f : 0.75f, BTWFunc.RandInt(3, 7), this.coreColor
 						);
 						this.room.AddObject(lightingArc);
-						if (BTWPlugin.meadowEnabled)
+						if (Plugin.meadowEnabled)
 						{
 							MeadowCalls.MSCCompat_RPCSyncLightnightArc(lightingArc);
 						}
@@ -637,7 +637,7 @@ public class Tristor : Weapon, ElectricExplosion.IReactToElectricExplosion
 				{
                     if (this.attractForce.chunksAffected[i].owner is not Tristor otherTristor) 
 					{ 
-						BTWPlugin.LogError($"[{this}] Tried to attract to [{this.attractForce.chunksAffected[i].owner}] !"); 
+						Plugin.LogError($"[{this}] Tried to attract to [{this.attractForce.chunksAffected[i].owner}] !"); 
 						continue; 
 					}
                     Vector2 tristorPos = otherTristor.firstChunk.pos;
@@ -685,7 +685,7 @@ public class Tristor : Weapon, ElectricExplosion.IReactToElectricExplosion
 				if (!this.room.GetTile(this.idealPosition).IsAir())
 				{
 					ChangeState(State.Colapse);
-					BTWPlugin.Log($"Tristor <{this.AT.ID}> was trying to move to [{this.idealPosition}], which is [{this.room.GetTile(this.idealPosition).Terrain}] ! Collapsing...");
+					Plugin.Log($"Tristor <{this.AT.ID}> was trying to move to [{this.idealPosition}], which is [{this.room.GetTile(this.idealPosition).Terrain}] ! Collapsing...");
 				}
 
 				this.g = 0f;
@@ -793,7 +793,7 @@ public class Tristor : Weapon, ElectricExplosion.IReactToElectricExplosion
 										this.coreColor
 									);
 									this.room.AddObject(lightingArc);
-									if (BTWPlugin.meadowEnabled)
+									if (Plugin.meadowEnabled)
 									{
 										MeadowCalls.MSCCompat_RPCSyncLightnightArc(lightingArc);
 									}

@@ -3,6 +3,7 @@ using UnityEngine;
 using System;
 using MonoMod.Cil;
 using Mono.Cecil.Cil;
+using System.Linq;
 
 namespace BeyondTheWest;
 public class CoreFunc
@@ -19,9 +20,16 @@ public class CoreFunc
         {
             IL.Player.CanIPickThisUp += Player_CoreCanPullSpears;
         }
-        BTWPlugin.Log("CoreFunc ApplyHooks Done !");
+        Plugin.Log("CoreFunc ApplyHooks Done !");
     }
 
+    public static bool IsCore(Player player)
+    {
+        return player.SlugCatClass.ToString() == CoreID;
+    }
+    public static SlugcatStats.Name Core => 
+        SlugBase.SlugBaseCharacter.Registry.Keys.First(x => x.value == CoreID);
+        
     private static bool AllowCoreToPullSpear(Player player)
     {
         if (IsCore(player) 
@@ -34,10 +42,10 @@ public class CoreFunc
     }
     private static void Player_CoreCanPullSpears(ILContext il)
     {
-        BTWPlugin.Log("CoreFunc IL starts");
+        Plugin.Log("CoreFunc IL starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             ILLabel label = cursor.DefineLabel();
             if (cursor.TryGotoNext(MoveType.After,
@@ -62,34 +70,30 @@ public class CoreFunc
                 }
                 else
                 {
-                    BTWPlugin.logger.LogError("Couldn't find IL hook 2 :<");
+                    Plugin.logger.LogError("Couldn't find IL hook 2 :<");
                 }
             }
             else
             {
-                BTWPlugin.logger.LogError("Couldn't find IL hook 1 :<");
+                Plugin.logger.LogError("Couldn't find IL hook 1 :<");
             }
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("CoreFunc IL ends");
+        Plugin.Log("CoreFunc IL ends");
     }
 
-    public static bool IsCore(Player player)
-    {
-        return player.SlugCatClass.ToString() == CoreID;
-    }
     public static void GiveCoreToPlayer(Player player)
     {
-        BTWPlugin.Log("Trying to add core to " + player.ToString());
+        Plugin.Log("Trying to add core to " + player.ToString());
 
         AbstractEnergyCore.AddCore(player.abstractCreature);
         // abstractEnergyCore.RealizeInRoom();
 
-        BTWPlugin.Log("Core of " + player.abstractCreature.ToString() + "(" + player.ToString() + ")" + " added in world !");
+        Plugin.Log("Core of " + player.abstractCreature.ToString() + "(" + player.ToString() + ")" + " added in world !");
     }
 
 
@@ -102,7 +106,7 @@ public class CoreFunc
             bool hasCore = AbstractEnergyCore.TryGetCore(self.abstractCreature, out var AEC);
             if (!hasCore || AEC == null || AEC.world == null || AEC.pos == null)
             {
-                BTWPlugin.Log("Something wrong happened to the core of " + self.ToString() + $". \nHasCore = <{hasCore}>, AEC world = [{AEC?.world}], AEC Pos = [{AEC?.pos}]. \nFixing it...");
+                Plugin.Log("Something wrong happened to the core of " + self.ToString() + $". \nHasCore = <{hasCore}>, AEC world = [{AEC?.world}], AEC Pos = [{AEC?.pos}]. \nFixing it...");
                 if (hasCore) {
                     if (AEC != null)
                     {

@@ -54,7 +54,7 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
                 arenaShield.Destroy();
             }
             arenaShields.Add(this.target, this);
-            if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowLobby())
+            if (Plugin.meadowEnabled && MeadowFunc.IsMeadowLobby())
             {
                 this.isMine = BTWFunc.IsLocal(this.target.abstractCreature);
                 this.meadowSync = true;
@@ -76,7 +76,7 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
                 this.life += this.shieldTime/8; 
             }
         }
-        if (BTWPlugin.meadowEnabled && callForSync && !fake && this.meadowSync)
+        if (Plugin.meadowEnabled && callForSync && !fake && this.meadowSync)
         {
             MeadowCalls.BTWArena_RPCArenaForcefieldBlock(this);
         }
@@ -91,7 +91,7 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
             }
             this.life = this.shieldTime;
         }
-        if (BTWPlugin.meadowEnabled && callForSync && this.meadowSync && this.isMine)
+        if (Plugin.meadowEnabled && callForSync && this.meadowSync && this.isMine)
         {
             MeadowCalls.BTWArena_RPCArenaForcefieldDismiss(this);
         }
@@ -332,7 +332,7 @@ public static class ArenaShieldHooks
         On.Player.ctor += Player_AddQueuedShield;
         On.Player.ThrowObject += Player_RemoveShieldOnThrowObject;
         On.Creature.Violence += Player_RemoveShieldOnViolence;
-        BTWPlugin.Log("CompetitiveAddition ApplyHooks Done !");
+        Plugin.Log("CompetitiveAddition ApplyHooks Done !");
     }
 
 
@@ -370,7 +370,7 @@ public static class ArenaShieldHooks
             && ArenaShield.TryGetShield(player, out var shield) 
             && shield.Shielding)
         {
-            BTWPlugin.Log("["+ weapon +"] BLOCKED BY SHIELD OF PLAYER ["+ player +"]");
+            Plugin.Log("["+ weapon +"] BLOCKED BY SHIELD OF PLAYER ["+ player +"]");
 
             shield.Block();
             Vector2 inbetweenPos = Vector2.Lerp(result.obj.firstChunk.lastPos, weapon.firstChunk.lastPos, 0.5f);
@@ -391,7 +391,7 @@ public static class ArenaShieldHooks
             shield.Init();
             self.room.AddObject( shield );
             ArenaShield.shieldToAdd.Remove(abstractCreature);
-            BTWPlugin.Log($"Spared shield added to [{self}] ! Can the shield be found ? <{ArenaShield.TryGetShield(self, out _)}>");
+            Plugin.Log($"Spared shield added to [{self}] ! Can the shield be found ? <{ArenaShield.TryGetShield(self, out _)}>");
         }
     }
     private static void Player_RemoveShieldOnThrowObject(On.Player.orig_ThrowObject orig, Player self, int grasp, bool eu)
@@ -399,7 +399,7 @@ public static class ArenaShieldHooks
         if (ArenaShield.TryGetShield(self, out var shield) 
             && shield.Shielding)
         {
-            BTWPlugin.Log("REMOVED SHIELD OF PLAYER ["+ self +"]. Reason : item throw.");
+            Plugin.Log("REMOVED SHIELD OF PLAYER ["+ self +"]. Reason : item throw.");
             shield.Dismiss();
         }
         orig(self, grasp, eu);
@@ -410,7 +410,7 @@ public static class ArenaShieldHooks
             && ArenaShield.TryGetShield(player, out var shield) 
             && shield.Shielding)
         {
-            BTWPlugin.Log("REMOVED SHIELD OF PLAYER ["+ player +"]. Reason : item grab.");
+            Plugin.Log("REMOVED SHIELD OF PLAYER ["+ player +"]. Reason : item grab.");
             shield.Dismiss();
         }
         return orig(self, obj, graspUsed, chunkGrabbed, shareability, dominance, overrideEquallyDominant, pacifying);
@@ -423,7 +423,7 @@ public static class ArenaShieldHooks
         {
             if (!OutOfBounds(self))
             {
-                BTWPlugin.Log("DEATH BLOCKED BY SHIELD OF PLAYER ["+ player +"]");
+                Plugin.Log("DEATH BLOCKED BY SHIELD OF PLAYER ["+ player +"]");
 
                 shield.Block();
                 player.Stun(BTWFunc.FrameRate * 1);
@@ -455,16 +455,16 @@ public static class ArenaShieldHooks
                 return;
             }
             shield.Dismiss();
-            BTWPlugin.Log("REMOVED SHIELD OF PLAYER ["+ player +"]. Reason : out of bounds.");
+            Plugin.Log("REMOVED SHIELD OF PLAYER ["+ player +"]. Reason : out of bounds.");
         }
         orig(self);
     }
     private static void Weapon_BlockWithArenaShield(ILContext il)
     {
-        BTWPlugin.Log("Weapon PassThrough IL starts");
+        Plugin.Log("Weapon PassThrough IL starts");
         try
         {
-            BTWPlugin.Log("Trying to hook IL");
+            Plugin.Log("Trying to hook IL");
             ILCursor cursor = new(il);
             if (cursor.TryGotoNext(MoveType.After,
                 x => x.MatchLdarg(0),
@@ -490,18 +490,18 @@ public static class ArenaShieldHooks
                 {
                     cursor.Emit(OpCodes.Brfalse_S, Mark2);
                 }
-                else { BTWPlugin.logger.LogError("Couldn't find IL hook 2 :<"); }
+                else { Plugin.logger.LogError("Couldn't find IL hook 2 :<"); }
             }
-            else { BTWPlugin.logger.LogError("Couldn't find IL hook 1 :<"); }
+            else { Plugin.logger.LogError("Couldn't find IL hook 1 :<"); }
 
-            BTWPlugin.Log("IL hook ended");
+            Plugin.Log("IL hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
         // Plugin.Log(il);
-        BTWPlugin.Log("Weapon PassThrough IL ends");
+        Plugin.Log("Weapon PassThrough IL ends");
     }
     private static void Player_BlockViolence(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
     {
@@ -509,7 +509,7 @@ public static class ArenaShieldHooks
             && ArenaShield.TryGetShield(player, out var shield) 
             && shield.Shielding)
         {
-            BTWPlugin.Log("VIOLENCE BLOCKED BY SHIELD OF PLAYER ["+ player +"]");
+            Plugin.Log("VIOLENCE BLOCKED BY SHIELD OF PLAYER ["+ player +"]");
 
             shield.Block();
             if (source?.owner != null && source.owner is Creature creature)
@@ -530,7 +530,7 @@ public static class ArenaShieldHooks
             && ArenaShield.TryGetShield(player, out var shield) 
             && shield.Shielding)
         {
-            BTWPlugin.Log("REMOVED SHIELD OF PLAYER ["+ player +"]. Reason : violence.");
+            Plugin.Log("REMOVED SHIELD OF PLAYER ["+ player +"]. Reason : violence.");
             shield.Dismiss();
             Vector2 dir = (source.lastPos - (hitChunk ?? self.firstChunk).lastPos).normalized * 3f + BTWFunc.RandomCircleVector() + Vector2.up;
             BTWFunc.CustomKnockback(player, dir.normalized, 20f, true);

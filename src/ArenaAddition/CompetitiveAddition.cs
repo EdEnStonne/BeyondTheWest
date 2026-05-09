@@ -9,7 +9,7 @@ public static class CompetitiveAddition
     public static void ApplyHooks()
     {
         On.Player.ProcessDebugInputs += Player_ArenaDebug;
-        BTWPlugin.Log("CompetitiveAddition ApplyHooks Done !");
+        Plugin.Log("CompetitiveAddition ApplyHooks Done !");
     }
     
     public static bool ReachedMomentWhenLivesAreSetTo0(ArenaGameSession arenaGame)
@@ -26,12 +26,12 @@ public static class CompetitiveAddition
     private static void Player_ArenaDebug(On.Player.orig_ProcessDebugInputs orig, Player self)
     {
         orig(self);
-        bool targetLocal = !BTWPlugin.meadowEnabled || BTWFunc.IsLocal(self.abstractPhysicalObject);
+        bool targetLocal = !Plugin.meadowEnabled || BTWFunc.IsLocal(self.abstractPhysicalObject);
         if (self.room == null || !self.room.game.devToolsActive || !targetLocal)
         {
             return;
         }
-        bool IsMeadowArena = BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena();
+        bool IsMeadowArena = Plugin.meadowEnabled && MeadowFunc.IsMeadowArena();
         if (Input.GetKeyDown(KeyCode.L))
         {
             if (Input.GetKey(KeyCode.LeftShift) && self.room.world.game.IsArenaSession && !IsMeadowArena)

@@ -117,9 +117,9 @@ public class ObjectDataPool
         this.pool.Sort((x,y) => y.weight - x.weight);
         foreach (var item in this.pool)
         {
-            BTWPlugin.Log($"    > [{item.objectData.objectType}]<{item.objectData.intData}> : <{item.weight}>");
+            Plugin.Log($"    > [{item.objectData.objectType}]<{item.objectData.intData}> : <{item.weight}>");
         }
-        BTWPlugin.Log($"Total weight : <{this.totalWeight}>");
+        Plugin.Log($"Total weight : <{this.totalWeight}>");
     }
     public bool IsEmpty => this.pool.Count == 0;
 }

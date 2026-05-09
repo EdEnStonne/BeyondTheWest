@@ -18,7 +18,7 @@ public static class MeadowRPCs
         {
             ChatLogManager.LogSystemMessage(rpc.from.id.GetPersonaName() + " " 
                 + BTWFunc.Translate("doesn't have the good version of Beyond the West ! (Player : ") 
-                + $"{subscribedVersion} / " + BTWFunc.Translate("Host : " ) + $"{BTWPlugin.MOD_VERSION})");
+                + $"{subscribedVersion} / " + BTWFunc.Translate("Host : " ) + $"{Plugin.MOD_VERSION})");
         }
     }
     [SoftRPCMethod]
@@ -54,7 +54,7 @@ public static class MeadowRPCs
 
         PoleKickManager.HitCreatureWithKick(player, chunkHit, knockback, kBonusCent / 100f);
         
-        BTWPlugin.Log($"Player [{player}] did a kick on [{target}] with <{knockback}> and <{kBonusCent / 100f}> knockback bonus !");
+        Plugin.Log($"Player [{player}] did a kick on [{target}] with <{knockback}> and <{kBonusCent / 100f}> knockback bonus !");
     }
     [RPCMethod]
     public static void PoleKickManager_WhiffKick(RPCEvent rpc, OnlineCreature playerOpo, Vector2 position)
@@ -62,7 +62,7 @@ public static class MeadowRPCs
         if (playerOpo?.abstractCreature?.realizedCreature is not Player player) { return; }
 
         PoleKickManager.WhiffKick(player, position);
-        BTWPlugin.Log($"Player [{player}] did a kick at [{position}] but missed !");
+        Plugin.Log($"Player [{player}] did a kick at [{position}] but missed !");
     }
     [RPCMethod]
     public static void Spark_SparkExplosion(RPCEvent rpc, RoomSession onlineRoom, short size, 
@@ -77,7 +77,7 @@ public static class MeadowRPCs
         room.PlaySound(SoundID.Death_Lightning_Spark_Spontaneous, position, 0.5f + Math.Min(1f, volume), UnityEngine.Random.Range(1.1f, 1.5f));
         room.PlaySound(SoundID.Bomb_Explode, position, volume / 2f, UnityEngine.Random.Range(1.75f, 2.25f));
         
-        BTWPlugin.Log($"A spark explosion happened at [{position}] !");
+        Plugin.Log($"A spark explosion happened at [{position}] !");
     }
     [RPCMethod]
     public static void Spark_ElectricExplosionSync(RPCEvent rpc, RoomSession roomSession, Vector2 pos, 
@@ -94,7 +94,7 @@ public static class MeadowRPCs
         );
         room.AddObject(electricExplosion);
 
-        BTWPlugin.Log("Created Fake Electric Explosion !");
+        Plugin.Log("Created Fake Electric Explosion !");
     }
     [RPCMethod] // Violence is not synced now ??? Fine, I'll do it myself.
     public static void Spark_ElectricExplosionHit(RPCEvent rpc, 
@@ -116,7 +116,7 @@ public static class MeadowRPCs
             killTagHolderDmgFactorCent / 100f, damageCent / 100f, stun,
             color, doSpams, false, true);
         
-        BTWPlugin.Log($"Creature [{target}] got hit by an electric explosion of damage <{damageCent / 100f}> and stun <{stun}> !");
+        Plugin.Log($"Creature [{target}] got hit by an electric explosion of damage <{damageCent / 100f}> and stun <{stun}> !");
     }
     [RPCMethod]
     public static void Core_Boost(RPCEvent rpc, OnlinePhysicalObject playerOpo, byte pow)
@@ -126,7 +126,7 @@ public static class MeadowRPCs
         if (core.AEC.active || !core.AEC.isMeadowFakePlayer) { return; }
 
         core.Boost(pow, false);
-        BTWPlugin.Log("Fake player [" + core.player.ToString() + "] did a leap ! (and maybe a flip)");
+        Plugin.Log("Fake player [" + core.player.ToString() + "] did a leap ! (and maybe a flip)");
     }
     [RPCMethod]
     public static void Core_Shockwave(RPCEvent rpc, OnlinePhysicalObject playerOpo)
@@ -136,7 +136,7 @@ public static class MeadowRPCs
         if (core.AEC.active || !core.AEC.isMeadowFakePlayer) { return; }
 
         core.ShockWave(false);
-        BTWPlugin.Log("Fake player [" + core.player.ToString() + "] did a shockwave !");
+        Plugin.Log("Fake player [" + core.player.ToString() + "] did a shockwave !");
     }
     [RPCMethod]
     public static void Core_Explode(RPCEvent rpc, OnlinePhysicalObject playerOpo)
@@ -146,7 +146,7 @@ public static class MeadowRPCs
         if (core.AEC.active || !core.AEC.isMeadowFakePlayer) { return; }
 
         core.Explode(false);
-        BTWPlugin.Log("Fake player [" + core.player.ToString() + "] did an explosion ! (ouch)");
+        Plugin.Log("Fake player [" + core.player.ToString() + "] did an explosion ! (ouch)");
     }
     [RPCMethod]
     public static void Core_Pop(RPCEvent rpc, OnlinePhysicalObject playerOpo)
@@ -156,7 +156,7 @@ public static class MeadowRPCs
         if (core.AEC.active || !core.AEC.isMeadowFakePlayer) { return; }
 
         core.Pop(false);
-        BTWPlugin.Log("Fake player [" + core.player.ToString() + "] did a pop !");
+        Plugin.Log("Fake player [" + core.player.ToString() + "] did a pop !");
     }
     [RPCMethod]
     public static void Core_Disable(RPCEvent rpc, OnlinePhysicalObject playerOpo)
@@ -166,7 +166,7 @@ public static class MeadowRPCs
         if (!core.AEC.active || core.AEC.isMeadowFakePlayer) { return; }
 
         core.Disable();
-        BTWPlugin.Log("Fake player [" + core.player.ToString() + "] got disabled !");
+        Plugin.Log("Fake player [" + core.player.ToString() + "] got disabled !");
     }
     [RPCMethod]
     public static void Core_GaveOxygenToOthers(RPCEvent rpc, OnlinePhysicalObject playerOpo, OnlinePhysicalObject otherplayerOpo)
@@ -177,7 +177,7 @@ public static class MeadowRPCs
         if (core.AEC.active || !core.AEC.isMeadowFakePlayer) { return; }
 
         otherPlayer.airInLungs = Mathf.Max(0.85f, otherPlayer.airInLungs);
-        BTWPlugin.Log("Fake player [" + core.player.ToString() + "] gave oxygen to " + otherPlayer.ToString() + " !");
+        Plugin.Log("Fake player [" + core.player.ToString() + "] gave oxygen to " + otherPlayer.ToString() + " !");
     }
     [RPCMethod]
     public static void BTWFunc_CustomKnockBack(RPCEvent rpc, OnlinePhysicalObject objectOpo, short chunkAffected, Vector2 force)
@@ -192,12 +192,12 @@ public static class MeadowRPCs
         if (chunkAffected < 0 || chunkAffected > physicalObject.bodyChunks.Length)
         {
             BTWFunc.CustomKnockback(physicalObject, force);
-            BTWPlugin.Log("Object "+ physicalObject.ToString() +" was pushed with a force of "+ force.ToString() +" !");
+            Plugin.Log("Object "+ physicalObject.ToString() +" was pushed with a force of "+ force.ToString() +" !");
         }
         else
         {
             BTWFunc.CustomKnockback(physicalObject.bodyChunks[chunkAffected], force);
-            BTWPlugin.Log("Chuck "+ chunkAffected.ToString() +" of object "+ physicalObject.ToString() +" was pushed with a force of "+ force.ToString() +" !");
+            Plugin.Log("Chuck "+ chunkAffected.ToString() +" of object "+ physicalObject.ToString() +" was pushed with a force of "+ force.ToString() +" !");
         }
     }
     [RPCMethod]
@@ -219,7 +219,7 @@ public static class MeadowRPCs
         };
         room.AddObject(lightingArc);
 
-        BTWPlugin.Log($"Added lightning arc from [{from}] to [{target}] !");
+        Plugin.Log($"Added lightning arc from [{from}] to [{target}] !");
     }
     [RPCMethod]
     public static void BTWArenaAddition_AreneForcedDeathEffect(RPCEvent rpc, OnlineCreature targetOc)
@@ -232,7 +232,7 @@ public static class MeadowRPCs
 
         target.room.AddObject( new ArenaForcedDeath(target.abstractCreature, true) );
 
-        BTWPlugin.Log("Added Arena Forced Death Effect to "+ target +" !");
+        Plugin.Log("Added Arena Forced Death Effect to "+ target +" !");
     }
     [RPCMethod]
     public static void BTWArenaAddition_AddArenaShield(RPCEvent rpc, OnlineCreature targetOc, byte shieldTimeSeconds)
@@ -243,7 +243,7 @@ public static class MeadowRPCs
         if (abstractTarget.realizedCreature is Player target && target.room != null)
         {
             target.room.AddObject( new ArenaShield(target, shieldTimeSeconds * BTWFunc.FrameRate) );
-            BTWPlugin.Log("Added Arena Forcefield to "+ target +" !");
+            Plugin.Log("Added Arena Forcefield to "+ target +" !");
         }
         else
         {
@@ -252,7 +252,7 @@ public static class MeadowRPCs
                 ArenaShield.shieldToAdd.Remove(abstractTarget);
             }
             ArenaShield.shieldToAdd.Add(abstractTarget, new ArenaShield(shieldTimeSeconds * BTWFunc.FrameRate));
-            BTWPlugin.Log($"Arena shield spared for when [{abstractTarget}] realizes !");
+            Plugin.Log($"Arena shield spared for when [{abstractTarget}] realizes !");
         }
     }
     [RPCMethod]
@@ -267,7 +267,7 @@ public static class MeadowRPCs
 
         shield.Block(false);
 
-        BTWPlugin.Log("Arena Forcefield Block sync from "+ target +" !");
+        Plugin.Log("Arena Forcefield Block sync from "+ target +" !");
     }
     [RPCMethod]
     public static void BTWArenaAddition_DismissArenaShield(RPCEvent rpc, OnlineCreature targetOc)
@@ -282,7 +282,7 @@ public static class MeadowRPCs
         
         shield.Dismiss(false);
 
-        BTWPlugin.Log("Arena Forcefield Dismiss sync from "+ target +" !");
+        Plugin.Log("Arena Forcefield Dismiss sync from "+ target +" !");
     }
     [RPCMethod]
     public static void BTWArenaAddition_DestroyArenaLifes(RPCEvent rpc, OnlineCreature targetOc)
@@ -295,7 +295,7 @@ public static class MeadowRPCs
             lives.Destroy();
         }
 
-        BTWPlugin.Log("Arena Lifes detroyed for "+ abstractTarget +" !");
+        Plugin.Log("Arena Lifes detroyed for "+ abstractTarget +" !");
     }
     [RPCMethod]
     public static void BTWArenaAddition_AddArenaLifes(RPCEvent rpc, OnlineCreature targetOc)
@@ -309,7 +309,7 @@ public static class MeadowRPCs
 
         target.room.AddObject( new ArenaLives(target.abstractCreature, true) );
 
-        BTWPlugin.Log("(fake) Arena Lifes added for "+ abstractTarget +" !");
+        Plugin.Log("(fake) Arena Lifes added for "+ abstractTarget +" !");
     }
     [RPCMethod]
     public static void BTWArenaAddition_AddItemSpawn(RPCEvent rpc, RoomSession roomSession, Vector2 position, 
@@ -324,17 +324,14 @@ public static class MeadowRPCs
         };
         room.AddObject( arenaItemSpawn );
 
-        BTWPlugin.Log($"(fake) Arena ItemSpawn added in [{room}]!");
+        Plugin.Log($"(fake) Arena ItemSpawn added in [{room}]!");
     }
     [RPCMethod]
     public static void BTWArenaAddition_RequestAllItemSpawn(RPCEvent rpc, RoomSession roomSession)
     {
         if (!MeadowFunc.IsMeadowArena()) { return; }
         if (!MeadowFunc.IsMeadowHost()) { return; }
-        if (roomSession == null) { return; }
-        AbstractRoom abstractRoom = roomSession.absroom;
-        if (abstractRoom == null || abstractRoom.realizedRoom == null) { return; }
-        Room room = abstractRoom.realizedRoom;
+        if (roomSession?.absroom?.realizedRoom is not Room room) { return; }
         
         foreach (ArenaItemSpawn itemSpawner in room.updateList.FindAll(x => x is ArenaItemSpawn).Cast<ArenaItemSpawn>())
         {
@@ -344,7 +341,7 @@ public static class MeadowRPCs
             }
         }
 
-        BTWPlugin.Log($"Send all itemSpawner as requested !");
+        Plugin.Log($"Send all itemSpawner as requested !");
     }
     [RPCMethod]
     public static void BTWStockArena_ChangeLifes(RPCEvent rpc, int lives)
@@ -355,7 +352,7 @@ public static class MeadowRPCs
             && rpc.from == OnlineManager.lobby.owner)
         {
             arenaSettings.arenaStockClientSettings.lives = lives;
-            BTWPlugin.Log($"Changed current life count to <{lives}>");
+            Plugin.Log($"Changed current life count to <{lives}>");
         }
     }
     [RPCMethod]
@@ -365,7 +362,7 @@ public static class MeadowRPCs
             && !crystalSpear.Local())
         {
             crystalSpear.Pop(pos);
-            BTWPlugin.Log($"Fake Crystal Spear Poped at [{pos}] !");
+            Plugin.Log($"Fake Crystal Spear Poped at [{pos}] !");
         }
     }
     [RPCMethod]
@@ -375,7 +372,7 @@ public static class MeadowRPCs
             && !crystalSpear.Local())
         {
             crystalSpear.Explode(pos: pos);
-            BTWPlugin.Log($"Fake Crystal Spear Exploded at [{pos}] !");
+            Plugin.Log($"Fake Crystal Spear Exploded at [{pos}] !");
         }
     }
 
@@ -388,12 +385,12 @@ public static class MeadowRPCs
         {
             if (obj.Length < i)
             {
-                BTWPlugin.logger.LogError($"ARGUMENT MISSING ON RPC [{del.Method.Name}] ! Expecting [{types[i]}], got <{obj.Length}/{types.Length - 1}> arguments.");
+                Plugin.logger.LogError($"ARGUMENT MISSING ON RPC [{del.Method.Name}] ! Expecting [{types[i]}], got <{obj.Length}/{types.Length - 1}> arguments.");
                 match = false;
             }
             else if (obj[i - 1] != null && (types[i].IsEquivalentTo(obj[i - 1].GetType()) || types[i].IsInstanceOfType(obj[i - 1]) || types[i].IsAssignableFrom(obj[i - 1].GetType())))
             {
-                BTWPlugin.logger.LogError($"TYPE MISMATCH ON RPC [{del.Method.Name}] ! Type [{types[i]}] is not [{obj[i - 1]}] type [{obj[i - 1].GetType()}]");
+                Plugin.logger.LogError($"TYPE MISMATCH ON RPC [{del.Method.Name}] ! Type [{types[i]}] is not [{obj[i - 1]}] type [{obj[i - 1].GetType()}]");
                 match = false;
             }
         }

@@ -20,7 +20,7 @@ public static class BTWSimplifiedMoveset
         new Hook(typeof(PlayerMod).GetMethod(nameof(PlayerMod.UpdateAnimation_HangFromBeam)), DisablePoleUpdateOnPoleRelease);
         new Hook(typeof(PlayerMod).GetMethod(nameof(PlayerMod.UpdateAnimation_HangUnderVerticalBeam)), DisablePoleUpdateOnPoleRelease);
         new Hook(typeof(PlayerMod).GetMethod(nameof(PlayerMod.UpdateAnimation_StandOnBeam)), DisablePoleUpdateOnPoleRelease);
-        BTWPlugin.Log("BTWSimplifiedMoveset ApplyHooks Done !");
+        Plugin.Log("BTWSimplifiedMoveset ApplyHooks Done !");
     }
 
     //----------- Function

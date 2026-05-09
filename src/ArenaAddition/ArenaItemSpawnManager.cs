@@ -103,7 +103,7 @@ public class ArenaItemSpawnManager
         {
             newPoll.RemoveFromPool(x => blocklist.Contains(x.objectData.objectType));
         }
-        if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+        if (Plugin.meadowEnabled && MeadowFunc.IsMeadowArena())
         {
             MeadowFunc.RemoveRestrictedItemsInArenaFromPool(ref newPoll);
         }
@@ -135,11 +135,11 @@ public class ArenaItemSpawnManager
         if (objectList.Count == 0) { return; }
 
         ArenaItemSpawn itemSpawn = new(placedObject.pos, objectList);
-        if (BTWPlugin.meadowEnabled && MeadowFunc.ShouldHoldFireFromOnlineArenaTimer())
+        if (Plugin.meadowEnabled && MeadowFunc.ShouldHoldFireFromOnlineArenaTimer())
         {
             int timer = MeadowFunc.ArenaCountdownTimerCurrent();
             itemSpawn.spawnTime = (int)BTWFunc.Random(timer);
-            BTWPlugin.Log($"Meadow setting detected ! Timer set at <{itemSpawn.spawnTime}> since timer is at <{timer}>");
+            Plugin.Log($"Meadow setting detected ! Timer set at <{itemSpawn.spawnTime}> since timer is at <{timer}>");
         }
         else
         {
@@ -171,7 +171,7 @@ public class ArenaItemSpawnManager
             this.room = arena.room;
             this.playersCount = arena.arenaSitting.players.Count;
             this.availableSpawn = arena.room.roomSettings.placedObjects.FindAll(x => x.data is MItemData);
-            if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+            if (Plugin.meadowEnabled && MeadowFunc.IsMeadowArena())
             {
                 MeadowCalls.BTWArena_ArenaItemSpawnManagerInit(this);
             }
@@ -281,7 +281,7 @@ public class ArenaItemSpawnManager
             }
             else
             {
-                BTWPlugin.Log("Couldn't find a suitable spot !");
+                Plugin.Log("Couldn't find a suitable spot !");
             }
         }
         return Vector2.zero;
@@ -385,7 +385,7 @@ public class ArenaItemSpawnManager
             return;
         }
 
-        if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+        if (Plugin.meadowEnabled && MeadowFunc.IsMeadowArena())
         {
             this.playersCount = arena.arenaSitting.players.Count;
         }
@@ -398,7 +398,7 @@ public class ArenaItemSpawnManager
             if (respawnCount.ended)
             {
                 respawnCount.Reset();
-                BTWPlugin.Log($"Respawning some items !");
+                Plugin.Log($"Respawning some items !");
                 for (int i = 0; i < this.RespawnAttemps; i++)
                 {
                     PlacedObject availableSpawn = GetRandomAvailableSpawn();
@@ -428,7 +428,7 @@ public class ArenaItemSpawnManager
                             {
                                 newPool.RemoveFromPool(x => ArenaItemSpawn.spearPool.AllItemsTypes().Exists(y => y == x.objectData.objectType));
                             }
-                            if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+                            if (Plugin.meadowEnabled && MeadowFunc.IsMeadowArena())
                             {
                                 MeadowFunc.RemoveRestrictedItemsInArenaFromPool(ref newPool);
                             }
@@ -438,10 +438,10 @@ public class ArenaItemSpawnManager
                         }
                         if (objectList.Count == 0) { continue; }
                         ArenaItemSpawn itemSpawn = new(spot, objectList);
-                        if (BTWPlugin.meadowEnabled && MeadowFunc.ShouldHoldFireFromOnlineArenaTimer())
+                        if (Plugin.meadowEnabled && MeadowFunc.ShouldHoldFireFromOnlineArenaTimer())
                         {
                             itemSpawn.spawnTime = (int)BTWFunc.Random(MeadowFunc.ArenaCountdownTimerCurrent());
-                            BTWPlugin.Log($"Meadow setting detected ! Timer set at <{itemSpawn.spawnTime}> since timer is at <{MeadowFunc.ArenaCountdownTimerCurrent()}>");
+                            Plugin.Log($"Meadow setting detected ! Timer set at <{itemSpawn.spawnTime}> since timer is at <{MeadowFunc.ArenaCountdownTimerCurrent()}>");
                             itemSpawn.spawnTime = (int)Mathf.Clamp(itemSpawn.spawnTime, BTWFunc.FrameRate * 3f, BTWFunc.FrameRate * 60f);
                         }
                         this.itemSpawns.Add(itemSpawn);
@@ -460,7 +460,7 @@ public class ArenaItemSpawnManager
             {
                 int spawning = (int)(Mathf.Pow(BTWFunc.random, 5) * 2) + 1;
                 Vector2 spot = GetRandomSpawnPos();
-                BTWPlugin.Log($"Not enough spears ! <{spearcount}> for <{this.playersCount}> player ! Adding <{spawning}> spears at [{spot}]");
+                Plugin.Log($"Not enough spears ! <{spearcount}> for <{this.playersCount}> player ! Adding <{spawning}> spears at [{spot}]");
 
                 if (spot != Vector2.zero)
                 {
@@ -468,7 +468,7 @@ public class ArenaItemSpawnManager
                     for (int i = 1; i <= spawning; i++)
                     {
                         ObjectDataPool newPool = new(ArenaItemSpawn.spearPool);
-                        if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+                        if (Plugin.meadowEnabled && MeadowFunc.IsMeadowArena())
                         {
                             MeadowFunc.RemoveRestrictedItemsInArenaFromPool(ref newPool);
                         }
@@ -478,10 +478,10 @@ public class ArenaItemSpawnManager
                     }
                     if (objectList.Count == 0) { continue; }
                     ArenaItemSpawn itemSpawn = new(spot, (int)(BTWFunc.Random(10, 20) * BTWFunc.FrameRate), objectList);
-                    if (BTWPlugin.meadowEnabled && MeadowFunc.ShouldHoldFireFromOnlineArenaTimer())
+                    if (Plugin.meadowEnabled && MeadowFunc.ShouldHoldFireFromOnlineArenaTimer())
                     {
                         itemSpawn.spawnTime = (int)BTWFunc.Random(MeadowFunc.ArenaCountdownTimerCurrent());
-                        BTWPlugin.Log($"Meadow setting detected ! Timer set at <{itemSpawn.spawnTime}> since timer is at <{MeadowFunc.ArenaCountdownTimerCurrent()}>");
+                        Plugin.Log($"Meadow setting detected ! Timer set at <{itemSpawn.spawnTime}> since timer is at <{MeadowFunc.ArenaCountdownTimerCurrent()}>");
                         itemSpawn.spawnTime = (int)Mathf.Clamp(itemSpawn.spawnTime, BTWFunc.FrameRate * 3f, BTWFunc.FrameRate * 60f);
                     }
                     this.itemSpawns.Add(itemSpawn);
@@ -504,7 +504,7 @@ public class ArenaItemSpawnManager
             {
                 int spawning = (int)(Mathf.Pow(BTWFunc.random, 5) * 2) + 1;
                 Vector2 spot = GetRandomSpawnPos();
-                BTWPlugin.Log($"Not enough throwable ! <{throwableCount}> for <{this.playersCount}> player ! Adding <{spawning}> throwable at [{spot}]");
+                Plugin.Log($"Not enough throwable ! <{throwableCount}> for <{this.playersCount}> player ! Adding <{spawning}> throwable at [{spot}]");
 
                 if (spot != Vector2.zero)
                 {
@@ -512,7 +512,7 @@ public class ArenaItemSpawnManager
                     for (int i = 1; i <= spawning; i++)
                     {
                         ObjectDataPool newPool = new(ArenaItemSpawn.rockPool);
-                        if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+                        if (Plugin.meadowEnabled && MeadowFunc.IsMeadowArena())
                         {
                             MeadowFunc.RemoveRestrictedItemsInArenaFromPool(ref newPool);
                         }
@@ -522,10 +522,10 @@ public class ArenaItemSpawnManager
                     }
                     if (objectList.Count == 0) { continue; }
                     ArenaItemSpawn itemSpawn = new(spot, (int)(BTWFunc.Random(20, 30) * BTWFunc.FrameRate), objectList);
-                    if (BTWPlugin.meadowEnabled && MeadowFunc.ShouldHoldFireFromOnlineArenaTimer())
+                    if (Plugin.meadowEnabled && MeadowFunc.ShouldHoldFireFromOnlineArenaTimer())
                     {
                         itemSpawn.spawnTime = (int)BTWFunc.Random(MeadowFunc.ArenaCountdownTimerCurrent());
-                        BTWPlugin.Log($"Meadow setting detected ! Timer set at <{itemSpawn.spawnTime}> since timer is at <{MeadowFunc.ArenaCountdownTimerCurrent()}>");
+                        Plugin.Log($"Meadow setting detected ! Timer set at <{itemSpawn.spawnTime}> since timer is at <{MeadowFunc.ArenaCountdownTimerCurrent()}>");
                         itemSpawn.spawnTime = (int)Mathf.Clamp(itemSpawn.spawnTime, BTWFunc.FrameRate * 5f, BTWFunc.FrameRate * 60f);
                     }
                     this.itemSpawns.Add(itemSpawn);
@@ -548,7 +548,7 @@ public class ArenaItemSpawnManager
             {
                 int spawning = (int)(Mathf.Pow(BTWFunc.random, 5) * 2) + 1;
                 Vector2 spot = GetRandomSpawnPos();
-                BTWPlugin.Log($"Not enough miscellanious ! <{miscellaniousCount}> for <{this.playersCount}> player ! Adding <{spawning}> miscellanious at [{spot}]");
+                Plugin.Log($"Not enough miscellanious ! <{miscellaniousCount}> for <{this.playersCount}> player ! Adding <{spawning}> miscellanious at [{spot}]");
 
                 if (spot != Vector2.zero)
                 {
@@ -556,7 +556,7 @@ public class ArenaItemSpawnManager
                     for (int i = 1; i <= spawning; i++)
                     {
                         ObjectDataPool newPool = new(ArenaItemSpawn.othersPool);
-                        if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+                        if (Plugin.meadowEnabled && MeadowFunc.IsMeadowArena())
                         {
                             MeadowFunc.RemoveRestrictedItemsInArenaFromPool(ref newPool);
                         }
@@ -608,7 +608,7 @@ public class ArenaItemSpawnManagerHooks
     {
         On.ArenaGameSession.Initiate += ArenaGameSession_AddArenaItemSpawnManager;
         On.ArenaGameSession.Update += ArenaGameSession_UpdateArenaItemSpawnManager;
-        BTWPlugin.Log("ArenaItemSpawnManagerHooks ApplyHooks Done !");
+        Plugin.Log("ArenaItemSpawnManagerHooks ApplyHooks Done !");
     }
 
 
@@ -618,15 +618,15 @@ public class ArenaItemSpawnManagerHooks
         if (self is CompetitiveGameSession)
         {
             bool manager = false;
-            BTWPlugin.Log($"Adding Spawn Manager to [{self}]...");
-            if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+            Plugin.Log($"Adding Spawn Manager to [{self}]...");
+            if (Plugin.meadowEnabled && MeadowFunc.IsMeadowArena())
             {
-                BTWPlugin.Log("Applying meadow settings !");
+                Plugin.Log("Applying meadow settings !");
                 manager = MeadowFunc.CheckIfShouldAddItemManagerOnline();
             }
             else
             {
-                BTWPlugin.Log("Applying normal settings !");
+                Plugin.Log("Applying normal settings !");
                 manager = BTWRemix.NewItemSpawningSystem.Value;
             }
             if (manager)
@@ -636,7 +636,7 @@ public class ArenaItemSpawnManagerHooks
                 {
                     spawnManager.itemSpawns.Add(itemSpawner);
                 }
-                BTWPlugin.Log($"Added Spawn Manager to [{self}] !");
+                Plugin.Log($"Added Spawn Manager to [{self}] !");
             }
         }
     }
@@ -646,14 +646,14 @@ public class ArenaItemSpawnManagerHooks
         try
         {
             if (ArenaItemSpawnManager.TryGetManager(self, out var itemSpawnManager) 
-                && (!self.game.GamePaused || (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowLobby())))
+                && (!self.game.GamePaused || (Plugin.meadowEnabled && MeadowFunc.IsMeadowLobby())))
             {
                 itemSpawnManager.Update();
             }
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
     }
 }

@@ -29,7 +29,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
         return abstractPlayer != null 
             && (
                 (abstractPlayer.state != null && !abstractPlayer.state.alive) 
-                || (BTWPlugin.meadowEnabled && !MeadowFunc.IsPlayerAlive(abstractPlayer))
+                || (Plugin.meadowEnabled && !MeadowFunc.IsPlayerAlive(abstractPlayer))
                 || (
                     abstractPlayer.realizedCreature != null 
                     && (abstractPlayer.realizedCreature as Player).dangerGrasp != null
@@ -38,7 +38,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
             && ArenaLives.TryGetLives(abstractPlayer, out var arenaLives) 
             && arenaLives.blockArenaOut
             && arenaLives.lifesleft > 0
-            && !(BTWPlugin.meadowEnabled && !MeadowFunc.IsOwnerInSession(abstractPlayer));
+            && !(Plugin.meadowEnabled && !MeadowFunc.IsOwnerInSession(abstractPlayer));
     }
     public static int AdditionalPlayerInArenaCount(ArenaGameSession arenaGame)
     {
@@ -51,7 +51,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
             }
             catch (Exception ex)
             {
-                BTWPlugin.logger.LogError("Something wrong happened while counting players ! " + ex);
+                Plugin.logger.LogError("Something wrong happened while counting players ! " + ex);
             }
         }
         // Plugin.Log($"Returning count {revivingPlayers}");
@@ -122,7 +122,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
                 arenaGameSession.arenaSitting.players[BTWFunc.GetPlayerArenaNumber(player)].deaths++;
             }
 
-            if (BTWPlugin.meadowEnabled)
+            if (Plugin.meadowEnabled)
             {
                 MeadowFunc.ResetDeathMessage(this.abstractTarget);
                 MeadowFunc.ResetSlugcatIcon(this.abstractTarget);
@@ -154,7 +154,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
                 }
             }
 
-            BTWPlugin.Log($"Reset stat of [{player}] for revival !");
+            Plugin.Log($"Reset stat of [{player}] for revival !");
         }
     }
     public void ReviveCreature() // taken from Mouse drag method of revival, credit to them !
@@ -252,11 +252,11 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
             }
             if (!this.room.abstractRoom.creatures.Exists(x => x == this.abstractTarget))
             {
-                BTWPlugin.Log($"[{this.abstractTarget}] was removed from the creature list ! Adding it back"); 
+                Plugin.Log($"[{this.abstractTarget}] was removed from the creature list ! Adding it back"); 
                 this.room.abstractRoom.creatures.Add(this.abstractTarget);
             }
 
-            if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
+            if (Plugin.meadowEnabled && MeadowFunc.IsMeadowArena())
             {
                 MeadowFunc.ReviveOnlinePlayer(this.room.game.session as ArenaGameSession, this.abstractTarget, this.respawnExit);
             }
@@ -292,7 +292,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
     }
     public void TriggerRevive() 
     {
-        BTWPlugin.Log("Let's try reviving ["+ this.abstractTarget +"] !\nCounter at : <"
+        Plugin.Log("Let's try reviving ["+ this.abstractTarget +"] !\nCounter at : <"
             + this.reviveCounter +">, fake : <"+ this.fake +">, gone : <"+
             (!this.CreatureStillValid 
                 && this.abstractTarget != null 
@@ -318,7 +318,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
             if (creature == null || creature.room == null) { this.lifesleft = 0; return; }
 
             ReviveCreature();
-            BTWPlugin.Log("Attempted to revive ["+ creature +"].");
+            Plugin.Log("Attempted to revive ["+ creature +"].");
             
             this.countedAlive = creature.State.alive; 
             this.reinforced = false;
@@ -367,10 +367,10 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
 
     public override void Destroy()
     {
-        BTWPlugin.Log($"Live destroyed for player $[{this.abstractTarget}]");
+        Plugin.Log($"Live destroyed for player $[{this.abstractTarget}]");
         if (this.abstractTarget != null)
         {
-            if (!fake && BTWPlugin.meadowEnabled)
+            if (!fake && Plugin.meadowEnabled)
             {
                 MeadowCalls.BTWArena_RPCArenaLivesDestroy(this);
             }
@@ -390,9 +390,9 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
         base.Update(eu);
         if (this.abstractTarget == null) { this.Destroy(); return; }
 
-        if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowLobby() && !this.meadowInit)
+        if (Plugin.meadowEnabled && MeadowFunc.IsMeadowLobby() && !this.meadowInit)
         {
-            if (BTWPlugin.meadowEnabled)
+            if (Plugin.meadowEnabled)
             {
                 MeadowCalls.BTWArena_ArenaLivesInit(this);
             }
@@ -419,14 +419,14 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
                     this.countedAlive = false;
                     this.killChain = 0;
                     InitRevive();
-                    BTWPlugin.Log("Oh no ! ["+ this.abstractTarget +"] died ! We must revive them, they have "+ this.lifesleft +" lives left.");
+                    Plugin.Log("Oh no ! ["+ this.abstractTarget +"] died ! We must revive them, they have "+ this.lifesleft +" lives left.");
                 }
             }
             else
             {
                 if (alive)
                 {
-                    BTWPlugin.Log("Seems like ["+ this.abstractTarget +"] revived without us noticing...");
+                    Plugin.Log("Seems like ["+ this.abstractTarget +"] revived without us noticing...");
                     this.reinforced = false;
                     this.reviveCounter = 0;
                     if (this.lifesleft <= 0)
@@ -714,7 +714,7 @@ public static class ArenaLivesHooks
         On.RainCycle.ArenaEndSessionRain += RainCycle_SuddenDeath;
         On.UpdatableAndDeletable.Destroy += Creature_DontDestroyIfReviving;
         On.KarmaFlower.BitByPlayer += KarmaFlower_AddLifeToPlayer;
-        BTWPlugin.Log("CompetitiveAddition ApplyHooks Done !");
+        Plugin.Log("CompetitiveAddition ApplyHooks Done !");
     }
 
 
@@ -723,7 +723,7 @@ public static class ArenaLivesHooks
         On.ArenaGameSession.PlayersStillActive += ArenaGameSession_AddRevivingPlayers;
         On.ArenaBehaviors.ExitManager.PlayerTryingToEnterDen += ArenaGameSession_RemoveLifeFromPlayerInDen;
         On.AbstractWorldEntity.Destroy += AbstractCreature_DontDestroyIfReviving;
-        BTWPlugin.Log("CompetitiveAddition ApplyPostHooks Done !");
+        Plugin.Log("CompetitiveAddition ApplyPostHooks Done !");
     }
 
     private static bool ArenaGameSession_RemoveLifeFromPlayerInDen(On.ArenaBehaviors.ExitManager.orig_PlayerTryingToEnterDen orig, ArenaBehaviors.ExitManager self, ShortcutHandler.ShortCutVessel shortcutVessel)
@@ -732,7 +732,7 @@ public static class ArenaLivesHooks
         {
             if (ArenaLives.TryGetLives(shortcutVessel?.creature?.abstractCreature, out var arenaLives))
             {
-                BTWPlugin.Log($"[{shortcutVessel?.creature?.abstractCreature}] entered a den, removing its lifes");
+                Plugin.Log($"[{shortcutVessel?.creature?.abstractCreature}] entered a den, removing its lifes");
                 arenaLives.Destroy();
             }
             return true;
@@ -743,14 +743,14 @@ public static class ArenaLivesHooks
     public static void LogLivesState(AbstractCreature abstractPlayer)
     {
         if (abstractPlayer == null) { return; } 
-        BTWPlugin.Log($"Logging lives state of {abstractPlayer} :");
-        BTWPlugin.Log($"{abstractPlayer} : "
+        Plugin.Log($"Logging lives state of {abstractPlayer} :");
+        Plugin.Log($"{abstractPlayer} : "
             + $"\nalive <{abstractPlayer.state.alive }>\n"
-            + $"meadowAlive <{BTWPlugin.meadowEnabled && MeadowFunc.IsPlayerAlive(abstractPlayer)}>"
+            + $"meadowAlive <{Plugin.meadowEnabled && MeadowFunc.IsPlayerAlive(abstractPlayer)}>"
             + $"\nin danger <{abstractPlayer.realizedCreature != null && (abstractPlayer.realizedCreature as Player).dangerGrasp != null}>"
             + $"\nshould count even if dead <" +
                 (!abstractPlayer.state.alive 
-                || (BTWPlugin.meadowEnabled && !MeadowFunc.IsPlayerAlive(abstractPlayer))
+                || (Plugin.meadowEnabled && !MeadowFunc.IsPlayerAlive(abstractPlayer))
                 || (
                     abstractPlayer.realizedCreature != null 
                     && (abstractPlayer.realizedCreature as Player).dangerGrasp != null
@@ -758,7 +758,7 @@ public static class ArenaLivesHooks
                 )+">");
         if (ArenaLives.TryGetLives(abstractPlayer, out var arenaLives))
         {
-            BTWPlugin.Log($"Lives state found ! \n"
+            Plugin.Log($"Lives state found ! \n"
                 + $"Lives <{arenaLives.lifes}>\n"
                 + $"Lives Left <{arenaLives.lifesleft}>\n"
                 + $"Block Out Arena <{arenaLives.blockArenaOut}>\n"
@@ -767,7 +767,7 @@ public static class ArenaLivesHooks
         }
         else
         {
-            BTWPlugin.Log("No lives states !");
+            Plugin.Log("No lives states !");
         }
     }
     
@@ -781,7 +781,7 @@ public static class ArenaLivesHooks
             && player.abstractCreature != null
             && ArenaLives.TryGetLives(player.abstractCreature, out var lives))
         {
-            if (BTWPlugin.meadowEnabled)
+            if (Plugin.meadowEnabled)
             {
                 MeadowFunc.HandleKarmaFlowerInArena(lives);
             }
@@ -802,18 +802,18 @@ public static class ArenaLivesHooks
             && ArenaLives.TryGetLives(creature.abstractCreature, out var lives)
             && lives.canRespawn
             && lives.lifesleft > 0
-            && !(BTWPlugin.meadowEnabled && !MeadowFunc.IsOwnerInSession(creature.abstractCreature)))
+            && !(Plugin.meadowEnabled && !MeadowFunc.IsOwnerInSession(creature.abstractCreature)))
         {
             if (creature == creature.abstractCreature.realizedCreature)
             {
                 creature.Die();
                 creature.abstractCreature.Abstractize(self.room.GetWorldCoordinate(lives.respawnPos));
-                BTWPlugin.Log($"Creature [{creature}] was destroyed while having some lives left !");
+                Plugin.Log($"Creature [{creature}] was destroyed while having some lives left !");
                 // return;
             }
             else
             {
-                BTWPlugin.Log($"Seems like [{creature}] is not the same as [{creature.abstractCreature}]'s [{creature.abstractCreature.realizedCreature}]. Destroying it.");
+                Plugin.Log($"Seems like [{creature}] is not the same as [{creature.abstractCreature}]'s [{creature.abstractCreature.realizedCreature}]. Destroying it.");
             }
         }
         orig(self);
@@ -826,7 +826,7 @@ public static class ArenaLivesHooks
             && abstractCreature != null
             && ArenaLives.TryGetLives(abstractCreature, out var lives))
         {
-            if (lives.canRespawn && lives.lifesleft > 0 && !(BTWPlugin.meadowEnabled && !MeadowFunc.IsOwnerInSession(abstractCreature)))
+            if (lives.canRespawn && lives.lifesleft > 0 && !(Plugin.meadowEnabled && !MeadowFunc.IsOwnerInSession(abstractCreature)))
             {
                 abstractCreature.destroyOnAbstraction = false;
                 abstractCreature.Die();
@@ -834,13 +834,13 @@ public static class ArenaLivesHooks
                 abstractCreature.Abstractize(self.Room.realizedRoom.GetWorldCoordinate(lives.respawnPos));
                 abstractCreature.realizedCreature?.Destroy();
                 abstractCreature.realizedCreature = null;
-                BTWPlugin.Log($"Stopped Abstract Creature [{abstractCreature}] from being destroyed, so they can revive in peace (lives : <{lives.lifesleft}>).");
+                Plugin.Log($"Stopped Abstract Creature [{abstractCreature}] from being destroyed, so they can revive in peace (lives : <{lives.lifesleft}>).");
                 return;
             }
             else
             {
                 lives.Dismiss();
-                BTWPlugin.Log($"Abstract Creature [{abstractCreature}] is being destroyed and cannot revive (Reason : <{lives.canRespawn}>,<{lives.lifesleft > 0}>,<{!BTWPlugin.meadowEnabled || MeadowFunc.HasOwner(abstractCreature)}>), dismissing the resting lives.");
+                Plugin.Log($"Abstract Creature [{abstractCreature}] is being destroyed and cannot revive (Reason : <{lives.canRespawn}>,<{lives.lifesleft > 0}>,<{!Plugin.meadowEnabled || MeadowFunc.HasOwner(abstractCreature)}>), dismissing the resting lives.");
             }
         }
         orig(self);

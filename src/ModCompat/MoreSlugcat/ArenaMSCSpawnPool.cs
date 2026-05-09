@@ -16,7 +16,7 @@ public static class SpawnMSCPool
     public static void ApplyHooks()
     {
         InitMSCPools();
-        BTWPlugin.Log("SpawnMSCPool ApplyHooks Done !");
+        Plugin.Log("SpawnMSCPool ApplyHooks Done !");
     }
 
     private static void InitMSCPools()

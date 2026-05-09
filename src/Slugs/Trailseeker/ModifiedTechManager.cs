@@ -19,7 +19,7 @@ public class ModifiedTechManager : AdditionnalTechManager<ModifiedTechManager>
 
     public ModifiedTechManager(AbstractCreature abstractCreature) : base(abstractCreature)
     {
-        if (BTWPlugin.meadowEnabled)
+        if (Plugin.meadowEnabled)
         {
             MeadowCalls.ModifiedTech_Init(this);
         }
@@ -78,7 +78,7 @@ public static class ModifiedTechHooks
     public static void ApplyHooks()
     {
         On.Player.Jump += Player_ModifiedTech_Jump;
-        BTWPlugin.Log("ModifiedTechHooks ApplyHooks Done !");
+        Plugin.Log("ModifiedTechHooks ApplyHooks Done !");
     }
     private static void Player_ModifiedTech_Jump(On.Player.orig_Jump orig, Player self)
     {

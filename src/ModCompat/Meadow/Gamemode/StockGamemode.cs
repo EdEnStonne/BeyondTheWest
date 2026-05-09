@@ -217,7 +217,7 @@ public partial class StockArenaMode : ExternalArenaGameMode
     {
         if (killedCrit is Player killedPlayer && killedPlayer != killer)
         {
-            BTWPlugin.Log($"Oh no ! Player [{killedPlayer}]<{ArenaLives.TryGetLives(killedPlayer.abstractCreature, out _)}><{(ArenaLives.TryGetLives(killedPlayer.abstractCreature, out var a1) ? a1.killChain : false)}> got killed by [{killer}]<{ArenaLives.TryGetLives(killer.abstractCreature, out _)}><{(ArenaLives.TryGetLives(killer.abstractCreature, out var a2) ? a2.killChain : false)}> !");
+            Plugin.Log($"Oh no ! Player [{killedPlayer}]<{ArenaLives.TryGetLives(killedPlayer.abstractCreature, out _)}><{(ArenaLives.TryGetLives(killedPlayer.abstractCreature, out var a1) ? a1.killChain : false)}> got killed by [{killer}]<{ArenaLives.TryGetLives(killer.abstractCreature, out _)}><{(ArenaLives.TryGetLives(killer.abstractCreature, out var a2) ? a2.killChain : false)}> !");
             
             if (killer.abstractCreature.GetOnlineCreature() is OnlineCreature onlineKiller
                 && onlineKiller.owner is OnlinePlayer onlinePlayer)
@@ -275,7 +275,7 @@ public partial class StockArenaMode : ExternalArenaGameMode
                 arenaLives.reinforced = true;
                 arenaLives.DisplayLives();
             }
-            BTWPlugin.Log($"Hell yeah, got kill credit <{arenaLives.killChain}> !");
+            Plugin.Log($"Hell yeah, got kill credit <{arenaLives.killChain}> !");
         }
     }
 
@@ -396,7 +396,7 @@ public static class StockArenaModeHook
             {
                 if (ArenaLives.TryGetLives(absPlayer, out var arenaLives))
                 {
-                    BTWPlugin.Log($"Dismissing live of [{absPlayer}] : i'm heading out !");
+                    Plugin.Log($"Dismissing live of [{absPlayer}] : i'm heading out !");
                     arenaLives.Destroy();
                 }
             }
@@ -413,7 +413,7 @@ public static class StockArenaModeHook
             {
                 if (ArenaLives.TryGetLives(absPlayer, out var arenaLives))
                 {
-                    BTWPlugin.Log($"Dismissing live of [{absPlayer}] : [{earlyQuitterOrLatecomer}] is leaving !");
+                    Plugin.Log($"Dismissing live of [{absPlayer}] : [{earlyQuitterOrLatecomer}] is leaving !");
                     arenaLives.fake = false;
                     arenaLives.Destroy();
                 }

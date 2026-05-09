@@ -24,7 +24,7 @@ public class EnergyCore : PhysicalObject, IDrawable
             collideWithObjects = false,
             collideWithTerrain = false,
             owner = this,
-            rad = 7.5f,
+            rad = 5f,
         };
         this.firstChunk.rotationChunk = player.mainBodyChunk;
 
@@ -35,7 +35,7 @@ public class EnergyCore : PhysicalObject, IDrawable
         base.gravity = 1f;
 
         this.bodyChunkConnections = new PhysicalObject.BodyChunkConnection[0];
-        BTWPlugin.Log($"Core ctor [{this}] done !");
+        Plugin.Log($"Core ctor [{this}] done !");
         //this.evenUpdate = !player.evenUpdate;
         //logger.LogDebug(player.mainBodyChunk.owner);
         //logger.LogDebug(this.firstChunk.owner);
@@ -205,7 +205,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                         break;
                     }
             }
-            this.color = Color.Lerp(this.color, this.gray, this.grayScale);
+            if (this.meowBlink <= 0) { this.color = Color.Lerp(this.color, this.gray, this.grayScale); }
             if (this.player.dead)
             {
                 CoreMesh.MoveVertice(0, new Vector2(-3f, 0f));
@@ -226,7 +226,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                     this.grayScale = 1f;
                 }  
             }
-            else
+            else if (this.meowBlink <= 0)
             {
                 if (this.grayScale > 0.01f)
                 {
@@ -795,7 +795,7 @@ public class EnergyCore : PhysicalObject, IDrawable
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
     }
     //----------------- IDrawable
@@ -940,7 +940,7 @@ public class EnergyCore : PhysicalObject, IDrawable
         {
             if (this.room.game.devToolsActive) { DebugUpdate(); }
             var cinput = this.player.input[0];
-            if (BTWPlugin.meadowEnabled && this.AEC.isMeadowArenaTimerCountdown && !BTWFunc.OnlineArenaTimerOn())
+            if (Plugin.meadowEnabled && this.AEC.isMeadowArenaTimerCountdown && !BTWFunc.OnlineArenaTimerOn())
             {
                 this.AEC.isMeadowArenaTimerCountdown = false;
             }
@@ -1024,8 +1024,8 @@ public class EnergyCore : PhysicalObject, IDrawable
         }
         else
         {
-            BTWPlugin.Log($"[{this}] is not in the same room as player ! AEC : [{this.AEC}], Room : [{this.room}], Player Room : [{this.player?.room}]. Deleting...");
-            this.AbstractEnergyCore.Abstractize(this.player != null ? this.player.abstractCreature.pos : this.AbstractEnergyCore.pos);
+            Plugin.Log($"[{this}] is not in the same room as player ! AEC : [{this.AEC}], Room : [{this.room}], Player Room : [{this.player?.room}]. Deleting...");
+            this.AEC.Abstractize(this.player != null ? this.player.abstractCreature.pos : this.AEC.pos);
         }
     }
     public override void Grabbed(Creature.Grasp grasp)
@@ -1049,7 +1049,7 @@ public class EnergyCore : PhysicalObject, IDrawable
         }
         else
         {
-            BTWPlugin.Log("The core has been hit by "+ weapon +" from "+ weapon.thrownBy +" but nothing happened !");
+            Plugin.Log("The core has been hit by "+ weapon +" from "+ weapon.thrownBy +" but nothing happened !");
         }
     }
 

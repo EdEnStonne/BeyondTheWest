@@ -60,7 +60,7 @@ public static class BTWFunc
     
     public static bool IsLocal(AbstractPhysicalObject abstractPhysicalObject)
     {
-        if (BTWPlugin.meadowEnabled && abstractPhysicalObject != null)
+        if (Plugin.meadowEnabled && abstractPhysicalObject != null)
         {
             return MeadowFunc.IsMine(abstractPhysicalObject);
         }
@@ -68,7 +68,7 @@ public static class BTWFunc
     }
     public static bool IsLocal(PhysicalObject physicalObject)
     {
-        if (BTWPlugin.meadowEnabled && physicalObject?.abstractPhysicalObject != null)
+        if (Plugin.meadowEnabled && physicalObject?.abstractPhysicalObject != null)
         {
             return IsLocal(physicalObject.abstractPhysicalObject);
         }
@@ -76,7 +76,7 @@ public static class BTWFunc
     }
     public static bool IsLocal(VoidSpark voidSpark)
     {
-        if (BTWPlugin.meadowEnabled && voidSpark != null)
+        if (Plugin.meadowEnabled && voidSpark != null)
         {
             return IsLocal(voidSpark);
         }
@@ -84,7 +84,7 @@ public static class BTWFunc
     }
     public static bool OnlineArenaTimerOn()
     {
-        if (BTWPlugin.meadowEnabled)
+        if (Plugin.meadowEnabled)
         {
             return MeadowFunc.ShouldHoldFireFromOnlineArenaTimer();
         }
@@ -105,12 +105,18 @@ public static class BTWFunc
 
     public static int GetPlayerArenaNumber(Player player)
     {
-        if (BTWPlugin.meadowEnabled)
+        if (Plugin.meadowEnabled)
         {
             return MeadowFunc.GetPlayerArenaOnlineNumber(player);
         }
         else
         {
+            if (ModManager.MSC 
+                && player.abstractCreature.world.game.IsArenaSession 
+                && player.abstractCreature.world.game.GetArenaGameSession.chMeta != null)
+            {
+                return 0;
+            }
             return player.abstractCreature.ID.number;
         }
     }
@@ -305,7 +311,7 @@ public static class BTWFunc
         }
         if (player.input.Length <= index)
         {
-            BTWPlugin.logger.LogError($"Tried to get input index <{index}> on InputPackage of lenght <{player.input.Length}> !");
+            Plugin.logger.LogError($"Tried to get input index <{index}> on InputPackage of lenght <{player.input.Length}> !");
         }
         return Vector2.zero;
     }
@@ -476,7 +482,7 @@ public static class BTWFunc
     public static void CustomKnockback(BodyChunk bodyChunk, Vector2 force, bool notifyMeadow = false)
     {
         bodyChunk.vel += force;
-        if (notifyMeadow && BTWPlugin.meadowEnabled && !MeadowFunc.IsMine(bodyChunk.owner.abstractPhysicalObject))
+        if (notifyMeadow && Plugin.meadowEnabled && !MeadowFunc.IsMine(bodyChunk.owner.abstractPhysicalObject))
         {
             MeadowCalls.BTWFuncMeadow_RPCCustomKnockBack(bodyChunk.owner, (short)bodyChunk.index, force);
         }
@@ -495,7 +501,7 @@ public static class BTWFunc
         { 
             CustomKnockback(bodyChunk, force); 
         }
-        if (notifyMeadow && BTWPlugin.meadowEnabled && !MeadowFunc.IsMine(physicalObject.abstractPhysicalObject))
+        if (notifyMeadow && Plugin.meadowEnabled && !MeadowFunc.IsMine(physicalObject.abstractPhysicalObject))
         {
             MeadowCalls.BTWFuncMeadow_RPCCustomKnockBack(physicalObject, -1, force);
         }

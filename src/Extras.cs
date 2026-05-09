@@ -29,15 +29,15 @@ internal static class Extras
             {
                 if (!_initialized)
                 {
-                    BTWPlugin.Log("BTW OnModsInit initializing...");
+                    Plugin.Log("BTW OnModsInit initializing...");
                     _initialized = true;
                     loadResources(self);
-                    BTWPlugin.Log("BTW OnModsInit Done !");
+                    Plugin.Log("BTW OnModsInit Done !");
                 }
             }
             catch (Exception e)
             {
-                BTWPlugin.logger.LogError(e);
+                Plugin.logger.LogError(e);
             }
         };
     }

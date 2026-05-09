@@ -59,7 +59,7 @@ public static class BTWVersionChecker
     }
     public static void CompareVersion(LobbyBTWVersionData hostBTWVersionData)
     {
-        BTWPlugin.Log($"Owner responded ! Here is their lobby version : ");
+        Plugin.Log($"Owner responded ! Here is their lobby version : ");
         hostBTWVersionData.Log();
         lobbyBTWVersionData = hostBTWVersionData;
 
@@ -69,7 +69,7 @@ public static class BTWVersionChecker
             {
                 if (hostBTWVersionData.BTWVersion[i] != myBTWVersionData.BTWVersion[i])
                 {
-                    BTWPlugin.logger.LogWarning($"version of BTW doesn't match ! <{myBTWVersionData.BTWVersionString}> instead of <{hostBTWVersionData.BTWVersionString}>");
+                    Plugin.logger.LogWarning($"version of BTW doesn't match ! <{myBTWVersionData.BTWVersionString}> instead of <{hostBTWVersionData.BTWVersionString}>");
                     errorMessageText = "Version mismatch for Beyond the West !" 
                     + Environment.NewLine + $"Your version is {myBTWVersionData.BTWVersionString} while the host is {hostBTWVersionData.BTWVersionString}"
                     + Environment.NewLine + "To avoid desync issues, you are being send back to the main menu.";
@@ -91,11 +91,11 @@ public static class BTWVersionChecker
                 leaveOnError = false;
                 return;
             }
-            BTWPlugin.Log($"Version verified ! Everything matches !");
+            Plugin.Log($"Version verified ! Everything matches !");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError("Error while checking version of lobby ! " + ex);
+            Plugin.logger.LogError("Error while checking version of lobby ! " + ex);
             errorMessageText = "Beyond the West failed to check the version of the host";
             leaveOnError = false;
         }
@@ -106,7 +106,7 @@ public static class BTWVersionChecker
         {
             if (ok)
             {
-                BTWPlugin.Log($"Is there a lobby there ? [{OnlineManager.lobby != null}], [{OnlineManager.lobby?.owner}], [{OnlineManager.lobby?.isOwner}], [{OnlineManager.lobby?.configurableInts.Count}]");
+                Plugin.Log($"Is there a lobby there ? [{OnlineManager.lobby != null}], [{OnlineManager.lobby?.owner}], [{OnlineManager.lobby?.isOwner}], [{OnlineManager.lobby?.configurableInts.Count}]");
                 if (OnlineManager.lobby != null)
                 {
                     myBTWVersionData = new();
@@ -114,13 +114,13 @@ public static class BTWVersionChecker
                     if (OnlineManager.lobby.isOwner)
                     {
                         lobbyBTWVersionData = myBTWVersionData;
-                        BTWPlugin.Log($"I'm the owner ! Here's the lobby version : ");
+                        Plugin.Log($"I'm the owner ! Here's the lobby version : ");
                         lobbyBTWVersionData.Log();
                     }
                     else
                     {
                         // myBTWVersionData.Swap2EnumForTestingPurposes(50);
-                        BTWPlugin.Log($"Lobby BTW version has to be checked ! Current version is :");
+                        Plugin.Log($"Lobby BTW version has to be checked ! Current version is :");
                         myBTWVersionData.Log();
                         OnlineManager.lobby.owner.InvokeRPC(MeadowRPCs.BTWVersionChecker_RequestVersionInfo);
                     }
@@ -129,7 +129,7 @@ public static class BTWVersionChecker
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError("Error while creating version struct of lobby ! " + ex);
+            Plugin.logger.LogError("Error while creating version struct of lobby ! " + ex);
         }
     }
 
@@ -137,7 +137,7 @@ public static class BTWVersionChecker
     {
         public LobbyBTWVersionData()
         {
-            this.BTWVersion = BTWPlugin.GetVersionIntArray();
+            this.BTWVersion = Plugin.GetVersionIntArray();
             this.RainWorldEnums = new string[SyncedEnumTypes.Count][];
             SaveCurrentEnumOrder();
         }
@@ -159,20 +159,20 @@ public static class BTWVersionChecker
 
         public void Log()
         {
-            BTWPlugin.Log($"Logging BTW lobby data :");
-            BTWPlugin.Log($"    > Version of BTW is {BTWVersionString}");
+            Plugin.Log($"Logging BTW lobby data :");
+            Plugin.Log($"    > Version of BTW is {BTWVersionString}");
             for (int i = 0; i < this.RainWorldEnums.Length; i++)
             {
-                BTWPlugin.Log($"    > Order of [{SyncedEnumTypes[i].Name}] enum is :");
+                Plugin.Log($"    > Order of [{SyncedEnumTypes[i].Name}] enum is :");
                 for (int j = 0; j < this.RainWorldEnums[i].Length; j++)
                 {
-                    BTWPlugin.Log($"        >> <{j}>[{this.RainWorldEnums[i][j]}]");
+                    Plugin.Log($"        >> <{j}>[{this.RainWorldEnums[i][j]}]");
                 }
             }
         }
         public void ReorganizeEnum()
         {
-            BTWPlugin.Log($"Changing the order of the enum according to the lobby data...");
+            Plugin.Log($"Changing the order of the enum according to the lobby data...");
             try
             {
                 for (int en = 0; en < this.RainWorldEnums.Length; en++)
@@ -198,13 +198,13 @@ public static class BTWVersionChecker
             }
             catch (Exception ex)
             {
-                BTWPlugin.logger.LogError("Error while changing the order of the enums ! " + ex);
+                Plugin.logger.LogError("Error while changing the order of the enums ! " + ex);
             }
-            BTWPlugin.Log($"Done without issues ! For now...");
+            Plugin.Log($"Done without issues ! For now...");
         }
         public bool IsEnumMatching()
         {
-            BTWPlugin.Log($"Checking if enum matches");
+            Plugin.Log($"Checking if enum matches");
             bool match = true;
             try
             {
@@ -214,14 +214,14 @@ public static class BTWVersionChecker
                     {
                         if (this.RainWorldEnums[en].Length != enumType.entries.Count)
                         {
-                            BTWPlugin.logger.LogWarning($"Lenght of enum [{SyncedEnumTypes[en].Name}] doesn't match ! [{enumType.entries.Count}] instead of [{this.RainWorldEnums[en].Length}]");
+                            Plugin.logger.LogWarning($"Lenght of enum [{SyncedEnumTypes[en].Name}] doesn't match ! [{enumType.entries.Count}] instead of [{this.RainWorldEnums[en].Length}]");
                             return false;
                         }
                         for (int i = 0; i < enumType.entries.Count; i++)
                         {
                             if (this.RainWorldEnums[en][i] != enumType.entries[i])
                             {
-                                BTWPlugin.logger.LogWarning($"id <{i}> of enum [{SyncedEnumTypes[en].Name}] doesn't match ! [{enumType.entries[i]}] instead of [{this.RainWorldEnums[en][i]}]");
+                                Plugin.logger.LogWarning($"id <{i}> of enum [{SyncedEnumTypes[en].Name}] doesn't match ! [{enumType.entries[i]}] instead of [{this.RainWorldEnums[en][i]}]");
                                 match = false;
                             }
                         }
@@ -234,13 +234,13 @@ public static class BTWVersionChecker
             }
             catch (Exception ex)
             {
-                BTWPlugin.logger.LogError("Error while changing the order of the enums ! " + ex);
+                Plugin.logger.LogError("Error while changing the order of the enums ! " + ex);
             }
             return match;
         }
         internal void Swap2EnumForTestingPurposes(int swaps = 1)
         {
-            BTWPlugin.Log($"Swapping two enum order (x{swaps}) for testing purposes...");
+            Plugin.Log($"Swapping two enum order (x{swaps}) for testing purposes...");
             for (int s = 1; s <= swaps; s++)
             {
                 try
@@ -253,7 +253,7 @@ public static class BTWVersionChecker
                         (enumType.entries[j], enumType.entries[i]) = (enumType.entries[i], enumType.entries[j]);
                         (this.RainWorldEnums[en][j], this.RainWorldEnums[en][i]) = (this.RainWorldEnums[en][i], this.RainWorldEnums[en][j]);
                         enumType.version++;
-                        BTWPlugin.Log($"Swapped <{i}>[{enumType.entries[j]}] and <{j}>[{enumType.entries[i]}] of enum [{SyncedEnumTypes[en].Name}]");
+                        Plugin.Log($"Swapped <{i}>[{enumType.entries[j]}] and <{j}>[{enumType.entries[i]}] of enum [{SyncedEnumTypes[en].Name}]");
                     }
                     else
                     {
@@ -262,10 +262,10 @@ public static class BTWVersionChecker
                 }
                 catch (Exception ex)
                 {
-                    BTWPlugin.logger.LogError("Error while changing the order of the enums ! " + ex);
+                    Plugin.logger.LogError("Error while changing the order of the enums ! " + ex);
                 }
             }
-            BTWPlugin.Log($"Done without issues ! For now...");
+            Plugin.Log($"Done without issues ! For now...");
         }
         public int[] BTWVersion;
         public string[][] RainWorldEnums;

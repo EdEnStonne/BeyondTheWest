@@ -14,7 +14,7 @@ public static class BTWMeow
     public static void ApplyHooks()
     {
         new Hook(typeof(MeowUtils).GetMethod(nameof(MeowUtils.DoMeowAnim)), OnMeow);
-        BTWPlugin.Log("BTWMeow ApplyHooks Done !");
+        Plugin.Log("BTWMeow ApplyHooks Done !");
     }
 
     //----------- Hooks

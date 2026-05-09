@@ -13,7 +13,7 @@ public static class BTWDMSDressing
     public static void ApplyHooks()
     {
         new Hook(typeof(SpriteDefinitions).GetMethod(nameof(SpriteDefinitions.Init)), SetCustomDMSSkin);
-        BTWPlugin.Log("BTWDMSDressing ApplyHooks Done !");
+        Plugin.Log("BTWDMSDressing ApplyHooks Done !");
     }
 
     private static void SetCustomDMSSkin(Action orig)

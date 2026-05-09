@@ -60,7 +60,7 @@ public class AbstractTristor : AbstractPhysicalObject
     {
         base.Update(time);
         
-        if (BTWPlugin.meadowEnabled && !this.isMeadowInit)
+        if (Plugin.meadowEnabled && !this.isMeadowInit)
         {
             MeadowCalls.BTWItems_AbstractTristorInit(this);
         }
@@ -107,10 +107,10 @@ public static class TristorHooks
         Tristor.State.Static = new("Static", true);
         Tristor.State.Colapse = new("Colapse", true);
         
-        BTWPlugin.Log($"Registered AbstractTristor ! Type : [{AbstractTristor.TristorType}], Unlock [{AbstractTristor.TristorUnlock}]");   
+        Plugin.Log($"Registered AbstractTristor ! Type : [{AbstractTristor.TristorType}], Unlock [{AbstractTristor.TristorUnlock}]");   
     }
     public static void ApplyHooks()
     {
-        BTWPlugin.Log("TristorHooks ApplyHooks Done !");    
+        Plugin.Log("TristorHooks ApplyHooks Done !");    
     }
 }

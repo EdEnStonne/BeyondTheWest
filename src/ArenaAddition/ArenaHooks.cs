@@ -15,11 +15,11 @@ public static class ArenaHookHelper
         ArenaItemSpawnHooks.ApplyHooks();
         ArenaItemSpawnManagerHooks.ApplyHooks();
 
-        BTWPlugin.Log("ArenaHookHelper ApplyHooks Done !");
+        Plugin.Log("ArenaHookHelper ApplyHooks Done !");
     }
     public static void ApplyPostHooks()
     {
         ArenaLivesHooks.ApplyPostHooks();
-        BTWPlugin.Log("ArenaHookHelper ApplyPostHooks Done !");
+        Plugin.Log("ArenaHookHelper ApplyPostHooks Done !");
     }
 }

@@ -85,13 +85,13 @@ public class OnlineArenaLivesData : OnlineEntity.EntityData
             if (lives.lifesleft != this.lifesleft || lives.countedAlive != this.countedAlive || lives.reinforced != this.reinforced)
             {
                 lives.karmaSymbolNeedToChange = true;
-                BTWPlugin.Log($"Detected a life change for [{onlineEntity} : {abstractCreature}] : <{this.lifesleft}> <{this.countedAlive}> <{this.reinforced}>");
+                Plugin.Log($"Detected a life change for [{onlineEntity} : {abstractCreature}] : <{this.lifesleft}> <{this.countedAlive}> <{this.reinforced}>");
             }
             if (this.countedAlive && lives.room != null && lives.abstractTarget?.realizedCreature != null)
             {
                 if (!lives.room.abstractRoom.creatures.Exists(x => x == lives.abstractTarget))
                 {
-                    BTWPlugin.Log($"[{lives.abstractTarget}] was removed from the creature list ! Adding it back"); 
+                    Plugin.Log($"[{lives.abstractTarget}] was removed from the creature list ! Adding it back"); 
                     lives.room.abstractRoom.creatures.Add(lives.abstractTarget);
                 }
             }

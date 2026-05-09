@@ -42,7 +42,7 @@ public class CrystalSpear : Spear, VoidSpark.IReactToVoidFlux
             }
             this.throwModeFrames += 30;
             Pop();
-            if (BTWPlugin.meadowEnabled)
+            if (Plugin.meadowEnabled)
             {
                 MeadowCalls.BTWItems_PopCrystalSpear(this);
             }
@@ -50,11 +50,14 @@ public class CrystalSpear : Spear, VoidSpark.IReactToVoidFlux
     }
     public override void HitByWeapon(Weapon weapon)
     {
-        base.HitByWeapon(weapon);
         if (BTWFunc.Chance(0.35f) && !this.exploded)
 		{
 			Explode();
 		}
+        else
+        {
+            base.HitByWeapon(weapon);
+        }
     }
     public override bool HitSomething(SharedPhysics.CollisionResult result, bool eu) // From Scavenger Bomb
 	{
@@ -202,7 +205,7 @@ public class CrystalSpear : Spear, VoidSpark.IReactToVoidFlux
             {
                 killTagHolder = this.thrownBy?.abstractCreature,
                 source = this,
-                momentum = new Vector2(this.firstChunk.vel.x * (1 - this.throwDir.x) * 2, this.firstChunk.vel.y * (1 - this.throwDir.y) * 2)
+                momentum = this.firstChunk.vel / 4
             };
             if (this.thrownBy != null)
             {
@@ -233,7 +236,7 @@ public class CrystalSpear : Spear, VoidSpark.IReactToVoidFlux
 
 		if (this.Local())
 		{
-            VoidSpark spark = new(this.firstChunk.lastPos, 1.75f, BTWFunc.FrameRate)
+            VoidSpark spark = new(this.firstChunk.lastLastPos, 1.75f, BTWFunc.FrameRate)
             {
                 killTagHolder = this.thrownBy?.abstractCreature,
                 source = this,
@@ -290,15 +293,16 @@ public class CrystalSpear : Spear, VoidSpark.IReactToVoidFlux
                     spear.firstChunk.vel = BTWFunc.RandomCircleVector(20f);
                 }
 
-                BTWPlugin.Log($"BOOM ! [{this}] converted into [{spear}] with a reversed direction !");
+                Plugin.Log($"BOOM ! [{this}] converted into [{spear}] with a reversed direction !");
             }
             if (spearIssued != null)
             {
                 spark.sparedList.Add(spearIssued);
+                spark.momentum = spearIssued.firstChunk.vel / 2;
             }
 			this.room.AddObject( spark );
 
-            if (BTWPlugin.meadowEnabled)
+            if (Plugin.meadowEnabled)
             {
                 MeadowCalls.BTWItems_ExplodeCrystalSpear(this);
             }

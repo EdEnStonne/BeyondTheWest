@@ -94,7 +94,7 @@ public static class MeadowCalls
         if (MeadowFunc.ShouldHoldFireFromOnlineArenaTimer())
         {
             abstractEnergyCore.isMeadowArenaTimerCountdown = true;
-            BTWPlugin.Log(abstractEnergyCore.abstractPlayer +" In Timer !");
+            Plugin.Log(abstractEnergyCore.abstractPlayer +" In Timer !");
         }
         if (IsMine && abstractEnergyCore.isMeadow && !onlineCreature.TryGetData<OnlineAbstractCoreData>(out _))
         {
@@ -170,8 +170,8 @@ public static class MeadowCalls
     }
     public static void SparkMeadow_Init(StaticChargeManager staticChargeManager)
     {
-        bool IsMine = !BTWPlugin.meadowEnabled || staticChargeManager.AbstractPlayer.IsLocal();
-        bool IsMeadowLobby = BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowLobby();
+        bool IsMine = !Plugin.meadowEnabled || staticChargeManager.AbstractPlayer.IsLocal();
+        bool IsMeadowLobby = Plugin.meadowEnabled && MeadowFunc.IsMeadowLobby();
         OnlineCreature onlineCreature = SparkMeadow_OnlineCreature(staticChargeManager);
 
         staticChargeManager.particles = true;
@@ -198,7 +198,7 @@ public static class MeadowCalls
             {
                 // staticChargeManager.dischargeCooldown = 10;
                 staticChargeManager.isMeadowArenaTimerCountdown = true;
-                BTWPlugin.Log(staticChargeManager.AbstractPlayer + " In Timer !");
+                Plugin.Log(staticChargeManager.AbstractPlayer + " In Timer !");
             }
         }
         if (IsMine && staticChargeManager.isMeadow && !onlineCreature.TryGetData<OnlineStaticChargeManagerData>(out _))
@@ -350,13 +350,13 @@ public static class MeadowCalls
     public static void BTWArena_RPCAddItemSpawnerToRequested(OnlinePlayer onlinePlayer, ArenaItemSpawn itemSpawner)
     {
         if (itemSpawner?.room?.abstractRoom?.GetResource() is not RoomSession roomSession) { return; }
-        if (!roomSession.participants.Exists(x => x == onlinePlayer)) 
+        if (!roomSession.participants.Contains(onlinePlayer)) 
         { 
-            BTWPlugin.LogError($"Trying to ping [{onlinePlayer}] when they're not even in the room [{roomSession}] !");
+            Plugin.LogError($"Trying to ping [{onlinePlayer}] when they're not even in the room [{roomSession}] !");
             return; 
         }
 
-        onlinePlayer.InvokeRPC(MeadowRPCs.BTWArenaAddition_AddItemSpawn,
+        onlinePlayer.InvokeOnceRPC(MeadowRPCs.BTWArenaAddition_AddItemSpawn,
                 roomSession, itemSpawner.pos, (ushort)Mathf.Clamp(itemSpawner.spawnTime, 0, ushort.MaxValue),
                 (ushort)Mathf.Clamp(itemSpawner.spawnCount, 0, ushort.MaxValue), new OnlineObjectDataList(itemSpawner.objectList)
         );
@@ -378,9 +378,9 @@ public static class MeadowCalls
         if (arena.room == null) { return; }
         if (!MeadowFunc.IsMeadowArena(out var arenaOnline)) { return; }
         if (MeadowFunc.IsMeadowHost()) { return; }
-
-        RoomSession roomSession = arena.room.abstractRoom.GetResource();
-        if (roomSession == null) { return; }
+        
+        if (arena?.room?.abstractRoom?.GetResource() is not RoomSession roomSession) { return; }
+        if (!roomSession.participants.Contains(arenaOnline.currentLobbyOwner)) { return; }
 
         arenaOnline.currentLobbyOwner.InvokeRPC(MeadowRPCs.BTWArenaAddition_RequestAllItemSpawn,
                 roomSession

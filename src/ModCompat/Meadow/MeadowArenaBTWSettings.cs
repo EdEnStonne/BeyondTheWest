@@ -102,9 +102,9 @@ public static class BTWMeadowArenaSettingsHooks
         }
         catch (Exception e)
         {
-            BTWPlugin.logger.LogError(e);
+            Plugin.logger.LogError(e);
         }
-        BTWPlugin.Log("BTWMeadowArenaSettingsHooks ApplyHooks Done !");
+        Plugin.Log("BTWMeadowArenaSettingsHooks ApplyHooks Done !");
     }
 
     private static void Player_InstantDeath(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
@@ -124,7 +124,7 @@ public static class BTWMeadowArenaSettingsHooks
 
     private static void ArenaDataHook()
     {
-        BTWPlugin.Log("Meadow BTW Arena Data starts");
+        Plugin.Log("Meadow BTW Arena Data starts");
         try
         {
             new Hook(typeof(Lobby).GetMethod("ActivateImpl", BindingFlags.NonPublic | BindingFlags.Instance), (Action<Lobby> orig, Lobby self) =>
@@ -135,13 +135,13 @@ public static class BTWMeadowArenaSettingsHooks
                     OnlineManager.lobby.AddData(new Data.BTWArenaLobbyRessourceData());
                 }
             });
-            BTWPlugin.Log("Meadow hook ended");
+            Plugin.Log("Meadow hook ended");
         }
         catch (Exception ex)
         {
-            BTWPlugin.logger.LogError(ex);
+            Plugin.logger.LogError(ex);
         }
-        BTWPlugin.Log("Meadow BTW Arena Data ends");
+        Plugin.Log("Meadow BTW Arena Data ends");
     }
     private static void OnlineSlugcatAbilitiesInterface_AddAllSettings(Action<OnlineSlugcatAbilitiesInterface, string> orig, OnlineSlugcatAbilitiesInterface self, string painCatName)
     {
