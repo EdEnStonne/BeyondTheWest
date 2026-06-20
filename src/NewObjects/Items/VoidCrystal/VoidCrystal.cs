@@ -173,13 +173,14 @@ public class VoidCrystal : Weapon, VoidSpark.IReactToVoidFlux
 		{
 			if (this.floorBounceFrames == 0)
 			{
-				this.Explode();
 				this.target = creature;
+				this.Explode();
 			}
 			else
 			{
 				this.InitExplosion();
-				this.explodeCounter.value += (int)(this.explodeCounter.max * 0.5f);
+				this.target = creature;
+				this.explodeCounter.value = Mathf.Max(this.explodeCounter.value, this.explodeCounter.max - 20);
 			}
 		}
 		else
@@ -222,7 +223,7 @@ public class VoidCrystal : Weapon, VoidSpark.IReactToVoidFlux
 		{
 			if (BTWFunc.Chance(0.65f))
 			{
-				while (this.AVC.containedVoidEnergy > 0)
+				while (this.AVC.containedVoidEnergy > 0.25f)
 				{
 					float energyDispensed = Mathf.Min(this.AVC.containedVoidEnergy, BTWFunc.Random(0.75f, 1.25f));
 					this.room.AddObject( new VoidSpark( this.firstChunk.pos , energyDispensed, (int)Mathf.Clamp(80 * 1f / energyDispensed, 10, 200) )

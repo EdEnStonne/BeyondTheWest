@@ -59,6 +59,7 @@ public class BTWMeadowArenaSettings
     // public int Core_AntiGravityCent = BTWRemix.MeadowCoreAntiGravityCent.Value;
     // public int Core_OxygenEnergyUsage = BTWRemix.MeadowCoreOxygenEnergyUsage.Value;
     public bool Core_Shockwave = BTWRemix.MeadowCoreShockwave.Value;
+    public bool Core_CellCollsion = BTWRemix.MeadowCoreCellCollsion.Value;
     
     // Spark
     // public int Spark_MaxCharge = BTWRemix.MeadowSparkMaxCharge.Value;

@@ -16,9 +16,23 @@ public class SparkFunc
         StaticChargeBatteryUIHooks.ApplyHooks();
 
         On.Player.ctor += Player_Electric_Charge_Init;
+        On.PlayerGraphics.ctor += PlayerGraphics_ctor_MakeSparkCuter;
         On.Player.ThrownSpear += Player_Spear_Elec_Modifier;
         IL.Player.UpdateBodyMode += Player_SparkCrawlSpeed;
         BTWPlugin.Log("SparkFunc ApplyHooks Done !");
+    }
+
+    private static void PlayerGraphics_ctor_MakeSparkCuter(On.PlayerGraphics.orig_ctor orig, PlayerGraphics self, PhysicalObject ow)
+    {
+        orig(self, ow);
+        if (IsSpark(self.player))
+        {
+            for (int i = 0; i < self.tail.Length; i++)
+            {
+                self.tail[i].rad *= 1.3f;
+                self.tail[i].connectionRad *= 0.7f;
+            }
+        }
     }
 
     public static bool IsSpark(Player player)

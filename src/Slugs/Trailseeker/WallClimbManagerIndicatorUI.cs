@@ -102,17 +102,7 @@ public class WallClimbManagerIndicatorUI : UpdatableAndDeletable, IDrawable
 
     //-------------- Variables
     public WallClimbManager WCM;
-    public Vector2 SpriteHeadPos
-    {
-        get
-        {
-            if (this.WCM != null && this.WCM.RealizedPlayer != null && BTWSkins.cwtPlayerSpriteInfo.TryGetValue(this.WCM.abstractPlayer, out var psl))
-            {
-                return psl[3].GetPosition();
-            }
-            return Vector2.negativeInfinity;
-        }
-    }
+    public Vector2 SpriteHeadPos => WCM.abstractPlayer?.realizedCreature?.bodyChunks[0]?.pos ?? Vector2.negativeInfinity;
     public int MaxShowPoleIconFrames = 200;
     public int showPoleIcon = 0;
     public float scale = 0.5f;

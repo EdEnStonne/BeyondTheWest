@@ -213,6 +213,9 @@ public class BTWRemix : OptionInterface
     public static Configurable<bool> MeadowCoreShockwave = instance.config.Bind("MeadowCoreShockwave", true,
         new ConfigurableInfo("Change if the Core will do a shockwave when charging a leap for too long. Default: true.")
     );
+    public static Configurable<bool> MeadowCoreCellCollsion = instance.config.Bind("MeadowCoreCellCollsion", true,
+        new ConfigurableInfo("Change if the Core's cell can be hit by weapon. Default: true.")
+    );
     
     // public static Configurable<int> MeadowSparkMaxCharge = instance.config.Bind("MeadowSparkMaxCharge", 100, 
     //     new ConfigurableInfo("The \"maximum\" charge of the Spark. Going above it will Overcharge the Spark. Default: 100c.",

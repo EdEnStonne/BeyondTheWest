@@ -8,71 +8,18 @@ using System.Collections.Generic;
 using ObjectType = AbstractPhysicalObject.AbstractObjectType;
 
 namespace BeyondTheWest.MeadowCompat.Data;
-public struct OnlineObjectData : ICustomSerializable
-{
-    public static OnlineObjectData DataToOnline(ObjectData objectData)
-    {
-        return new(objectData);
-    }
-    public static List<OnlineObjectData> DataToOnline(List<ObjectData> objectList)
-    {
-        List<OnlineObjectData> onlineObjectList = new();
-        foreach (ObjectData objectData in objectList)
-        {
-            onlineObjectList.Add( DataToOnline(objectData) );
-        }
-        return onlineObjectList;
-    }
-    public static ObjectData OnlineToData(OnlineObjectData onlineObjectData)
-    {
-        return new(onlineObjectData.objectType, onlineObjectData.intData);
-    }
-    public static List<ObjectData> OnlineToData(List<OnlineObjectData> onlineObjectList)
-    {
-        List<ObjectData> objectList = new();
-        foreach (OnlineObjectData onlineObjectData in onlineObjectList)
-        {
-            objectList.Add( OnlineToData(onlineObjectData) );
-        }
-        return objectList;
-    }
-
-    public ObjectType objectType = ObjectType.Rock;
-    public byte intData = 0;
-
-    public OnlineObjectData() { }
-    public OnlineObjectData(ObjectType objectType)
-    {
-        this.objectType = objectType;
-    }
-    public OnlineObjectData(ObjectType objectType, int intData) : this(objectType)
-    {
-        this.intData = (byte)Mathf.Clamp(intData, byte.MinValue, byte.MaxValue);
-    }
-    public OnlineObjectData(ObjectData objectData)
-    {
-        this.intData = (byte)Mathf.Clamp(objectData.intData, byte.MinValue, byte.MaxValue);
-        this.objectType = objectData.objectType;
-    }
-
-    public void CustomSerialize(Serializer serializer)
-    {
-        serializer.Serialize(ref this.intData);
-        serializer.SerializeExtEnum(ref this.objectType);
-    }
-}
 
 public struct OnlineObjectDataList : ICustomSerializable // thanks invalidunits
 {
     public ObjectData[] objectList = {};
-    public uint len = 0;
+    public byte len = 0;
 
     public OnlineObjectDataList() { }
 
     public OnlineObjectDataList(List<ObjectData> objectDatas)
     {
         this.objectList = objectDatas.ToArray();
-        this.len = (uint)objectDatas.Count;
+        this.len = (byte)objectDatas.Count;
     }
 
     public void CustomSerialize(Serializer serializer)
@@ -99,5 +46,36 @@ public struct OnlineObjectDataList : ICustomSerializable // thanks invalidunits
                  objectList[i] = data;
              }
         }
+    }
+    
+    //-------- To make it pass in a State
+    public override readonly bool Equals(object obj)
+    {
+        return obj is OnlineObjectDataList onlineObjectDataList && this == onlineObjectDataList;
+    }
+    public static bool operator ==(OnlineObjectDataList left, OnlineObjectDataList right)
+    {
+        if (left.len == right.len)
+        {
+            for (int i = 0; i < left.objectList.Length; i++)
+            {
+                if (left.objectList[i] != right.objectList[i]) return false;
+            }
+            return true;
+        }
+        return false;
+    }
+    public static bool operator !=(OnlineObjectDataList left, OnlineObjectDataList right)
+    {
+        return !(left == right);
+    }
+    public override int GetHashCode()
+    {
+        int hash = 0;
+        for (int i = 0; i < this.objectList.Length; i++)
+        {
+            hash += objectList.GetHashCode();
+        }
+        return this.len.GetHashCode() * hash;
     }
 }

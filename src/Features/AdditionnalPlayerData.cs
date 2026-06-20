@@ -28,7 +28,7 @@ public class BTWPlayerData : AdditionnalTechManager<BTWPlayerData>
             MeadowCalls.BTWPlayerData_Init(this);
         }
     }
-
+    
     public override void Update()
     {
         base.Update();
@@ -51,15 +51,19 @@ public class BTWPlayerData : AdditionnalTechManager<BTWPlayerData>
             {
                 dangerGraspLastSpecButton = false;
             }
-
-            if (player.rollDirection == 0 
-                && !(player.isSlugpup && player.playerState.isPup)
-                && player.bodyChunkConnections[0].distance == 17f
-                && slugHeight != 17f)
+            
+            if (player.stun == 0)
             {
-                player.bodyChunkConnections[0].distance = slugHeight;
+                bool pup = player.isSlugpup && player.playerState.isPup;
+                if (pup ? slugPupHeight != defaultPupSize : slugHeight != defaultSize)
+                {
+                    player.bodyChunkConnections[0].distance *= 
+                        (player.isSlugpup && player.playerState.isPup) 
+                        ? SlugPupHeightRatio
+                        : SlugHeightRatio;
+                }
             }
-
+            
             if (this.dizzy > 0)
             {
                 this.dizzy--;
@@ -94,12 +98,28 @@ public class BTWPlayerData : AdditionnalTechManager<BTWPlayerData>
     public bool isSuperLaunchJump = false;
     public bool dangerGraspLastSpecButton = false;
     public Player.InputPackage dangerGraspCurrentInput = new();
-    public float slugHeight = 17f;
+    public float slugHeight = defaultSize;
+    public float SlugHeightRatio
+    {
+        get => slugHeight / defaultSize;
+        set => slugHeight = defaultSize * value;
+    }
+    public float slugPupHeight = defaultPupSize;
+    public float SlugPupHeightRatio
+    {
+        get => slugPupHeight / defaultPupSize;
+        set => slugPupHeight = defaultPupSize * value;
+    }
+    public const float defaultSize = 17f;
+    public const float defaultPupSize = 12f;
     public bool local = true;
     public int dizzy = 0;
     public int exhausted = 0;
     public List<SporeCloud> sporecloudsHit = new();
     public int onlineBlind = 0;
+    public Vector2 bodySpritePos;
+    public Vector2 hipsSpritePos;
+    public Vector2 headSpritePos;
 }
 public static class BTWPlayerDataHooks
 {
@@ -110,7 +130,19 @@ public static class BTWPlayerDataHooks
         On.Player.Jump += Player_BTWPlayerData_OnJump;
         On.Player.ThrownSpear += Player_SpearingExhaust;
         IL.Player.ThrowObject += Player_WeaponExhaust;
+        On.PlayerGraphics.DrawSprites += PlayerGraphics_DrawSprites_GetBodySpritePos;
         BTWPlugin.Log("BTWPlayerDataHooks ApplyHooks Done !");
+    }
+
+    private static void PlayerGraphics_DrawSprites_GetBodySpritePos(On.PlayerGraphics.orig_DrawSprites orig, PlayerGraphics self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
+    {
+        orig(self, sLeaser, rCam, timeStacker, camPos);
+        if (self.player.GetBTWPlayerData() is BTWPlayerData bTWPlayerData)
+        {
+            bTWPlayerData.bodySpritePos = sLeaser.sprites[0].GetPosition();
+            bTWPlayerData.hipsSpritePos = sLeaser.sprites[1].GetPosition();
+            bTWPlayerData.headSpritePos = sLeaser.sprites[3].GetPosition();
+        }
     }
 
     public static bool IsExhausted(bool orig, Player player)

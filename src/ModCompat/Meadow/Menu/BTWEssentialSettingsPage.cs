@@ -16,6 +16,7 @@ public class BTWEssentialSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
 {
     public const string TS_EVERYONECANPOLETECH = "BTW_TR_EPT";
     public const string CO_SHOCKWAVE = "BTW_CO_SHW";
+    public const string CO_CELLCOLISION = "BTW_CO_COL";
     public const string SP_DODISCHARGEDAMAGE = "BTW_SP_DDD";
     public const string SP_RISKYOVERCHARGE = "BTW_SP_ROC";
     public const string SP_DEADLYOVERCHARGE = "BTW_SP_DOC";
@@ -30,12 +31,12 @@ public class BTWEssentialSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         Core_MaxLeap_Label, 
         Spark_MaxElectricBounce_Label;
     public RestorableCheckbox TrailSeeker_EveryoneCanPoleTech_CheckBox,
-        Core_Shockwave_CheckBox, 
+        Core_Shockwave_CheckBox, Core_CellCollsion_CheckBox, 
         Spark_DoDischargeDamage_CheckBox, Spark_RiskyOvercharge_CheckBox, Spark_DeadlyOvercharge_CheckBox;
 
     public SimpleButton backButton, resetButton;
 
-    public override string Name => "BTW Essential Settings"; //this will appear on Select Settings Page
+    public override string Name => "BTW Settings"; //this will appear on Select Settings Page
 
     public BTWEssentialSettingsPage(global::Menu.Menu menu, MenuObject owner, Vector2 spacing, float textSpacing = 300) : base(menu, owner)
     {
@@ -103,13 +104,17 @@ public class BTWEssentialSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         // Shockwave
         CreateCheckBox(ref Core_Shockwave_CheckBox, BTWRemix.MeadowCoreShockwave,
             "Shockwave Enabled:", CO_SHOCKWAVE, 5);
+
+        // Collision
+        CreateCheckBox(ref Core_CellCollsion_CheckBox, BTWRemix.MeadowCoreCellCollsion,
+            "Cell weapon deflect:", CO_CELLCOLISION, 6);
         
         //--------------------- Spark
-        CreateTitle(ref Spark_Title, "The Spark", 6);
+        CreateTitle(ref Spark_Title, "The Spark", 7);
 
         // MaxElectricBounce
         CreateIntTextBox(ref Spark_MaxElectricBounce_TextBox, ref Spark_MaxElectricBounce_Label,
-            BTWRemix.MeadowSparkMaxElectricBounce, "Electric Bounces:", 7);
+            BTWRemix.MeadowSparkMaxElectricBounce, "Electric Bounces:", 8);
 
         Spark_MaxElectricBounce_TextBox.OnValueUpdate += (UIconfig config, string value, string lastValue) =>
         {
@@ -120,22 +125,22 @@ public class BTWEssentialSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
 
         // DoDischargeDamage
         CreateCheckBox(ref Spark_DoDischargeDamage_CheckBox, BTWRemix.MeadowSparkDoDischargeDamage,
-            "Enable Discharge Damage:", SP_DODISCHARGEDAMAGE, 8);
+            "Enable Discharge Damage:", SP_DODISCHARGEDAMAGE, 9);
 
         // RiskyOvercharge
         CreateCheckBox(ref Spark_RiskyOvercharge_CheckBox, BTWRemix.MeadowSparkRiskyOvercharge,
-            "Risky Overcharge:", SP_RISKYOVERCHARGE, 9);
+            "Risky Overcharge:", SP_RISKYOVERCHARGE, 10);
 
         // DeadlyOvercharge
         CreateCheckBox(ref Spark_DeadlyOvercharge_CheckBox, BTWRemix.MeadowSparkDeadlyOvercharge,
-            "Deadly Surcharge:", SP_DEADLYOVERCHARGE, 10);
+            "Deadly Surcharge:", SP_DEADLYOVERCHARGE, 11);
 
 
         this.SafeAddSubobjects(
             tabWrapper,
             TrailSeeker_Title, Core_Title, Spark_Title,
             TrailSeeker_EveryoneCanPoleTech_CheckBox,
-            Core_Shockwave_CheckBox,
+            Core_Shockwave_CheckBox, Core_CellCollsion_CheckBox,
             Spark_DoDischargeDamage_CheckBox, Spark_RiskyOvercharge_CheckBox, Spark_DeadlyOvercharge_CheckBox,
             Trailseeker_WallGripTimer_Label,
             Core_MaxLeap_Label,
@@ -153,6 +158,7 @@ public class BTWEssentialSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
 
         BTWRemix.MeadowCoreMaxLeap.Value = this.Core_MaxLeap_TextBox.valueInt;
         BTWRemix.MeadowCoreShockwave.Value = this.Core_Shockwave_CheckBox.Checked;
+        BTWRemix.MeadowCoreCellCollsion.Value = this.Core_CellCollsion_CheckBox.Checked;
 
         BTWRemix.MeadowSparkMaxElectricBounce.Value = this.Spark_MaxElectricBounce_TextBox.valueInt;
         BTWRemix.MeadowSparkDoDischargeDamage.Value = this.Spark_DoDischargeDamage_CheckBox.Checked;
@@ -201,6 +207,7 @@ public class BTWEssentialSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
             
             this.Core_MaxLeap_TextBox.valueInt = ValueConverter.ConvertToValue<int>(BTWRemix.MeadowCoreMaxLeap.defaultValue);
             this.Core_Shockwave_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowCoreShockwave.defaultValue);
+            this.Core_CellCollsion_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowCoreCellCollsion.defaultValue);
             
             this.Spark_MaxElectricBounce_TextBox.valueInt = ValueConverter.ConvertToValue<int>(BTWRemix.MeadowSparkMaxElectricBounce.defaultValue);
             this.Spark_DoDischargeDamage_CheckBox.Checked = ValueConverter.ConvertToValue<bool>(BTWRemix.MeadowSparkDoDischargeDamage.defaultValue);
@@ -257,6 +264,7 @@ public class BTWEssentialSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         {
             if (id == TS_EVERYONECANPOLETECH) return settings.Trailseeker_EveryoneCanPoleTech;
             if (id == CO_SHOCKWAVE) return settings.Core_Shockwave;
+            if (id == CO_CELLCOLISION) return settings.Core_CellCollsion;
             if (id == SP_DODISCHARGEDAMAGE) return settings.Spark_DoDischargeDamage;
             if (id == SP_RISKYOVERCHARGE) return settings.Spark_RiskyOvercharge;
             if (id == SP_DEADLYOVERCHARGE) return settings.Spark_DeadlyOvercharge;
@@ -270,6 +278,7 @@ public class BTWEssentialSettingsPage : SettingsPage, CheckBox.IOwnCheckBox
         string id = box.IDString;
         if (id == TS_EVERYONECANPOLETECH) {settings.Trailseeker_EveryoneCanPoleTech = c;}
         else if (id == CO_SHOCKWAVE) {settings.Core_Shockwave = c;}
+        else if (id == CO_CELLCOLISION) {settings.Core_CellCollsion = c;}
         else if (id == SP_DODISCHARGEDAMAGE) {settings.Spark_DoDischargeDamage = c;}
         else if (id == SP_RISKYOVERCHARGE) {settings.Spark_RiskyOvercharge = c;}
         else if (id == SP_DEADLYOVERCHARGE) {settings.Spark_DeadlyOvercharge = c;}

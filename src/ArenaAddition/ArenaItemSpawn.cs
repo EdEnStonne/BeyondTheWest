@@ -12,6 +12,7 @@ using ObjectType = AbstractPhysicalObject.AbstractObjectType;
 using MItemData = PlacedObject.MultiplayerItemData;
 using BepInEx;
 using BeyondTheWest.Items;
+using RainMeadow;
 
 namespace BeyondTheWest.ArenaAddition;
 public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
@@ -72,34 +73,33 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
     public static ObjectDataPool othersPool = new();
     public static ObjectDataPool allPool = new();
 
-    public ArenaItemSpawn(Vector2 position, int spawnTime, List<ObjectData> objectList, bool notifyMeadow = true, bool isFake = false)
+    public ArenaItemSpawn(Vector2 position, int spawnTime, List<ObjectData> objectList, bool isFake = false)
     {
         this.pos = position;
         this.spawnTime = spawnTime;
         this.objectList = objectList;
         this.isFake = isFake;
-        this.notifyMeadow = notifyMeadow;
         if (this.room != null)
         {
             Init();
         }
     }
-    public ArenaItemSpawn(Vector2 position, int spawnTime, ObjectType objectType, int intdata = 0, bool notifyMeadow = true)
-        : this(position, spawnTime, new List<ObjectData>{ new(objectType, intdata) }, notifyMeadow) {}
-    public ArenaItemSpawn(Vector2 position, List<ObjectData> objectList, bool notifyMeadow = true)
-        : this(position, (int)(3 * BTWFunc.FrameRate + BTWFunc.Random(7 * BTWFunc.FrameRate)), objectList, notifyMeadow) {}
-    public ArenaItemSpawn(Vector2 position, ObjectType objectType, int intdata = 0, bool notifyMeadow = true)
-        : this(position, new List<ObjectData>{ new(objectType, intdata) }, notifyMeadow) {}
-    public ArenaItemSpawn(Vector2 position, bool notifyMeadow = true)
-        : this(position, ObjectType.Rock, 0, notifyMeadow) {}
+    public ArenaItemSpawn(Vector2 position, int spawnTime, ObjectType objectType, int intdata = 0, bool isFake = false)
+        : this(position, spawnTime, new List<ObjectData>{ new(objectType, intdata) }, isFake) {}
+    public ArenaItemSpawn(Vector2 position, List<ObjectData> objectList, bool isFake = false)
+        : this(position, (int)(3 * BTWFunc.FrameRate + BTWFunc.Random(7 * BTWFunc.FrameRate)), objectList, isFake) {}
+    public ArenaItemSpawn(Vector2 position, ObjectType objectType, int intdata = 0, bool isFake = false)
+        : this(position, new List<ObjectData>{ new(objectType, intdata) }, isFake) {}
+    public ArenaItemSpawn(Vector2 position, bool isFake = false)
+        : this(position, ObjectType.Rock, 0, isFake) {}
     
     public void Init()
     {
         if (!this.isMeadowInit && this.room != null)
         {
-            if (BTWPlugin.meadowEnabled && this.notifyMeadow && !this.isFake)
+            if (BTWPlugin.meadowEnabled && !this.isFake)
             {
-                MeadowCalls.BTWArena_RPCAddItemSpawnerToAllInRoom(this);
+                MeadowCalls.BTWArena_ArenaItemSpawnEnterRoom(this);
             }
             else
             {
@@ -111,6 +111,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
     {
         if (this.room != null)
         {
+            this.spawnCount = this.spawnTime;
             World world = this.room.world;
             WorldCoordinate coords = this.room.GetWorldCoordinate(this.pos);
             BTWPlugin.Log($"Spawning items at [{pos}]/[{coords}] !");
@@ -270,7 +271,7 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
             {
                 this.spawnCount++;
                 var radiusCheck = BTWFunc.GetAllCreatureInRadius(this.room, this.pos, 20f);
-                int i = radiusCheck.FindIndex(x => x.physicalObject is Player);
+                int i = radiusCheck.FindIndex(x => x.physicalObject is Player player);
                 if (i != -1)
                 {
                     // BTWPlugin.Log($"Player [{radiusCheck[i].physicalObject}] found near : <{radiusCheck[i].distance}> unit ! Spawn was accelerated !");
@@ -282,12 +283,16 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
                 }
                 if (this.spawnCount == this.spawnTime || (this.forceSpawnCount.ended && i != -1))
                 {
-                    if (this.forceSpawnCount.ended && i != -1) { BTWPlugin.Log($"Forced Spawn event ! Triggered by [{radiusCheck[i].physicalObject}] at dist <{radiusCheck[i].distance}>"); }
+                    if (this.forceSpawnCount.ended && i != -1) { BTWPlugin.Log($"Forced Spawn event at <{this.pos}><{this.isFake}> ! Triggered by [{radiusCheck[i].physicalObject}] at dist <{radiusCheck[i].distance}>"); }
                     this.spawnCount = this.spawnTime;
                     this.room.PlaySound(SoundID.HUD_Pause_Game, this.pos, 0.35f, 0.65f + BTWFunc.random * 0.25f);
                     if (!this.isFake)
                     {
                         SpawnItems();
+                    }
+                    else if (BTWPlugin.meadowEnabled && this.forceSpawnCount.ended && i != -1 && (radiusCheck[i].physicalObject as Player).Local())
+                    {
+                        MeadowCalls.BTWArena_RPCArenaItemSpawnForceSpawning(this);
                     }
                 }
             }
@@ -311,6 +316,10 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
         if (itemSpawnManager != null)
         {
             itemSpawnManager.itemSpawns.Remove(this);
+        }
+        if (BTWPlugin.meadowEnabled && !this.isFake && this.isMeadowInit)
+        {
+            MeadowCalls.BTWArena_ArenaItemSpawnLeaveRoom(this);
         }
     }
 
@@ -415,11 +424,10 @@ public class ArenaItemSpawn : UpdatableAndDeletable, IDrawable
     public Vector2 pos;
 
     public bool isMeadowInit = false;
-    private bool notifyMeadow = true;
 
     public Color baseColor = Color.gray;
     public int spawnCount = 0;
-    private int destructionCount = 0;
+    public int destructionCount = 0;
     private int circlesAmount = 0;
     private Counter forceSpawnCount = new(30);
     

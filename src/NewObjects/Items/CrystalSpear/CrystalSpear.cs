@@ -50,11 +50,14 @@ public class CrystalSpear : Spear, VoidSpark.IReactToVoidFlux
     }
     public override void HitByWeapon(Weapon weapon)
     {
-        base.HitByWeapon(weapon);
         if (BTWFunc.Chance(0.35f) && !this.exploded)
 		{
 			Explode();
 		}
+        else
+        {
+            base.HitByWeapon(weapon);
+        }
     }
     public override bool HitSomething(SharedPhysics.CollisionResult result, bool eu) // From Scavenger Bomb
 	{
@@ -81,7 +84,6 @@ public class CrystalSpear : Spear, VoidSpark.IReactToVoidFlux
         if (this.mode == Mode.Thrown && direction == this.throwDir)
         {
             this.Explode();
-            this.Destroy();
         }
     }
 
@@ -190,7 +192,7 @@ public class CrystalSpear : Spear, VoidSpark.IReactToVoidFlux
 
     public void Pop(Vector2 pos = default)
     {
-        if (pos == default) { pos = this.firstChunk.pos; }
+        if (pos != default) { this.firstChunk.pos = pos; }
 		this.room.AddObject(new ShockWave(this.firstChunk.pos, 60f, 0.045f, 5, false));
         this.room.PlaySound(SoundID.Fire_Spear_Pop, this.firstChunk, false, 0.8f, BTWFunc.Random(1.8f, 1.9f));
         VoidSpark.MakeDraggedSparks(this.room, 40f, this.firstChunk.pos, 
@@ -202,7 +204,7 @@ public class CrystalSpear : Spear, VoidSpark.IReactToVoidFlux
             {
                 killTagHolder = this.thrownBy?.abstractCreature,
                 source = this,
-                momentum = new Vector2(this.firstChunk.vel.x * (1 - this.throwDir.x) * 2, this.firstChunk.vel.y * (1 - this.throwDir.y) * 2)
+                momentum =  this.firstChunk.vel / 4
             };
             if (this.thrownBy != null)
             {
@@ -233,7 +235,7 @@ public class CrystalSpear : Spear, VoidSpark.IReactToVoidFlux
 
 		if (this.Local())
 		{
-            VoidSpark spark = new(this.firstChunk.lastPos, 1.75f, BTWFunc.FrameRate)
+            VoidSpark spark = new(this.firstChunk.lastLastPos, 1.75f, BTWFunc.FrameRate)
             {
                 killTagHolder = this.thrownBy?.abstractCreature,
                 source = this,
@@ -278,7 +280,7 @@ public class CrystalSpear : Spear, VoidSpark.IReactToVoidFlux
                     spear.thrownPos = this.firstChunk.lastPos;
                     spear.floorBounceFrames = 20;
                     spear.throwDir = new IntVector2(-this.throwDir.x, -this.throwDir.y);
-                    spear.throwModeFrames = Mathf.Max(this.throwModeFrames, 60);
+                    spear.throwModeFrames = Mathf.Max(this.throwModeFrames + 20, 60);
                     spear.overrideExitThrownSpeed = 12f;
 
                     spear.firstChunk.vel = new Vector2(
@@ -295,6 +297,7 @@ public class CrystalSpear : Spear, VoidSpark.IReactToVoidFlux
             if (spearIssued != null)
             {
                 spark.sparedList.Add(spearIssued);
+                spark.momentum = spearIssued.firstChunk.vel / 2;
             }
 			this.room.AddObject( spark );
 

@@ -36,6 +36,8 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
         // public int CO_OxygenEnergyUsage;
         [OnlineField(group = "Core")]
         public bool CO_Shockwave;
+        [OnlineField(group = "Core")]
+        public bool CO_CellCollsion;
 
         // Group: Spark
         // [OnlineField(group = "Spark")]            
@@ -134,6 +136,7 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
             this.CO_MaxLeap = arenaSettings.Core_MaxLeap;
             // this.CO_AntiGravityCent = arenaSettings.Core_AntiGravityCent;
             this.CO_Shockwave = arenaSettings.Core_Shockwave;
+            this.CO_CellCollsion = arenaSettings.Core_CellCollsion;
 
             // this.SP_AdditionnalOvercharge = arenaSettings.Spark_AdditionnalOvercharge;
             // this.SP_ChargeRegenerationMult = arenaSettings.Spark_ChargeRegenerationMult;
@@ -194,6 +197,7 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
                 // arenaSettings.Core_AntiGravityCent = this.CO_AntiGravityCent;
                 arenaSettings.Core_MaxLeap = this.CO_MaxLeap;
                 arenaSettings.Core_Shockwave = this.CO_Shockwave;
+                arenaSettings.Core_CellCollsion = this.CO_CellCollsion;
 
                 // arenaSettings.Spark_AdditionnalOvercharge = this.SP_AdditionnalOvercharge;
                 // arenaSettings.Spark_ChargeRegenerationMult = this.SP_ChargeRegenerationMult;

@@ -37,7 +37,6 @@ public partial class StockArenaMode : ExternalArenaGameMode
         {
             return StockArenaModeID; 
         }
-        set { GetGameModeId = value; }
     }
 
     public bool IsPlayerReviving(ArenaGameSession arenaGame, AbstractCreature abstractPlayer)
@@ -64,19 +63,22 @@ public partial class StockArenaMode : ExternalArenaGameMode
     public override bool IsExitsOpen(ArenaMode arena, On.ArenaBehaviors.ExitManager.orig_ExitsOpen orig, ExitManager self)
     {
         // For next Meadow Update I suppose
-        // if (self.gameSession.GameTypeSetup.denEntryRule == ArenaSetup.GameTypeSetup.DenEntryRule.Always)
-        // {
-        //     return true;
-        // }
+        if (self.gameSession.GameTypeSetup.denEntryRule == ArenaSetup.GameTypeSetup.DenEntryRule.Always)
+        {
+            return true;
+        }
 
-        // if (self.gameSession.GameTypeSetup.denEntryRule == ArenaSetup.GameTypeSetup.DenEntryRule.Score)
-        // {
-        //     return orig(self) || (self.gameSession?.arenaSitting?.players?.Any(p => p?.score >= arena.denScore) ?? false);
-        // }
+        if (self.gameSession.GameTypeSetup.denEntryRule == ArenaSetup.GameTypeSetup.DenEntryRule.Score)
+        {
+            return orig(self) || (self.gameSession?.arenaSitting?.players?.Any(p => p?.score >= arena.denScore) ?? false);
+        }
 
         int playersStillStanding = self.gameSession.Players?.Count(player =>
-            (player.realizedCreature != null && player.realizedCreature.State.alive)
-            || IsPlayerReviving(self?.gameSession, player)) ?? 0;
+            player.realizedCreature != null && player.realizedCreature.State.alive)
+                + (self.gameSession.game.world.rainCycle.TimeUntilRain > rainTimerToSuddentDeath 
+                    ? ArenaLives.AdditionalPlayerInArenaCount(self.gameSession) 
+                    : 0) 
+            ?? 0;
 
         if (playersStillStanding == 1 && arena.arenaSittingOnlineOrder.Count > 1 && !arena.countdownInitiatedHoldFire)
         {
@@ -86,53 +88,6 @@ public partial class StockArenaMode : ExternalArenaGameMode
         if (self.world.rainCycle.TimeUntilRain <= 100)
         {
             return true;
-        }
-
-        if (this.isTeamBattle && playersStillStanding > 1 && arena.setupTime == 0) // taken from team battle
-        {
-            HashSet<int> aliveTeams = new HashSet<int>();
-            if (self.gameSession.Players != null)
-            {
-                foreach (var acPlayer in self.gameSession.Players)
-                {
-                    if (acPlayer != null)
-                    {
-                        OnlinePhysicalObject onlineP = acPlayer.GetOnlineObject();
-                        if (onlineP != null)
-                        {
-                            bool gotPlayerTeam = OnlineManager.lobby.clientSettings.TryGetValue(
-                                onlineP.owner,
-                                out var onlineClientP
-                            );
-                            if (gotPlayerTeam)
-                            {
-                                onlineClientP.TryGetData<ArenaTeamClientSettings>(
-                                    out var playerTeam
-                                );
-                                if (gotPlayerTeam)
-                                {
-                                    if (acPlayer.realizedCreature != null)
-                                    {
-                                        if (acPlayer.realizedCreature.State.alive || IsPlayerReviving(self?.gameSession, acPlayer)) // THIS is the only line changed. GOD.
-                                        {
-                                            aliveTeams.Add(playerTeam.team);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                if (aliveTeams.Count == 1)
-                {
-                    if (self.gameSession.game.world.rainCycle.speedUpToRain == false)
-                    {
-                        RainMeadow.RainMeadow.Debug("Team Stock Battle: Adding rain");
-                        self.gameSession.game.world.rainCycle.ArenaEndSessionRain();
-                    }
-                    return true;
-                }
-            }
         }
 
         return orig(self);
@@ -440,10 +395,10 @@ public static class StockArenaModeHook
         {
             if (stockArenaMode.LivesDefaultAmount > 0 
                 && self.room != null 
-                && !ArenaLives.TryGetLives(abstractCreature, out _))
+                && !ArenaLives.TryGetLives(BTWFunc.GetPlayerArenaNumber(abstractCreature), out _))
             {
                 ArenaLives arenaLives = new(
-                    abstractCreature, 
+                    BTWFunc.GetPlayerArenaNumber(abstractCreature), 
                     arenaSettings.arenaStockClientSettings.lives,
                     stockArenaMode.reviveTime * BTWFunc.FrameRate,
                     stockArenaMode.additionalReviveTime * BTWFunc.FrameRate,

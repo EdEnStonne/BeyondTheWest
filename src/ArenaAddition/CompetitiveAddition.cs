@@ -41,12 +41,12 @@ public static class CompetitiveAddition
             }
             else if (Input.GetKey(KeyCode.LeftControl) && self.room.world.game.IsArenaSession && !IsMeadowArena)
             {
-                ArenaLives arenaLives = new(self.abstractCreature);
+                ArenaLives arenaLives = new(BTWFunc.GetPlayerArenaNumber(self.abstractCreature));
                 self.room.AddObject( arenaLives );
             }
             else if (Input.GetKey(KeyCode.LeftAlt) && self.room.world.game.IsArenaSession)
             {
-                ArenaItemSpawn arenaItemSpawn = new(self.mainBodyChunk.pos, ArenaItemSpawn.GetRandomTestList(), true);
+                ArenaItemSpawn arenaItemSpawn = new(self.mainBodyChunk.pos, ArenaItemSpawn.GetRandomTestList());
                 self.room.AddObject( arenaItemSpawn );
             }
             else

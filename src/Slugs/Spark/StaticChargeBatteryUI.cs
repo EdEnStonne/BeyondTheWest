@@ -121,13 +121,31 @@ public class StaticChargeBatteryUI : UpdatableAndDeletable, IDrawable
             {
                 sprite.x = pos.x + shakeFactor.x;
                 sprite.y = pos.y + shakeFactor.y;
-                sprite.alpha = 1f;
             }
-
+            int MaxCircles = Mathf.Min(3, this.SCM.MaxEBounce);
+            for (int i = 0; i < sLeaser.sprites.Length - MaxCircles; i++)
+            {
+                sLeaser.sprites[i].alpha = 1f;
+            }
+                
             SetBatteryBGSprite(sLeaser);
             SetBatteryChargeSprite(sLeaser, this.SCM.FullECharge > 0 ? this.SCM.Charge / this.SCM.FullECharge : 0);
             SetBatteryRechargeSprite(sLeaser, Mathf.Sqrt(this.SCM.ChargePerSecond / (this.SCM.FullECharge / 2)));
             SetBatteryOverchargeSprite(sLeaser, this.SCM.MaxECharge > 0 || this.SCM.endlessCharge > 0 ? OverChargeFactor : 0);
+            
+            bool displayCircles = this.SCM.MaxEBounce > this.SCM.eBounceLeft && this.SCM.eBounceLeft <= MaxBounceCircles;
+            float spacing = CircleSpacing/2f * (MaxCircles + 1);
+            for (int i = sLeaser.sprites.Length - MaxCircles; i < sLeaser.sprites.Length; i++)
+            {
+                int currentCircle = sLeaser.sprites.Length - i;
+                sLeaser.sprites[i].y += 12f;
+                sLeaser.sprites[i].x += -spacing + spacing * 2f * (currentCircle / (MaxCircles + 1f));
+                sLeaser.sprites[i].alpha = Mathf.Lerp(
+                    sLeaser.sprites[i].alpha,
+                    displayCircles ? (this.SCM.eBounceLeft >= currentCircle ? 1f : 0.2f) : 0f,
+                    0.1f
+                );
+            }
         }
         else
         {
@@ -140,7 +158,7 @@ public class StaticChargeBatteryUI : UpdatableAndDeletable, IDrawable
     }
     public void InitiateSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
     {
-        sLeaser.sprites = new FSprite[5];
+        sLeaser.sprites = new FSprite[5 + MaxBounceCircles];
 
         TriangleMesh BatteryOutline = new(
             "Futile_White",
@@ -261,22 +279,28 @@ public class StaticChargeBatteryUI : UpdatableAndDeletable, IDrawable
         BatteryRecharge.color = new Color(1f, 0.75f, 0.25f);
         sLeaser.sprites[4] = BatteryRecharge;
 
+        for (int i = sLeaser.sprites.Length - MaxBounceCircles; i < sLeaser.sprites.Length; i++)
+        {
+            sLeaser.sprites[i] = new FSprite("Futile_White", true)
+            {
+                shader = rCam.room.game.rainWorld.Shaders["VectorCircleFadable"],
+                color = Color.white,
+                alpha = 0f,
+                scale = 0.4f
+            };
+        }
+
         this.AddToContainer(sLeaser, rCam, null);
     }
 
     //-------------- Variables
     public StaticChargeManager SCM;
-    public Vector2 SpriteHeadPos
-    {
-        get
-        {
-            if (this.SCM != null && this.SCM.Player != null && BTWSkins.cwtPlayerSpriteInfo.TryGetValue(this.SCM.AbstractPlayer, out var psl))
-            {
-                return psl[3].GetPosition();
-            }
-            return Vector2.negativeInfinity;
-        }
-    }
+    public Vector2 SpriteHeadPos => 
+        (SCM.AbstractPlayer?.realizedCreature as Player)?.GetBTWPlayerData() is BTWPlayerData bTWPlayerData 
+        ? bTWPlayerData.headSpritePos 
+        : Vector2.negativeInfinity;
+    public const int MaxBounceCircles = 3;
+    public const float CircleSpacing = 8f;
 }
 
 public static class StaticChargeBatteryUIHooks

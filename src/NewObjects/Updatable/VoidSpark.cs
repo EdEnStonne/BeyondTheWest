@@ -142,12 +142,17 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
         {
             Room room = target.room;
             Vector2 position = GetPosition(target);
+            room.PlaySound(SoundID.Death_Lightning_Spark_Object, position, 0.2f, BTWFunc.Random(1.75f, 1.8f));
+		    room.ScreenMovement(position, direction, Mathf.Pow(damage/8f, 2f));
+
             if (target is Creature creature)
             {
-                BodyChunk chunk = creature.mainBodyChunk;
+                room.PlaySound(SoundID.Bomb_Explode, position, 0.15f, BTWFunc.Random(0.6f, 0.7f));
+                room.PlaySound(SoundID.Spear_Hit_Small_Creature, position, 0.65f, BTWFunc.Random(1.65f, 1.7f));
 
                 if (creature.Local())
                 {
+                    BodyChunk chunk = creature.mainBodyChunk;
                     float stun = damage * BTWFunc.FrameRate * 3;
                     if (killtagholder != null)
                     {
@@ -183,11 +188,11 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
                     }
                 }
                 
-                room.PlaySound(SoundID.Bomb_Explode, position, 0.15f, BTWFunc.Random(0.6f, 0.7f));
-                room.PlaySound(SoundID.Spear_Hit_Small_Creature, position, 0.65f, BTWFunc.Random(1.65f, 1.7f));
             }
             else if (target is PhysicalObject physicalObject)
             {
+                room.PlaySound(SoundID.Bomb_Explode, position, 0.2f, BTWFunc.Random(0.6f, 0.7f));
+
                 if (physicalObject.Local())
                 {
                     BTWFunc.CustomKnockback(physicalObject.firstChunk, direction, damage * 10f);
@@ -219,15 +224,9 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
                             energyCell.Use(true);
                         }
                     }
-                    room.PlaySound(SoundID.Bomb_Explode, position, 0.2f, BTWFunc.Random(0.6f, 0.7f));
                 }
             }
-            else
-            {
-                
-            }
-
-            room.PlaySound(SoundID.Death_Lightning_Spark_Object, position, 0.2f, BTWFunc.Random(1.75f, 1.8f));
+            
         }
     }
     public static VoidSpark FindSparkByID(Room room, int ID)
@@ -249,9 +248,11 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
 
     public VoidSpark(Vector2 position, float damage, int lifetime, bool fake = false) : base()
     {
+        this.initPos = position;
         this.position = position;
         this.lastPosition = position;
         this.damage = damage;
+        this.destructionTime = new((int)(BTWFunc.FrameRate * Mathf.Max(1, damage)));
         this.lifetime = new(lifetime)
         {
             value = lifetime
@@ -323,44 +324,37 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
         
         BTWPlugin.Log($"VoidSpark hit [{this.target}] for <{this.damage}> dmg !");
 
-        if (target.Local() && target is IReactToVoidFlux reactToVoidFlux)
+        if (target is IReactToVoidFlux reactToVoidFlux)
         {
             reactToVoidFlux.HitByVoidSpark(this);
         }
+
         HitSomethingWithVoidSpark(this.target, this.damage, this.direction, this.killTagHolder);
-        this.lifetime.value = 0;
-
-        if (!this.fake)
-        {
-            this.position = this.lastPosition;
-        }
-        if (ModManager.MSC && HasAPosition(this.target, out Vector2 targetPos))
-        {
-            this.lightingArc?.Destroy();
-            if (this.target is PhysicalObject targetPO)
-            {
-                this.lightingArc = new LightingArc(this.position, GetChunk(targetPO), 
-                    this.damage / 2f, 0.5f + Mathf.Log10(1 + this.damage), this.lifetime.value, this.color);
-            }
-            else
-            {
-                this.lightingArc = new LightingArc(this.position, targetPos, 
-                    this.damage / 2f, 0.5f + Mathf.Log10(1 + this.damage), this.lifetime.value, this.color);
-            }
-            this.room.AddObject(this.lightingArc);
-        }
-
-
         if (BTWPlugin.meadowEnabled && !this.fake)
         {
             MeadowCalls.BTWItems_VoidSparkHitSomething(this);
         }
 
-        this.Destroy();
+        // if (ModManager.MSC && HasAPosition(this.target, out Vector2 targetPos))
+        // {
+        //     this.lightingArc?.Destroy();
+        //     if (this.target is PhysicalObject targetPO)
+        //     {
+        //         this.lightingArc = new LightingArc(this.lastPosition, GetChunk(targetPO), 
+        //             Mathf.Log10(1 + this.damage), 0.5f + Mathf.Log10(1 + this.damage), this.lifetime.value, this.color);
+        //     }
+        //     else
+        //     {
+        //         this.lightingArc = new LightingArc(this.lastPosition, targetPos, 
+        //             Mathf.Log10(1 + this.damage), 0.5f + Mathf.Log10(1 + this.damage), this.lifetime.value, this.color);
+        //     }
+        //     this.room.AddObject(this.lightingArc);
+        // }
+        
+        StartDestruction();
     }
     public void HitWall()
     {
-        this.lifetime.value = 0;
         MakeDraggedSparks(this.room, 15f, this.position, (byte)BTWFunc.RandInt(12, 17), this.color, 0.2f);
         
         if (BTWPlugin.meadowEnabled && !this.fake)
@@ -368,18 +362,23 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
             MeadowCalls.BTWItems_VoidSparkExplode(this);
         }
 
-        this.Destroy();
+        StartDestruction();
     }
     public void Dissipate()
     {
-        this.lifetime.value = 0;
-        this.destructionTime.value = 1;
         MakeDraggedSparks(this.room, 7f, this.position, (byte)BTWFunc.RandInt(4, 7), this.color, 0.2f);
         
         if (BTWPlugin.meadowEnabled && !this.fake)
         {
             MeadowCalls.BTWItems_VoidSparkDissipate(this);
         }
+        
+        StartDestruction();
+    }
+    private void StartDestruction()
+    {
+        this.lifetime.value = 0;
+        this.destructionTime.value = 1;
     }
 
     public override void Update(bool eu)
@@ -397,7 +396,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
             {
                 if (BTWPlugin.meadowEnabled && !this.meadowInit)
                 {
-                MeadowCalls.BTWItems_VoidSparkEnterRoom(this);
+                    MeadowCalls.BTWItems_VoidSparkEnterRoom(this);
                 }
 
                 this.lastPosition = this.position;
@@ -417,6 +416,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
 
                 this.target ??= LookForTarget();
             }
+            
             if (this.room.GetTile(this.position).Solid && !this.fake)
             {
                 HitWall();
@@ -430,7 +430,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
                 this.position = room.RayTraceSolid(this.position, newPos);
                 this.direction = dir.normalized;
 
-                if ((this.position - targetPos).magnitude < 1)
+                if ((this.position - targetPos).magnitude < 1 && !this.fake)
                 {
                     HitObject();
                 }
@@ -448,7 +448,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
                 if (this.lightingArc == null)
                 {
                     this.lightingArc = new LightingArc(this.position, this.lastPosition, 
-                        this.damage / 2f, 0.5f + Mathf.Log10(1 + this.damage), this.lifetime.value, this.color);
+                        0.25f + Mathf.Clamp01(this.damage/5f) * 1.75f, 0.5f + Mathf.Log10(1 + this.damage), this.lifetime.value, this.color);
                     this.room.AddObject(this.lightingArc);
                 }
 
@@ -482,7 +482,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
 
     public void InitiateSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
     {
-        sLeaser.sprites = new FSprite[2];
+        sLeaser.sprites = new FSprite[3];
 
         sLeaser.sprites[0] = new FSprite("Futile_White", true)
         {
@@ -496,6 +496,14 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
         {
             shader = rCam.room.game.rainWorld.Shaders["LightSource"],
 			scale = 2f,
+            alpha = 1f,
+            color = this.color
+        };
+
+        sLeaser.sprites[2] = new FSprite("Futile_White", true)
+        {
+            shader = rCam.room.game.rainWorld.Shaders["Darken"],
+			scale = rCam.sSize.x * 0.125f + damage,
             alpha = 1f,
             color = this.color
         };
@@ -523,16 +531,19 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
         }
         sLeaser.sprites[0].alpha = 0.5f * Mathf.Clamp01(this.lifetime.value / 5f);
         sLeaser.sprites[1].alpha = BTWFunc.EaseIn(this.destructionTime.fractInv);
+        sLeaser.sprites[2].alpha = this.destructionTime.atZero ? 1f : BTWFunc.EaseOut(this.destructionTime.fractInv);
+        Shader.SetGlobalVector("_SKLightningBlindness", new Vector2(Mathf.Lerp(0, this.destructionTime.value, timeStacker), this.destructionTime.value));
     }
 
 
     public float damage;
     public bool chainReactionNotified = false;
     public Counter lifetime;
-    public Counter destructionTime = new(40);
+    public Counter destructionTime;
     public int ID = -1;
     public bool fake = false;
     public bool meadowInit = false;
+    public readonly Vector2 initPos;
     public Vector2 position = Vector2.zero;
     public Vector2 lastPosition = Vector2.zero;
     public Vector2 direction = Vector2.zero;

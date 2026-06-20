@@ -14,27 +14,39 @@ public class OnlineVoidSparkState : OnlineEntity.EntityState
     [OnlineField]
     public Vector2 lastPosition = Vector2.zero;
     [OnlineField]
+    public Vector2 momentum = Vector2.zero;
+    [OnlineField]
     public int lifetime = 0;
     [OnlineField]
     public int destructionTime = 0;
+    [OnlineField(nullable:true)]
+    public OnlinePhysicalObject onlineTarget = null;
 
     public OnlineVoidSparkState() : base() { }
     public OnlineVoidSparkState(OnlineVoidSpark onlineVoidSpark, OnlineResource inResource, uint ts) : base(onlineVoidSpark, inResource, ts)
     {
-        this.position = onlineVoidSpark.voidSpark.position;
-        this.lastPosition = onlineVoidSpark.voidSpark.lastPosition;
-        this.lifetime = onlineVoidSpark.voidSpark.lifetime.value;
-        this.destructionTime = onlineVoidSpark.voidSpark.destructionTime.value;
+        if (onlineVoidSpark?.voidSpark is not VoidSpark voidSpark) return;
+        this.position = voidSpark.position;
+        this.lastPosition = voidSpark.lastPosition;
+        this.momentum = voidSpark.momentum;
+        this.lifetime = voidSpark.lifetime.value;
+        this.destructionTime = voidSpark.destructionTime.value;
+        if ((voidSpark.target as PhysicalObject)?.abstractPhysicalObject?.GetOnlineObject() is OnlinePhysicalObject onlinePhysicalObject)
+        {
+            this.onlineTarget = onlinePhysicalObject;
+        }
     }
 
     public override void ReadTo(OnlineEntity onlineEntity)
     {
         base.ReadTo(onlineEntity);
+        if ((onlineEntity as OnlineVoidSpark)?.voidSpark is not VoidSpark voidSpark) return;
 
-        var onlineVoidSpark = onlineEntity as OnlineVoidSpark;
-        onlineVoidSpark.voidSpark.position = this.position;
-        onlineVoidSpark.voidSpark.lastPosition = this.lastPosition;
-        onlineVoidSpark.voidSpark.lifetime.value = this.lifetime;
-        onlineVoidSpark.voidSpark.destructionTime.value = this.destructionTime;
+        voidSpark.position = this.position;
+        voidSpark.lastPosition = this.lastPosition;
+        voidSpark.momentum = this.momentum;
+        voidSpark.lifetime.value = this.lifetime;
+        voidSpark.destructionTime.value = this.destructionTime;
+        voidSpark.target = this.onlineTarget?.apo?.realizedObject;
     }
 }

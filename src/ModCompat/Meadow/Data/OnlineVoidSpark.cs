@@ -49,9 +49,7 @@ public class OnlineVoidSpark : OnlineEntity // mostly copied from OnlinePhysical
     }
     public static OnlineVoidSpark NewFromVoidSpark(VoidSpark voidSpark)
     {
-        bool transferable = !RainMeadow.RainMeadow.sSpawningAvatar;
-
-        EntityId entityId = new EntityId(OnlineManager.mePlayer.inLobbyId, EntityId.IdType.custom, voidSpark.ID);
+        EntityId entityId = new EntityId(OnlineManager.mePlayer.inLobbyId, (EntityId.IdType)100, voidSpark.ID);
         if (OnlineManager.recentEntities.ContainsKey(entityId))
         {
             RainMeadow.RainMeadow.Error($"entity with repeated VoidSpark ID: {entityId}");
@@ -60,16 +58,18 @@ public class OnlineVoidSpark : OnlineEntity // mostly copied from OnlinePhysical
             RainMeadow.RainMeadow.Error($"set as: {entityId}");
         }
 
-        return new OnlineVoidSpark(voidSpark, entityId, OnlineManager.mePlayer, transferable);
+        return new OnlineVoidSpark(voidSpark, entityId, OnlineManager.mePlayer, false);
     }
-    protected virtual VoidSpark VoidSparkFromDef(OnlineVoidSparkDefinition newObjectEvent, OnlineResource inResource, OnlineVoidSparkState initialState)
+    protected VoidSpark VoidSparkFromDef(OnlineVoidSparkDefinition newObjectEvent, OnlineResource inResource, OnlineVoidSparkState initialState)
     {
         VoidSpark voidSpark = new(initialState.position, newObjectEvent.damage, initialState.lifetime, true)
         {
             lastPosition = initialState.lastPosition,
             color = newObjectEvent.color,
-            ID = newObjectEvent.VoidSparkID
+            ID = newObjectEvent.VoidSparkID,
+            target = initialState.onlineTarget?.apo?.realizedObject
         };
+        voidSpark.destructionTime.value = initialState.destructionTime;
         return voidSpark;
     }
 
@@ -195,7 +195,7 @@ public class OnlineVoidSpark : OnlineEntity // mostly copied from OnlinePhysical
     [RPCMethod]
     public static void HitSomething(OnlineVoidSpark onlineVoidSpark, OnlineEntity onlineTarget, ushort damageCent, Vector2 direction, Vector2 lastPosition, OnlineCreature onlineKilltagholder)
     {
-        if (onlineVoidSpark?.voidSpark is null || onlineVoidSpark?.voidSpark?.room == null)
+        if (onlineVoidSpark?.voidSpark?.room == null)
         {
             HitSomethingSparkless(onlineTarget, damageCent, direction, lastPosition, onlineKilltagholder);
         }
@@ -244,15 +244,24 @@ public class OnlineVoidSpark : OnlineEntity // mostly copied from OnlinePhysical
         if (target is null || room is null) return;
         
         Vector2 position = VoidSpark.GetPosition(target);
-        VoidSpark. MakeDraggedSparks(room, 25f + 10f * damage, position, 
+        VoidSpark.MakeDraggedSparks(room, 25f + 10f * damage, position, 
             (byte)(BTWFunc.RandInt(15, 25) + damage), VoidSpark.defaultColor, 0.2f);
         
         BTWPlugin.Log($"VoidSpark (that was too quick to realize) hit [{target}] for <{damage}> dmg !");
 
         if (ModManager.MSC)
         {
-            LightingArc arc = new(position, lastPosition, 
+            LightingArc arc;
+            if (VoidSpark.GetChunk(target) is BodyChunk bodyChunk)
+            {
+                arc = new(bodyChunk, lastPosition, 
                     damage / 2f, 0.5f + Mathf.Log10(1 + damage), 10, VoidSpark.defaultColor);
+            }
+            else
+            {
+                arc = new(position, lastPosition, 
+                    damage / 2f, 0.5f + Mathf.Log10(1 + damage), 10, VoidSpark.defaultColor);
+            }
             room.AddObject(arc);
         }
         VoidSpark.HitSomethingWithVoidSpark(target, damage, direction, killtagholder);

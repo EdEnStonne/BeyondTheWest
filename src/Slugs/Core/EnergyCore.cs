@@ -5,10 +5,14 @@ using RWCustom;
 using System.Runtime.CompilerServices;
 using BeyondTheWest.MeadowCompat;
 
+using AECore = BeyondTheWest.AbstractEnergyCore;
+using CoreState = BeyondTheWest.AbstractEnergyCore.CoreState;
+using DressMySlugcat;
+
 namespace BeyondTheWest;
 public class EnergyCore : PhysicalObject, IDrawable
 {
-    public EnergyCore(AbstractEnergyCore abstractEnergyCore, Player player) : base(abstractEnergyCore)
+    public EnergyCore(AECore abstractEnergyCore, Player player) : base(abstractEnergyCore)
     {
         // Plugin.Log("Core ctor init...");
         
@@ -17,8 +21,8 @@ public class EnergyCore : PhysicalObject, IDrawable
         this.scale = this.AEC.scale;
 
         this.collisionLayer = 1;
-        base.bodyChunks = new BodyChunk[1];
-        base.bodyChunks[0] = new BodyChunk(this, 0, new Vector2(player.mainBodyChunk.pos.x, player.mainBodyChunk.pos.y), this.scale, 0.1f)
+        bodyChunks = new BodyChunk[1];
+        bodyChunks[0] = new BodyChunk(this, 0, new Vector2(player.mainBodyChunk.pos.x, player.mainBodyChunk.pos.y), this.scale, 0.1f)
         {
             collideWithSlopes = false,
             collideWithObjects = false,
@@ -28,13 +32,13 @@ public class EnergyCore : PhysicalObject, IDrawable
         };
         this.firstChunk.rotationChunk = player.mainBodyChunk;
 
-        base.CollideWithObjects = false;
-        base.CollideWithSlopes = false;
-        base.CollideWithTerrain = false;
+        CollideWithObjects = false;
+        CollideWithSlopes = false;
+        CollideWithTerrain = false;
         this.canBeHitByWeapons = true;
-        base.gravity = 1f;
+        gravity = 1f;
 
-        this.bodyChunkConnections = new PhysicalObject.BodyChunkConnection[0];
+        this.bodyChunkConnections = new BodyChunkConnection[0];
         BTWPlugin.Log($"Core ctor [{this}] done !");
         //this.evenUpdate = !player.evenUpdate;
         //logger.LogDebug(player.mainBodyChunk.owner);
@@ -43,23 +47,23 @@ public class EnergyCore : PhysicalObject, IDrawable
     }
 
     //----------------- Local functions
-    byte GetCurrentState()
+    CoreState GetCurrentState()
     {
         if (this.player != null)
         {
-            if (this.AEC.energy <= 0f) { return 10; }
+            if (this.AEC.energy <= 0f) { return CoreState.Meltdown; }
             if (ShouldZeroG)
             {
-                if (this.AEC.antiGravityCount > 0) { return 5; }
-                if (this.AEC.oxygenCount > 0 && this.oxygenCooldown) { return 7; }
-                if (this.AEC.coreBoostLeft <= 0) { return 3; }
-                if (this.AEC.waterCorrectionCount > 0) { return 6; }
-                return 4;
+                if (this.AEC.antiGravityCount > 0) { return CoreState.AntiGravON; }
+                if (this.AEC.oxygenCount > 0 && this.oxygenCooldown) { return CoreState.OxygenON; }
+                if (this.AEC.coreBoostLeft <= 0) { return CoreState.NoMoreBoost; }
+                if (this.AEC.waterCorrectionCount > 0) { return CoreState.Slowdown; }
+                return CoreState.AntiGravOFF;
             }
-            if (this.AEC.coreBoostLeft <= 0 && !this.Landed) { return 3; }
-            if (this.AEC.boostingCount > 0) { return 2; }
-            if (this.AEC.slowModeCount > 0 || this.AEC.waterCorrectionCount > 0) { return 6; }
-            return 1;
+            if (this.AEC.coreBoostLeft <= 0 && !this.Landed) { return CoreState.NoMoreBoost; }
+            if (this.AEC.boostingCount > 0) { return CoreState.Boosting; }
+            if (this.AEC.slowModeCount > 0 || this.AEC.waterCorrectionCount > 0) { return CoreState.Slowdown; }
+            return CoreState.Idle;
         }
         return 0;
     }
@@ -74,7 +78,7 @@ public class EnergyCore : PhysicalObject, IDrawable
 
         if (this.player != null && this.AEC != null && CoreMesh != null)
         {
-            byte state = this.AEC.state;
+            CoreState state = this.AEC.state;
 
             float energy = this.AEC.energy;
             float eRatio = energy / this.AEC.CoreMaxEnergy;
@@ -82,7 +86,7 @@ public class EnergyCore : PhysicalObject, IDrawable
             float eINRatio = Mathf.Pow(eRatio, 3f);
 
 
-            if (state == 1 || state == 3)
+            if (state == CoreState.Idle || state == CoreState.NoMoreBoost)
             {
                 CoreMesh.MoveVertice(0, new Vector2(-4f, 0f));
                 CoreMesh.MoveVertice(1, new Vector2(0f, 4f));
@@ -92,7 +96,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                 CoreMesh.MoveVertice(4, new Vector2(0f, -4f));
                 CoreMesh.MoveVertice(5, new Vector2(4f, 0f));
             }
-            if (state == 4 || state == 5 || state == 6)
+            if (state == CoreState.AntiGravOFF || state == CoreState.AntiGravON || state == CoreState.Slowdown)
             {
                 CoreMesh.MoveVertice(0, new Vector2(-2f, -2f));
                 CoreMesh.MoveVertice(1, new Vector2(-2f, 2f));
@@ -106,7 +110,7 @@ public class EnergyCore : PhysicalObject, IDrawable
 
             switch (state)
             {
-                case 1: // Idle
+                case CoreState.Idle: 
                     {
                         if (this.meowBlink > 0)
                         {
@@ -125,7 +129,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                         }
                         break;
                     }
-                case 2: // Boosting
+                case CoreState.Boosting: 
                     {
                         float boostCount = this.AEC.boostingCount;
                         float ratio = boostCount / 100f;
@@ -145,27 +149,27 @@ public class EnergyCore : PhysicalObject, IDrawable
                         CoreMesh.MoveVertice(5, new Vector2(4f, 0f));
                         break;
                     }
-                case 3: // Out of Boosts
+                case CoreState.NoMoreBoost:
                     {
                         this.color = new Color(1f, 0.35f, 0.10f);
                         break;
                     }
-                case 4: // Anti-G OFF
+                case CoreState.AntiGravOFF:
                     {
                         this.color = new Color(0.25f * eRatio, 0.25f + 0.25f * eRatio, 0.25f + 0.75f * eRatio);
                         break;
                     }
-                case 5: // Anti-G ON
+                case CoreState.AntiGravON:
                     {
                         this.color = new Color(0.25f * eINRatio, 0.5f + 0.5f * eINRatio, 0.5f + 0.5f * eINRatio);
                         break;
                     }
-                case 6: // Slow-Down
+                case CoreState.Slowdown: 
                     {
                         this.color = new Color(0.75f + 0.25f * eRatio, 0.75f + 0.25f * eRatio, 0.75f + 0.25f * eRatio);
                         break;
                     }
-                case 7: // Oxygen ON
+                case CoreState.OxygenON: 
                     {
                         this.color = new(0.25f + 0.75f * eOUTRatio, 0.5f * eOUTRatio, 0.25f + 0.75f * eOUTRatio);
 
@@ -178,9 +182,9 @@ public class EnergyCore : PhysicalObject, IDrawable
                         CoreMesh.MoveVertice(5, new Vector2(4f, 0f));
                         break;
                     }
-                case 10: // Meltdown
+                case CoreState.Meltdown:
                     {
-                        float melt_energy = this.AEC.CoreMeltdown;
+                        float melt_energy = AECore.CoreMeltdown;
                         float meltRatio = -energy / melt_energy;
                         int frequency = (int)((1 - meltRatio) * melt_energy / 10f);
                         float red = frequency < 4 ? 1f : Math.Abs((-(int)energy) % frequency - frequency / 2f) / (frequency / 2f);
@@ -201,9 +205,9 @@ public class EnergyCore : PhysicalObject, IDrawable
                         break;
                     }
                 default: // Dead or OFF
-                    {
-                        break;
-                    }
+                {
+                    break;
+                }
             }
             this.color = Color.Lerp(this.color, this.gray, this.grayScale);
             if (this.player.dead)
@@ -219,7 +223,6 @@ public class EnergyCore : PhysicalObject, IDrawable
                 if (this.grayScale < 0.99f)
                 {
                     this.grayScale = Mathf.Lerp(this.grayScale, 1f, 0.005f);
-                    // Plugin.Log($"Core of player [{this.player}] grayscale at [{this.grayScale}]. Color at <{this.color}>");
                 }
                 else
                 {
@@ -244,15 +247,15 @@ public class EnergyCore : PhysicalObject, IDrawable
     {
         if (this.player != null && this.AEC != null && this.room != null && this.player.room == this.room && !this.AEC.active && this.AEC.isMeadowFakePlayer)
         {
-            byte state = this.AEC.state;
-            if (state == 5 && this.player.animation == Player.AnimationIndex.Flip)
+            CoreState state = this.AEC.state;
+            if (state == CoreState.AntiGravON && this.player.animation == Player.AnimationIndex.Flip)
             {
                 foreach (var b in this.player.bodyChunks)
                 {
-                    b.vel.y += this.player.gravity * this.AEC.CoreAntiGravity;
+                    b.vel.y += this.player.gravity * AECore.CoreAntiGravity;
                 }
             }
-            else if (state == 7)
+            else if (state == CoreState.OxygenON)
             {
                 this.player.airInLungs = 0.85f;
             }
@@ -262,7 +265,7 @@ public class EnergyCore : PhysicalObject, IDrawable
     //------------------ Public functions
     public void MeltdownStart()
     {
-        this.player?.Stun((int)(this.AEC.CoreMeltdown / 5));
+        this.player?.Stun((int)(AECore.CoreMeltdown / 5));
         this.room?.PlaySound(SoundID.Death_Lightning_Spark_Object, this.firstChunk.pos, 0.75f, 0.9f);
         this.AEC.antiGravityCount = 0;
         this.AEC.boostingCount = -200;
@@ -274,11 +277,11 @@ public class EnergyCore : PhysicalObject, IDrawable
             this.disableCooldown = BTWFunc.FrameRate * 2;
             if (this.AEC.energy > 0)
             {
-                this.AEC.energy = -this.AEC.CoreMeltdown / 4;
+                this.AEC.energy = -AECore.CoreMeltdown / 4;
             }
             else
             {
-                this.AEC.energy -= this.AEC.CoreMeltdown / 4;
+                this.AEC.energy -= AECore.CoreMeltdown / 4;
             }
             if (this.AEC.isMeadowFakePlayer)
             {
@@ -487,14 +490,14 @@ public class EnergyCore : PhysicalObject, IDrawable
     {
         if (this.player != null && !this.player.dead && this.AEC.energy > 0f)
         {
-            float er = this.AEC.CoreShockwavePower;
-            Vector2 vector = Vector2.Lerp(base.firstChunk.pos, base.firstChunk.lastPos, 0.35f);
+            float er = AECore.CoreShockwavePower;
+            Vector2 vector = Vector2.Lerp(firstChunk.pos, firstChunk.lastPos, 0.35f);
 
             if (isReal)
             {
                 this.room.InGameNoise(new Noise.InGameNoise(vector, er * 3f, this, 1f));
                 MeltdownStart();
-                this.player?.Stun((int)(this.AEC.CoreMeltdown / 2));
+                this.player?.Stun((int)(AECore.CoreMeltdown / 2));
             }
             if (!this.AEC.isMeadowArenaTimerCountdown)
             {
@@ -510,7 +513,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                 this.room.AddObject(new ShockWave(vector, er        , 0.675f, 60, false));
                 this.room.ScreenMovement(new Vector2?(vector), default, 0.4f);
             }
-            this.room.PlaySound(SoundID.Bomb_Explode, base.firstChunk);
+            this.room.PlaySound(SoundID.Bomb_Explode, firstChunk);
 
             this.AEC.energy = 0f;
 
@@ -525,7 +528,7 @@ public class EnergyCore : PhysicalObject, IDrawable
         if (this.player != null)
         {
             var er = 500f;
-            Vector2 vector = Vector2.Lerp(base.firstChunk.pos, base.firstChunk.lastPos, 0.35f);
+            Vector2 vector = Vector2.Lerp(firstChunk.pos, firstChunk.lastPos, 0.35f);
 
             if (isReal)
             {
@@ -548,7 +551,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                 this.room.AddObject(new ShockWave(vector, er        , 0.675f, 10, false));
                 this.room.ScreenMovement(new Vector2?(vector), default, 0.2f);
             }
-            this.room.PlaySound(SoundID.Bomb_Explode, base.firstChunk);
+            this.room.PlaySound(SoundID.Bomb_Explode, firstChunk);
 
             if (this.AEC.isMeadow && isReal && this.AEC.active)
             {
@@ -580,9 +583,6 @@ public class EnergyCore : PhysicalObject, IDrawable
             Vector2 pos = this.firstChunk.pos;
             bool triggered = this.AEC.IsBetaBoost ? cinput.jmp : cinput.spec;
 
-            float antiGravity = this.AEC.CoreAntiGravity;
-            int startUp = this.AEC.CoreAntiGravityStartUp;
-
             bool Underwater = this.Underwater;
             bool ZeroG = this.ZeroG;
 
@@ -601,20 +601,21 @@ public class EnergyCore : PhysicalObject, IDrawable
             else if (ShouldZeroG && this.AEC.boostingCount < 5 && triggered && (this.AEC.energy > 0f))
             {
                 this.AEC.boostingCount = 0;
-                if (this.AEC.antiGravityCount == startUp)
+                if (this.AEC.antiGravityCount == AECore.CoreAntiGravityStartUp)
                 {
                     Pop();
                     foreach (var b in this.player.bodyChunks)
                     {
-                        b.vel.y = Math.Max(b.vel.y, antiGravity * 4f);
+                        b.vel.y = Math.Max(b.vel.y, AECore.CoreAntiGravity * 4f);
                         b.vel.y *= 1.5f;
                         b.vel.x *= 1.5f;
                     }
                     this.AEC.waterCorrectionCount = 0;
-                    this.AEC.energy -= 50f;
+                    this.AEC.energy -= Underwater ? AECore.Core0GWaterEnergyUsage : AECore.Core0GSpaceEnergyUsage;
                     this.AEC.coreBoostLeft--;
+                    this.zeroGravUsed = true;
                 }
-                else if (this.AEC.antiGravityCount > startUp)
+                else if (this.AEC.antiGravityCount > AECore.CoreAntiGravityStartUp)
                 {
                     foreach (var b in this.player.bodyChunks)
                     {
@@ -626,7 +627,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                             }
                             else
                             {
-                                b.vel = inputDir * (Underwater ? 55f : 7.5f);
+                                b.vel = inputDir * (Underwater ? 40f : 7.5f);
                             }
                             if (this.AEC.waterCorrectionCount < (Underwater ? 40 : 80))
                             {
@@ -635,13 +636,17 @@ public class EnergyCore : PhysicalObject, IDrawable
                         }
                         else
                         {
-                            b.vel.y += this.player.gravity * antiGravity;
+                            b.vel.y += this.player.gravity * AECore.CoreAntiGravity;
                         }
                     }
-                    this.AEC.energy -= (Underwater ? this.AEC.Core0GWaterEnergyUsage : this.AEC.Core0GSpaceEnergyUsage) / BTWFunc.FrameRate;
                     if (player.GetPoleKickManager() is PoleKickManager poleKickManager)
                     {
-                        poleKickManager.poleTechCooldown.Reset(20);
+                        poleKickManager.poleTechCooldown.Reset(10);
+                    }
+                    if (this.AEC.antiGravityCount >= AECore.CoreAntiGravityStartUp + AECore.CoreAntiGravityMaxTime)
+                    {
+                        this.AEC.antiGravityCount = -10;
+                        this.AEC.lockBoostInput = true;
                     }
                 }
 
@@ -655,6 +660,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                 if (this.AEC.antiGravityCount > 0)
                 {
                     this.AEC.antiGravityCount = 0;
+                    this.AEC.lockBoostInput = true;
                 }
                 if (this.AEC.waterCorrectionCount > 0)
                 {
@@ -680,7 +686,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                         && !otherplayer.dead)
                     {
                         creatureFound = true;
-                        this.AEC.energy -= this.AEC.CoreOxygenEnergyUsage * Mathf.Max(0f, 0.85f - otherplayer.airInLungs);
+                        this.AEC.energy -= AECore.CoreOxygenEnergyUsage * Mathf.Max(0f, 0.85f - otherplayer.airInLungs);
                         otherplayer.airInLungs = 0.85f;
 
                         if (this.AEC.isMeadow && this.AEC.active && otherplayer != this.player)
@@ -720,7 +726,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                 this.AEC.energy < this.AEC.CoreMaxEnergy
             )
             {
-                this.AEC.energy = Mathf.Min(this.AEC.CoreMaxEnergy, this.AEC.energy + this.AEC.CoreEnergyRecharge / 40f);
+                this.AEC.energy = Mathf.Min(this.AEC.CoreMaxEnergy, this.AEC.energy + AECore.CoreEnergyRecharge / 40f);
             }
 
             if (this.AEC.energy <= 0f && this.AEC.repairCount <= 0)
@@ -764,7 +770,8 @@ public class EnergyCore : PhysicalObject, IDrawable
             if (this.Landed || this.Underwater || this.ZeroG)
             {
                 this.canSlam = false;
-                if (!this.Underwater && !this.ZeroG) { this.AEC.antiGravityCount = 0; }
+                this.zeroGravUsed = false;
+                if (!this.Underwater && !this.ZeroG && this.AEC.antiGravityCount > 0) { this.AEC.antiGravityCount = 0; this.AEC.lockBoostInput = true; }
                 this.AEC.coreBoostLeft = this.AEC.CoreMaxBoost;
                 this.flipFromBoost = false;
             }
@@ -791,7 +798,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                 this.AEC.repairCount = 0;
             }
 
-            if (this.AEC.repairCount >= AbstractEnergyCore.FullRepairCount)
+            if (this.AEC.repairCount >= AECore.FullRepairCount)
             {
                 this.AEC.repairCount = 0;
                 this.AEC.energy = this.AEC.CoreMaxEnergy / 4f;
@@ -818,7 +825,7 @@ public class EnergyCore : PhysicalObject, IDrawable
                 }
                 else if (Input.GetKey(KeyCode.LeftControl))
                 {
-                    this.AEC.energy = -this.AEC.CoreMeltdown;
+                    this.AEC.energy = -AECore.CoreMeltdown;
                 }
                 else
                 {
@@ -832,12 +839,26 @@ public class EnergyCore : PhysicalObject, IDrawable
         }
     }
     //----------------- IDrawable
+    public void UpdateContainerPosition(RoomCamera.SpriteLeaser sLeaser)
+    {
+        if (this.AEC.playerContatiner != null)
+        {
+            sLeaser.sprites[0].RemoveFromContainer();
+            sLeaser.sprites[1].RemoveFromContainer();
+            this.AEC.playerContatiner.AddChildAtIndex(sLeaser.sprites[0], this.AEC.playerLeaserPos);
+            this.AEC.playerContatiner.AddChildAtIndex(sLeaser.sprites[1], this.AEC.playerLeaserPos + 1);
+            this.AEC.playerContatiner = null;
+            BTWPlugin.Log($"Updated Core {this} !");
+        }
+    }
     public void AddToContainer(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, FContainer newContatiner)
     {
+        sLeaser.RemoveAllSpritesFromContainer();
         rCam.ReturnFContainer("Items").AddChild(sLeaser.sprites[0]);
         rCam.ReturnFContainer("Items").AddChild(sLeaser.sprites[1]);
         rCam.ReturnFContainer("Bloom").AddChild(sLeaser.sprites[2]);
         rCam.ReturnFContainer("HUD").AddChild(sLeaser.sprites[3]);
+        if (this.AEC.playerContatiner != null) { UpdateContainerPosition(sLeaser); }
     }
     public void ApplyPalette(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, RoomPalette palette) { }
     public void DrawSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
@@ -847,6 +868,7 @@ public class EnergyCore : PhysicalObject, IDrawable
             sLeaser.CleanSpritesAndRemove();
             return;
         }
+        if (this.AEC.playerContatiner != null) { UpdateContainerPosition(sLeaser); }
         if (this.player != null && !this.player.inShortcut)
         {
             BodyChunk playerBody = this.player.mainBodyChunk;
@@ -854,7 +876,7 @@ public class EnergyCore : PhysicalObject, IDrawable
             this.firstChunk.pos = corePos + new Vector2(7.5f, 0) * this.player.input[0].x;
 
             float eRatio = Mathf.Clamp01(this.AEC.energy / this.AEC.CoreMaxEnergy);
-            float repRatio = Mathf.Clamp01((float)this.AEC.repairCount / AbstractEnergyCore.FullRepairCount);
+            float repRatio = Mathf.Clamp01((float)this.AEC.repairCount / AECore.FullRepairCount);
 
             SetCoreMesh(sLeaser);
 
@@ -894,17 +916,18 @@ public class EnergyCore : PhysicalObject, IDrawable
             sLeaser.sprites[2].scale = this.scale * (2f + 6f * eRatio);
             sLeaser.sprites[2].color = this.color;
 
-            if (this.AEC.state == 10 && this.AEC.repairCount > 0)
+            if (this.AEC.state == CoreState.Meltdown && this.AEC.repairCount > 0)
             {
                 sLeaser.sprites[3].alpha = Mathf.Lerp(sLeaser.sprites[3].alpha, 0.1f + 0.90f * repRatio, 0.40f);
                 sLeaser.sprites[3].scale = Mathf.Lerp(sLeaser.sprites[3].scale, 6f + 1f * repRatio, 0.40f);
             }
-            else if (this.AEC.state == 5)
+            else if (this.AEC.state == CoreState.AntiGravON)
             {
-                sLeaser.sprites[3].alpha = Mathf.Lerp(sLeaser.sprites[3].alpha, 0.30f + 0.30f * eRatio, 0.20f);
-                sLeaser.sprites[3].scale = Mathf.Lerp(sLeaser.sprites[3].scale, 6f * this.AEC.CoreAntiGravity, 0.20f);
+                float gRatio = Mathf.Clamp01(1 - (this.AEC.antiGravityCount - AECore.CoreAntiGravityStartUp)/(float)AECore.CoreAntiGravityMaxTime);
+                sLeaser.sprites[3].alpha = Mathf.Lerp(sLeaser.sprites[3].alpha, (0.30f + 0.30f * eRatio) * BTWFunc.EaseOut(gRatio, 4), 0.20f);
+                sLeaser.sprites[3].scale = Mathf.Lerp(sLeaser.sprites[3].scale, 2f + 5f * gRatio, 0.20f);
             }
-            else if (this.AEC.state == 7 || (Underwater && this.oxygenCooldown && this.AEC.energy > 0f))
+            else if (this.AEC.state == CoreState.OxygenON || (Underwater && this.oxygenCooldown && this.AEC.energy > 0f))
             {
                 sLeaser.sprites[3].alpha = Mathf.Lerp(sLeaser.sprites[3].alpha, 0.10f + 0.20f * eRatio, 0.05f);
                 sLeaser.sprites[3].scale = Mathf.Lerp(sLeaser.sprites[3].scale, OxygenRange, 0.05f);
@@ -979,6 +1002,7 @@ public class EnergyCore : PhysicalObject, IDrawable
         {
             if (this.room.game.devToolsActive) { DebugUpdate(); }
             var cinput = this.player.input[0];
+            var lastInput = this.player.input[0];
             if (BTWPlugin.meadowEnabled && this.AEC.isMeadowArenaTimerCountdown && !BTWFunc.OnlineArenaTimerOn())
             {
                 this.AEC.isMeadowArenaTimerCountdown = false;
@@ -1007,70 +1031,82 @@ public class EnergyCore : PhysicalObject, IDrawable
                     }
                     if (this.AEC.IsBetaBoost ? cinput.jmp : cinput.spec)
                     {
-                        if (this.ShouldZeroG && this.AEC.boostingCount < 5)
+                        if (this.AEC.lockBoostInput)
                         {
-                            if (this.AEC.antiGravityCount > 0 || this.AEC.coreBoostLeft > 0)
-                            {
-                                this.AEC.antiGravityCount++;
-                            }
-                        }
-                        else if ((this.Landed || this.AEC.coreBoostLeft > 0) && this.AEC.waterCorrectionCount <= 0)
-                        {
-                            if (this.BoostAllowed)
-                            {
-                                this.player.corridorDrop = false;
-                                this.AEC.boostingCount += (this.AEC.IsBetaBoost && this.player.input[0].spec ? 3 : 1) 
-                                    * (player.superLaunchJump > 0 && BTWFunc.CanSuperJump(this.player) ? 2 : 1);
-                                
-                                if (this.AEC.boostingCount > 10) { this.player.slowMovementStun = Mathf.Max(10, this.player.slowMovementStun); }
-                                if (this.AEC.boostingCount > 400)
-                                {
-                                    if (this.AEC.isShockwaveEnabled) { ShockWave(true); }
-                                    else { MeltdownStart(); this.AEC.boostingCount = 0; }
-                                }
-                            }
-                            else
-                            {
-                                this.AEC.boostingCount = -1;
-                            }
-                        }
-                    }
-                    else if (!this.ShouldZeroG && this.AEC.boostingCount > 0)
-                    {
-                        if (this.AEC.boostingCount < 5 
-                            && this.AEC.IsBetaBoost 
-                            && (this.player.canJump > 0 
-                                || this.player.animation == Player.AnimationIndex.ClimbOnBeam
-                                || this.player.bodyMode == Player.BodyModeIndex.CorridorClimb))
-                        {
-                            this.AEC.boostingCount = -20;
-                            if (this.player.bodyMode == Player.BodyModeIndex.CorridorClimb)
-                            {
-                                if (this.player.input[0].y == -1
-                                    && this.EffectiveRoomGravity > 0f 
-                                    && !this.player.IsTileSolid(0, 0, -1) && !this.player.IsTileSolid(1, 0, -1))
-                                {
-                                    this.player.corridorDrop = true;
-                                    this.player.canCorridorJump = 0;
-                                }
-                            }
-                            else
-                            {
-                                this.allowJumpException = true;
-                                this.player.Jump();
-                                this.allowJumpException = false;
-                            }
+                            this.AEC.antiGravityCount = -1;
+                            this.AEC.boostingCount = -1;
                         }
                         else
                         {
-                            Boost(Mathf.Min(200, this.AEC.boostingCount), true);
+                            if (this.ShouldZeroG && this.AEC.boostingCount < 5)
+                            {
+                                if (this.AEC.antiGravityCount > 0 || this.AEC.coreBoostLeft > 0)
+                                {
+                                    this.AEC.antiGravityCount++;
+                                }
+                            }
+                            else if ((this.Landed || this.AEC.coreBoostLeft > 0) && this.AEC.waterCorrectionCount <= 0)
+                            {
+                                if (this.BoostAllowed)
+                                {
+                                    this.player.corridorDrop = false;
+                                    this.AEC.boostingCount += (this.AEC.IsBetaBoost && this.player.input[0].spec ? 3 : 1) 
+                                        * (player.superLaunchJump > 0 && BTWFunc.CanSuperJump(this.player) ? 2 : 1);
+                                    
+                                    if (this.AEC.boostingCount > 10) { this.player.slowMovementStun = Mathf.Max(10, this.player.slowMovementStun); }
+                                    if (this.AEC.boostingCount > 400)
+                                    {
+                                        if (this.AEC.isShockwaveEnabled) { ShockWave(true); }
+                                        else { MeltdownStart(); this.AEC.boostingCount = 0; }
+                                    }
+                                }
+                                else
+                                {
+                                    this.AEC.boostingCount = -1;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        this.AEC.lockBoostInput = false;
+                        if (!this.ShouldZeroG && this.AEC.boostingCount > 0)
+                        {
+                            if (this.AEC.boostingCount < 5 
+                                && this.AEC.IsBetaBoost 
+                                && (this.player.canJump > 0 
+                                    || this.player.animation == Player.AnimationIndex.ClimbOnBeam
+                                    || this.player.bodyMode == Player.BodyModeIndex.CorridorClimb))
+                            {
+                                this.AEC.boostingCount = -20;
+                                if (this.player.bodyMode == Player.BodyModeIndex.CorridorClimb)
+                                {
+                                    if (this.player.input[0].y == -1
+                                        && this.EffectiveRoomGravity > 0f 
+                                        && !this.player.IsTileSolid(0, 0, -1) && !this.player.IsTileSolid(1, 0, -1))
+                                    {
+                                        this.player.corridorDrop = true;
+                                        this.player.canCorridorJump = 0;
+                                    }
+                                }
+                                else
+                                {
+                                    this.allowJumpException = true;
+                                    this.player.Jump();
+                                    this.allowJumpException = false;
+                                }
+                            }
+                            else
+                            {
+                                Boost(Mathf.Min(200, this.AEC.boostingCount), true);
+                            }
                         }
                     }
                 }
                 AntiGravityUpdate();
                 OxygenUpdate();
 
-                if (this.AEC.energy < -this.AEC.CoreMeltdown)
+                if (this.AEC.energy < -AECore.CoreMeltdown)
                 {
                     Explode(true);
                 }
@@ -1092,15 +1128,9 @@ public class EnergyCore : PhysicalObject, IDrawable
     }
     public override void HitByWeapon(Weapon weapon)
     {
-        // logger.LogDebug(weapon);
-        // logger.LogDebug(weapon.mode);
-        // logger.LogDebug(weapon.thrownBy);
-        if (
-            this.player != null &&
-            weapon.thrownBy != this.player
-        )
+        if (this.player != null && weapon.thrownBy != this.player && this.AEC.hasCollision)
         {
-            Vector2 vector = Vector2.Lerp(weapon.firstChunk.lastPos, base.firstChunk.lastPos, 0.5f);
+            Vector2 vector = Vector2.Lerp(weapon.firstChunk.lastPos, firstChunk.lastPos, 0.5f);
             Vector2 vector2 = this.player.mainBodyChunk.Rotation + Custom.DegToVec(UnityEngine.Random.value * 180f - 90f);
             weapon.WeaponDeflect(vector, vector2.normalized, this.firstChunk.vel.magnitude * 2 + weapon.firstChunk.vel.magnitude / 2);
             Disable();
@@ -1127,12 +1157,13 @@ public class EnergyCore : PhysicalObject, IDrawable
     public float scale = 1f;
     public float grayScale = 0f;
     public bool flipFromBoost = false;
+    private bool zeroGravUsed = false;
     public bool canSlam = false;
     public bool oxygenCooldown = true;
     public bool consideredDead = false;
     public bool allowJumpException = false;
-    public int disableCooldown = 0;
     public int meowBlink = 0;
+    private int disableCooldown = 0;
 
     // Get - Set
     public Vector2 DirectionalInput
@@ -1161,11 +1192,11 @@ public class EnergyCore : PhysicalObject, IDrawable
             return new Vector2Int(x, y);
         }
     }
-    public AbstractEnergyCore AEC
+    public AECore AEC
     {
         get
         {
-            return (AbstractEnergyCore)this.abstractPhysicalObject;
+            return (AECore)this.abstractPhysicalObject;
         }
     }
     public Vector2 PlayerMiddleSpritePos
@@ -1173,9 +1204,10 @@ public class EnergyCore : PhysicalObject, IDrawable
         get
         {
             if (this.player == null) { return Vector2.negativeInfinity; }
-            if (BTWSkins.cwtPlayerSpriteInfo.TryGetValue(this.player.abstractCreature, out var fSprites) && fSprites.Count > 1)
+
+            if (player?.GetBTWPlayerData() is BTWPlayerData bTWPlayerData)
             {
-                return fSprites[1].GetPosition() * 0.9f + fSprites[0].GetPosition() * 0.1f;
+                return bTWPlayerData.hipsSpritePos * 0.9f + bTWPlayerData.bodySpritePos * 0.1f;
             }
             return Vector2.negativeInfinity;
         }
@@ -1185,7 +1217,11 @@ public class EnergyCore : PhysicalObject, IDrawable
         get
         {
             if (this.player == null) { return false; }
-            return (this.player.animation == Player.AnimationIndex.Flip && !this.flipFromBoost) || Underwater || ZeroG;
+            return (this.player.animation == Player.AnimationIndex.Flip 
+                    && !this.flipFromBoost 
+                    && (!this.zeroGravUsed || this.AEC.antiGravityCount > 0)) 
+                || Underwater 
+                || ZeroG;
         }
     }
     public bool Underwater

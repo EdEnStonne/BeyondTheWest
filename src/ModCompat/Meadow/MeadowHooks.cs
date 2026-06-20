@@ -26,10 +26,8 @@ public static class MeadowHookHelper
         StockArenaModeHook.ApplyHooks();
 
         new Hook (typeof(StoryOnlineMenu).GetMethod(nameof(StoryOnlineMenu.Update)), StoryOnlineMenu_LockWIPCampaigns);
-
         new Hook(typeof(ArenaOnlineGameMode).GetConstructor(new[] { typeof(Lobby) }), SetUpArenaDescription);
         
-        On.ArenaGameSession.Initiate += ArenaGameSession_RequestAllItemSpawner;
         On.Creature.Blind += Player_GetBlindedInArena;
         On.SporeCloud.Update += Player_GetDizzyInArena;
         On.FirecrackerPlant.PopLump += Player_GetStunYeetedByFirePlantPop;
@@ -59,11 +57,11 @@ public static class MeadowHookHelper
 
     private static void Player_GetStunYeetedByFirePlantExplode(On.FirecrackerPlant.orig_Explode orig, FirecrackerPlant self)
     {
-        orig(self);
-        if (BTWMeadowArenaSettings.TryGetSettings(out var arenaSettings)
+        if (self?.room is Room room
+            && BTWMeadowArenaSettings.TryGetSettings(out var arenaSettings)
             && arenaSettings.ArenaBonus_ExtraItemUses)
         {
-            var playerInRange = BTWFunc.GetAllObjectsInRadius(self.room, self.firstChunk.pos, 90f);
+            var playerInRange = BTWFunc.GetAllObjectsInRadius(room, self.firstChunk.pos, 90f);
             for (int i = 0; i < playerInRange.Count; i++)
             {
                 if (playerInRange[i].physicalObject is Player player && player.Local())
@@ -73,6 +71,7 @@ public static class MeadowHookHelper
                 }
             }
         }
+        orig(self);
     }
 
     private static void Player_GetStunYeetedByFirePlantPop(On.FirecrackerPlant.orig_PopLump orig, FirecrackerPlant self, int lmp)
@@ -143,15 +142,6 @@ public static class MeadowHookHelper
         }
     }
 
-    private static void ArenaGameSession_RequestAllItemSpawner(On.ArenaGameSession.orig_Initiate orig, ArenaGameSession self)
-    {
-        orig(self);
-        if (MeadowFunc.IsMeadowArena() && !MeadowFunc.IsMeadowHost())
-        {
-            MeadowCalls.BTWArena_RPCRequestItemSpawn(self);
-        }
-    }
-
     private static void SetUpArenaDescription(Action<ArenaOnlineGameMode, Lobby> orig, ArenaOnlineGameMode self, Lobby lobby)
     {
         orig(self, lobby);
@@ -176,107 +166,5 @@ public static class MeadowHookHelper
         self.slugcatSelectDescriptions.Add("Core", "A last threat between you and your mission.<LINE>Leap yourself to victory.");
         self.slugcatSelectDescriptions.Remove("Spark");
         self.slugcatSelectDescriptions.Add("Spark", "Cornered, but not powerless.<LINE>Zap them with agility.");
-    }
-    
-    private static int ChangePlayerCount(int orig, ExitManager exitManager)
-    {
-        // Plugin.Log($"The current player count is <{orig}>, with exit manager [{exitManager}] of arena [{exitManager?.gameSession}] <{exitManager?.gameSession?.initiated}>."); 
-        if (exitManager?.gameSession != null)
-        {
-            int addcount = ArenaLives.AdditionalPlayerInArenaCount(exitManager.gameSession);
-            // if (addcount > 0) { Plugin.Log($"Hold on ! They say there's {orig} player but I say there's {orig + addcount} actually !"); }
-            // else { Plugin.Log($"The current player count is {orig}, and no one else is reviving (count = {addcount}).");  }
-            return orig + addcount;
-        }
-        return orig;
-    }
-    private static void FFA_DontOpenExitIfPlayerIsReviving(ILContext il)
-    {
-        BTWPlugin.Log("MeadowCompat IL 3 starts");
-        try
-        {
-            BTWPlugin.Log("Trying to hook IL");
-            ILCursor cursor = new(il);
-
-            if (cursor.TryGotoNext(MoveType.Before,
-                x => x.MatchStloc(0),
-                x => x.MatchLdloc(0),
-                x => x.MatchLdcI4(1),
-                x => x.MatchBneUn(out _)
-            ))
-            {
-                cursor.GotoNext(MoveType.After, x => x.MatchLdloc(0));
-                cursor.Emit(OpCodes.Ldarg_3);
-                cursor.EmitDelegate(ChangePlayerCount);
-            }
-            else
-            {
-                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
-            }
-
-            BTWPlugin.Log("IL hook ended");
-        }
-        catch (Exception ex)
-        {
-            BTWPlugin.logger.LogError(ex);
-        }
-        BTWPlugin.Log("MeadowCompat IL 3 ends");
-    }
-    
-    private static bool CheckPlayerAsAlive(bool orig, AbstractCreature abstractCreature, ExitManager exitManager)
-    {
-        if (!CompetitiveAddition.ReachedMomentWhenLivesAreSetTo0(exitManager?.gameSession))
-        {
-            return orig || ArenaLives.IsPlayerRevivingInArena(abstractCreature);
-        }
-        return orig;
-    }
-    private static void TeamBattleMode_DontOpenExitIfPlayerIsReviving(ILContext il)
-    {
-        BTWPlugin.Log("MeadowCompat IL 4 starts");
-        try
-        {
-            BTWPlugin.Log("Trying to hook IL");
-            ILCursor cursor = new(il);
-
-            if (cursor.TryGotoNext(MoveType.Before,
-                x => x.MatchStloc(0),
-                x => x.MatchLdloc(0),
-                x => x.MatchLdcI4(1),
-                x => x.MatchBneUn(out _)
-            ))
-            {
-                cursor.GotoNext(MoveType.After, x => x.MatchLdloc(0));
-                cursor.Emit(OpCodes.Ldarg_3);
-                cursor.EmitDelegate(ChangePlayerCount);
-            }
-            else
-            {
-                BTWPlugin.logger.LogError("Couldn't find IL hook 1 :<");
-            }
-
-            if (cursor.TryGotoNext(MoveType.After,
-                x => x.MatchLdloc(8),
-                x => x.MatchCallOrCallvirt(typeof(AbstractCreature).GetProperty(nameof(AbstractCreature.realizedCreature)).GetGetMethod()),
-                x => x.MatchCallOrCallvirt(typeof(Creature).GetProperty(nameof(Creature.State)).GetGetMethod()),
-                x => x.MatchCallOrCallvirt(typeof(CreatureState).GetProperty(nameof(CreatureState.alive)).GetGetMethod())
-            ))
-            {
-                cursor.Emit(OpCodes.Ldloc_S, (byte)8);
-                cursor.Emit(OpCodes.Ldarg_2);
-                cursor.EmitDelegate(CheckPlayerAsAlive);
-            }
-            else
-            {
-                BTWPlugin.logger.LogError("Couldn't find IL hook 2 :<");
-            }
-
-            BTWPlugin.Log("IL hook ended");
-        }
-        catch (Exception ex)
-        {
-            BTWPlugin.logger.LogError(ex);
-        }
-        BTWPlugin.Log("MeadowCompat IL 4 ends");
     }
 }
