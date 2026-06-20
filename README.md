@@ -55,13 +55,21 @@ For now, the top priority is fixing all bugs, balance issues and problem the mod
 If I decide to develop it more, I'll go and add new arenas and items, before finally heading toward the actual campaign of those 3.  
 Let's see how far I go with this one.  
 
-## Short term planned additions :  
+## Planned additions :  
+- **Modularisation**
+  - Make the autonomous parts of my mod as their own mod, and add them back as dependency for Beyond The West. That'll create the 3 modules below :
+    - Beyond the West : Cambat Module
+    - Beyond the West : Tutorial Module
+    - Beyond the West : Exploration Module
 - **Wiki**
-  - Update the wiki (oh God it's outdated)  
+  - Update the wiki (oh God it's SO outdated)  
 - **Meadow**
-  - piggyback power steal
+  - Piggyback power steal (optional)
 - **Items**
-  - 3 new items : Tristors, Crystal Shard and Crystal Spear
+  - 1 new item : Anchor (still trying to find a name for that
+- **Arena**
+  - Reworking current arenas.
+  - Adding 3 more arenas with the new item and decoration  
 - **Region**
   - Make more arena related to Crystal Cave region
   - Crystal Cave threat music
@@ -70,11 +78,10 @@ Let's see how far I go with this one.
   - Fix Stranded Sandway's threat theme
   - Make Stranded Sandway and Crystal Cave region's icon
 - **World**
-  - Reworking the day/night system
-  - Make exhaust cooldown and stun per player
-  - Save exhaust data (also in Meadow)
+  - Extensions of Subterrainian and Outer Expanse.
 
 ## Credits :   
 A BIG thanks to the alpha testers Martyn and M'eien for helping me test Meadow compatibility !  
-Another BIG thanks to UO who helped me SO MUCH on understanding Meadow's system.  
+Another BIG thanks to UO, Invalid, and the Meadow team in general who helped me SO MUCH on understanding Meadow's system.  
 A big thanks to also all the people in the Meadow Discord server and the Rain Wolrd Discord server who helped me throughout all this journey, helping me transform this summer random idea into a fully released mod !  
+Adn of course, thank you for playing my mod !
