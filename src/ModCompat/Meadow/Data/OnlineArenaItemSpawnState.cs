@@ -29,6 +29,7 @@ public class OnlineArenaItemSpawnState : EntityState
         //--------- Functions
         public override void ReadTo(OnlineEntity onlineEntity)
         {
+            base.ReadTo(onlineEntity);
             if (onlineEntity is not OnlineArenaItemSpawn onlineArenaItemSpawn
                 || onlineArenaItemSpawn.itemSpawn is not ArenaItemSpawn arenaItemSpawn) return;
 

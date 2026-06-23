@@ -192,57 +192,18 @@ public class OnlineVoidSpark : OnlineEntity // mostly copied from OnlinePhysical
         this.voidSpark.HitWall();
     }
     
-    [RPCMethod]
-    public static void HitSomething(OnlineVoidSpark onlineVoidSpark, OnlineEntity onlineTarget, ushort damageCent, Vector2 direction, Vector2 lastPosition, OnlineCreature onlineKilltagholder)
+    private static void HitSomething(VoidSpark voidSpark, UpdatableAndDeletable target, AbstractCreature killtagholder, ushort damageCent, Vector2 direction)
     {
-        if (onlineVoidSpark?.voidSpark?.room == null)
-        {
-            HitSomethingSparkless(onlineTarget, damageCent, direction, lastPosition, onlineKilltagholder);
-        }
-        else
-        {
-            UpdatableAndDeletable target = null;
-            AbstractCreature killtagholder = null;
-            
-            if (onlineTarget is OnlinePhysicalObject onlinePhysicalObject)
-            {
-                target = onlinePhysicalObject.apo?.realizedObject;
-            }
-            if (onlineKilltagholder is not null)
-            {
-                killtagholder = onlineKilltagholder.abstractCreature;
-            }
-            
-            if (target is null) return;
-
-            onlineVoidSpark.voidSpark.target = target;
-            onlineVoidSpark.voidSpark.killTagHolder = killtagholder;
-            onlineVoidSpark.voidSpark.direction = direction;
-            onlineVoidSpark.voidSpark.position = VoidSpark.GetPosition(target);
-            onlineVoidSpark.voidSpark.damage = damageCent / 100f;
-            onlineVoidSpark.voidSpark.HitObject();
-        }
+        voidSpark.target = target;
+        voidSpark.killTagHolder = killtagholder;
+        voidSpark.direction = direction;
+        voidSpark.position = VoidSpark.GetPosition(target);
+        voidSpark.damage = damageCent / 100f;
+        voidSpark.HitObject();
     }
-    [RPCMethod]
-    public static void HitSomethingSparkless(OnlineEntity onlineTarget, ushort damageCent, Vector2 direction, Vector2 lastPosition, OnlineCreature onlineKilltagholder)
+    private static void HitSomethingSparkless(Room room, UpdatableAndDeletable target, AbstractCreature killtagholder, ushort damageCent, Vector2 direction, Vector2 lastPosition)
     {
-        Room room = null;
-        UpdatableAndDeletable target = null;
-        AbstractCreature killtagholder = null;
         float damage = damageCent / 100f;
-        
-        if (onlineTarget is OnlinePhysicalObject onlinePhysicalObject)
-        {
-            target = onlinePhysicalObject.apo?.realizedObject;
-            room = target?.room;
-        }
-        if (onlineKilltagholder is not null)
-        {
-            killtagholder = onlineKilltagholder.abstractCreature;
-        }
-        
-        if (target is null || room is null) return;
-        
         Vector2 position = VoidSpark.GetPosition(target);
         VoidSpark.MakeDraggedSparks(room, 25f + 10f * damage, position, 
             (byte)(BTWFunc.RandInt(15, 25) + damage), VoidSpark.defaultColor, 0.2f);
@@ -265,5 +226,95 @@ public class OnlineVoidSpark : OnlineEntity // mostly copied from OnlinePhysical
             room.AddObject(arc);
         }
         VoidSpark.HitSomethingWithVoidSpark(target, damage, direction, killtagholder);
+    }
+    [RPCMethod]
+    public static void RPC_HitSomethingWithEneryCore(OnlineVoidSpark onlineVoidSpark, OnlineEntity onlineTargetWithCore, ushort damageCent, Vector2 direction, Vector2 lastPosition, OnlineCreature onlineKilltagholder)
+    {
+        if (onlineVoidSpark?.voidSpark?.room == null)
+        {
+            RPC_HitSomethingSparkless(onlineTargetWithCore, damageCent, direction, lastPosition, onlineKilltagholder);
+        }
+        else
+        {
+            UpdatableAndDeletable target = null;
+            AbstractCreature killtagholder = null;
+            
+            if (((onlineTargetWithCore as OnlinePhysicalObject)?.apo?.realizedObject as Player).GetAEC()?.RealizedCore is EnergyCore energyCore)
+            {
+                target = energyCore;
+            }
+            if (onlineKilltagholder is not null)
+            {
+                killtagholder = onlineKilltagholder.abstractCreature;
+            }
+            
+            if (target is null) return;
+            HitSomething(onlineVoidSpark.voidSpark, target, killtagholder, damageCent, direction);
+        }
+    }
+    [RPCMethod]
+    public static void RPC_HitSomethingWithEneryCoreSparkless(OnlineEntity onlineTargetWithCore, ushort damageCent, Vector2 direction, Vector2 lastPosition, OnlineCreature onlineKilltagholder)
+    {
+        Room room = null;
+        UpdatableAndDeletable target = null;
+        AbstractCreature killtagholder = null;
+        
+        if (((onlineTargetWithCore as OnlinePhysicalObject)?.apo?.realizedObject as Player).GetAEC()?.RealizedCore is EnergyCore energyCore)
+        {
+            target = energyCore;
+            room = target?.room;
+        }
+        if (onlineKilltagholder is not null)
+        {
+            killtagholder = onlineKilltagholder.abstractCreature;
+        }
+        
+        if (target is null || room is null) return;
+        HitSomethingSparkless(room, target, killtagholder, damageCent, direction, lastPosition);
+    }
+    [RPCMethod]
+    public static void RPC_HitSomething(OnlineVoidSpark onlineVoidSpark, OnlineEntity onlineTarget, ushort damageCent, Vector2 direction, Vector2 lastPosition, OnlineCreature onlineKilltagholder)
+    {
+        if (onlineVoidSpark?.voidSpark?.room == null)
+        {
+            RPC_HitSomethingSparkless(onlineTarget, damageCent, direction, lastPosition, onlineKilltagholder);
+        }
+        else
+        {
+            UpdatableAndDeletable target = null;
+            AbstractCreature killtagholder = null;
+            
+            if (onlineTarget is OnlinePhysicalObject onlinePhysicalObject)
+            {
+                target = onlinePhysicalObject.apo?.realizedObject;
+            }
+            if (onlineKilltagholder is not null)
+            {
+                killtagholder = onlineKilltagholder.abstractCreature;
+            }
+            
+            if (target is null) return;
+            HitSomething(onlineVoidSpark.voidSpark, target, killtagholder, damageCent, direction);
+        }
+    }
+    [RPCMethod]
+    public static void RPC_HitSomethingSparkless(OnlineEntity onlineTarget, ushort damageCent, Vector2 direction, Vector2 lastPosition, OnlineCreature onlineKilltagholder)
+    {
+        Room room = null;
+        UpdatableAndDeletable target = null;
+        AbstractCreature killtagholder = null;
+        
+        if (onlineTarget is OnlinePhysicalObject onlinePhysicalObject)
+        {
+            target = onlinePhysicalObject.apo?.realizedObject;
+            room = target?.room;
+        }
+        if (onlineKilltagholder is not null)
+        {
+            killtagholder = onlineKilltagholder.abstractCreature;
+        }
+        
+        if (target is null || room is null) return;
+        HitSomethingSparkless(room, target, killtagholder, damageCent, direction, lastPosition);
     }
 }

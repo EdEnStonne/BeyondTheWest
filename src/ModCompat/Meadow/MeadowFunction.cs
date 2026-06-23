@@ -251,8 +251,7 @@ public static class MeadowFunc
     public static void ResetDeathMessage(AbstractCreature abstractPlayer)
     {
         if (abstractPlayer.world?.game != null 
-            && abstractPlayer.GetOnlineObject() is OnlinePhysicalObject onlinePhysicalObject 
-            && onlinePhysicalObject != null)
+            && abstractPlayer.GetOnlineObject() is OnlinePhysicalObject onlinePhysicalObject)
         {
             var onlineHuds = abstractPlayer.world.game.cameras[0].hud.parts.OfType<PlayerSpecificOnlineHud>();
             foreach (var onlineHud in onlineHuds)
@@ -263,9 +262,7 @@ public static class MeadowFunc
     }
     public static void ResetSlugcatIcon(AbstractCreature abstractPlayer)
     {
-        if (abstractPlayer.world?.game != null 
-            && abstractPlayer.GetOnlineObject() is OnlinePhysicalObject onlinePhysicalObject 
-            && onlinePhysicalObject != null)
+        if (abstractPlayer.world?.game != null)
         {
             var onlineHuds = abstractPlayer.world.game.cameras[0].hud.parts.OfType<PlayerSpecificOnlineHud>();
             foreach (var onlineHud in onlineHuds)

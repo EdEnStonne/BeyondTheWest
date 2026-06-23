@@ -620,23 +620,31 @@ public static class MeadowCalls
         OnlineVoidSpark onlineVoidSpark = voidSpark.GetOnlineVoidSpark();
         OnlineCreature onlineKillTagHolder = voidSpark.killTagHolder?.GetOnlineCreature();
         OnlineEntity onlineTarget = null;
+        bool isEnergyCore = false;
         if (voidSpark.target is PhysicalObject physicalObject)
         {
-            onlineTarget = physicalObject.abstractPhysicalObject.GetOnlineObject();
-        }
-        if (MeadowFunc.IsMeadowLobby() && onlineTarget is not null)
-        {
-            if (onlineVoidSpark != null)
+            if (physicalObject is EnergyCore energyCore)
             {
-                if (onlineVoidSpark.isMine)
-                {
-                    onlineVoidSpark.BroadcastRPCInRoom(OnlineVoidSpark.HitSomething, onlineVoidSpark,
-                        onlineTarget, (ushort)(voidSpark.damage * 100), voidSpark.direction, voidSpark.initPos, onlineKillTagHolder);
-                }
+                isEnergyCore = true;
+                onlineTarget = energyCore.player?.abstractPhysicalObject.GetOnlineObject();
             }
             else
             {
-               onlineVoidSpark.BroadcastRPCInRoom(OnlineVoidSpark.HitSomethingSparkless,
+                onlineTarget = physicalObject.abstractPhysicalObject.GetOnlineObject();
+            }
+        }
+        BTWPlugin.Log($"Void Spark [{voidSpark}][{onlineVoidSpark}][{onlineVoidSpark?.currentlyJoinedResource}]<{!voidSpark.fake}><{onlineVoidSpark?.isMine}> calling HitSomething on online target [{onlineTarget}] ! Is Meadow ? <{MeadowFunc.IsMeadowLobby()}>");
+        if (MeadowFunc.IsMeadowLobby() && onlineTarget is not null && !voidSpark.fake)
+        {
+            if (onlineVoidSpark is not null && onlineVoidSpark.currentlyJoinedResource is RoomSession room)
+            {
+                onlineVoidSpark.BroadcastRPCInRoom(isEnergyCore ? OnlineVoidSpark.RPC_HitSomethingWithEneryCore : OnlineVoidSpark.RPC_HitSomething, 
+                    onlineVoidSpark,
+                    onlineTarget, (ushort)(voidSpark.damage * 100), voidSpark.direction, voidSpark.initPos, onlineKillTagHolder);
+            }
+            else
+            {
+               onlineTarget.BroadcastRPCInRoom(isEnergyCore ? OnlineVoidSpark.RPC_HitSomethingWithEneryCoreSparkless : OnlineVoidSpark.RPC_HitSomethingSparkless, 
                     onlineTarget, (ushort)(voidSpark.damage * 100), voidSpark.direction, voidSpark.initPos, onlineKillTagHolder);
             }
         }

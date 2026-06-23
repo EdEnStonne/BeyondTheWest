@@ -21,6 +21,8 @@ public class OnlineVoidSparkState : OnlineEntity.EntityState
     public int destructionTime = 0;
     [OnlineField(nullable:true)]
     public OnlinePhysicalObject onlineTarget = null;
+    [OnlineField]
+    public bool isTargetEnergyCore = false;
 
     public OnlineVoidSparkState() : base() { }
     public OnlineVoidSparkState(OnlineVoidSpark onlineVoidSpark, OnlineResource inResource, uint ts) : base(onlineVoidSpark, inResource, ts)
@@ -31,9 +33,15 @@ public class OnlineVoidSparkState : OnlineEntity.EntityState
         this.momentum = voidSpark.momentum;
         this.lifetime = voidSpark.lifetime.value;
         this.destructionTime = voidSpark.destructionTime.value;
+        this.isTargetEnergyCore = false;
         if ((voidSpark.target as PhysicalObject)?.abstractPhysicalObject?.GetOnlineObject() is OnlinePhysicalObject onlinePhysicalObject)
         {
             this.onlineTarget = onlinePhysicalObject;
+        }
+        else if ((voidSpark.target as EnergyCore)?.player?.abstractCreature?.GetOnlineCreature() is OnlineCreature onlineCreature)
+        {
+            this.onlineTarget = onlineCreature;
+            this.isTargetEnergyCore = true;
         }
     }
 
@@ -47,6 +55,8 @@ public class OnlineVoidSparkState : OnlineEntity.EntityState
         voidSpark.momentum = this.momentum;
         voidSpark.lifetime.value = this.lifetime;
         voidSpark.destructionTime.value = this.destructionTime;
-        voidSpark.target = this.onlineTarget?.apo?.realizedObject;
+        voidSpark.target = this.isTargetEnergyCore 
+            ? (this.onlineTarget?.apo?.realizedObject as Player)?.GetAEC()?.RealizedCore
+            : this.onlineTarget?.apo?.realizedObject;
     }
 }

@@ -52,18 +52,6 @@ public class BTWPlayerData : AdditionnalTechManager<BTWPlayerData>
                 dangerGraspLastSpecButton = false;
             }
             
-            if (player.stun == 0)
-            {
-                bool pup = player.isSlugpup && player.playerState.isPup;
-                if (pup ? slugPupHeight != defaultPupSize : slugHeight != defaultSize)
-                {
-                    player.bodyChunkConnections[0].distance *= 
-                        (player.isSlugpup && player.playerState.isPup) 
-                        ? SlugPupHeightRatio
-                        : SlugHeightRatio;
-                }
-            }
-            
             if (this.dizzy > 0)
             {
                 this.dizzy--;
@@ -131,7 +119,49 @@ public static class BTWPlayerDataHooks
         On.Player.ThrownSpear += Player_SpearingExhaust;
         IL.Player.ThrowObject += Player_WeaponExhaust;
         On.PlayerGraphics.DrawSprites += PlayerGraphics_DrawSprites_GetBodySpritePos;
+        IL.Player.MovementUpdate += Player_MovementUpdate_ModifyHeight;
         BTWPlugin.Log("BTWPlayerDataHooks ApplyHooks Done !");
+    }
+
+    private static float ChangeHeight(float orig, Player player)
+    {
+        if (player.GetBTWPlayerData() is BTWPlayerData bTWPlayerData)
+        {
+            bool pup = player.isSlugpup && player.playerState.isPup;
+            if (pup 
+                ? bTWPlayerData.slugPupHeight != BTWPlayerData.defaultPupSize 
+                : bTWPlayerData.slugHeight != BTWPlayerData.defaultSize)
+            {
+                return orig * (pup ? bTWPlayerData.SlugPupHeightRatio : bTWPlayerData.SlugHeightRatio);
+            }
+        }
+        return orig;
+    }
+    private static void Player_MovementUpdate_ModifyHeight(ILContext il)
+    {
+        BTWPlugin.Log("BTWPlayerData IL 3 starts");
+        try
+        {
+            BTWPlugin.Log("Trying to hook IL");
+            ILCursor cursor = new(il);
+            if (cursor.TryGotoNext(MoveType.After, 
+                x => x.MatchLdloc(4),
+                x => x.MatchConvR4()))
+            {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate(ChangeHeight);
+            }
+            else
+            {
+                BTWPlugin.LogError("Couldn't find IL hook :<");
+            }
+            BTWPlugin.Log("IL hook ended");
+        }
+        catch (Exception ex)
+        {
+            BTWPlugin.LogError(ex);
+        }
+        BTWPlugin.Log("BTWPlayerData IL 3 ends");
     }
 
     private static void PlayerGraphics_DrawSprites_GetBodySpritePos(On.PlayerGraphics.orig_DrawSprites orig, PlayerGraphics self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)

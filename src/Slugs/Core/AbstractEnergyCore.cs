@@ -214,7 +214,7 @@ public class AbstractEnergyCore : AbstractPhysicalObject
     public const float CoreShockwavePower = 300.0f;
     public const float CoreOxygenEnergyUsage = 100.0f;
     public const float Core0GWaterEnergyUsage = 250.0f;
-    public const float Core0GSpaceEnergyUsage = 150.0f;
+    public const float Core0GSpaceEnergyUsage = 200.0f;
     public const float CoreAntiGravity = 0.85f;
     public const int CoreAntiGravityStartUp = 5;
     public const int CoreAntiGravityMaxTime = 40;
@@ -390,6 +390,7 @@ public static class AbstractEnergyCoreHooks
             && abstractEnergyCore.realizedObject != null)
         {
             abstractEnergyCore.RealizedCore.consideredDead = true;
+            BTWFunc.ResetCore(self as Player);
         }
     }
     private static bool Player_CoreSLAM(On.Player.orig_SlugSlamConditions orig, Player self, PhysicalObject otherObject)

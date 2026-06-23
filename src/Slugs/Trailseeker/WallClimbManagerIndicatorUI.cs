@@ -24,7 +24,11 @@ public class WallClimbManagerIndicatorUI : UpdatableAndDeletable, IDrawable
     public void ApplyPalette(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, RoomPalette palette) { }
     public void DrawSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
-        if (this.WCM == null || this.WCM.RealizedPlayer == null || this.slatedForDeletetion || this.room != rCam.room)
+        if (this.WCM == null 
+            || this.WCM.abstractPlayer == null 
+            || this.WCM.abstractPlayer.slatedForDeletion 
+            || this.slatedForDeletetion 
+            || this.room != rCam.room)
         {
             sLeaser.CleanSpritesAndRemove();
             this.WCM.indicatorUI = null;
@@ -50,8 +54,8 @@ public class WallClimbManagerIndicatorUI : UpdatableAndDeletable, IDrawable
             }
             foreach (FSprite sprite in sLeaser.sprites)
             {
-                sprite.x = pos.x;
-                sprite.y = pos.y;
+                sprite.x = pos.x - camPos.x;
+                sprite.y = pos.y - camPos.y;
                 sprite.scale = this.scale;
                 if (ignorePoleToggle)
                 {

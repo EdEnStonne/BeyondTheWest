@@ -356,9 +356,22 @@ public class WallClimbManager : AdditionnalTechManager<WallClimbManager>
             this.wallGrip = 0f;
         }
     }
+    public void Destroy()
+    {
+        if (this.abstractPlayer is not null) { managers.Remove(this.abstractPlayer); }
+        this.indicatorUI?.Destroy();
+        this.abstractPlayer = null;
+    }
     public override void Update()
     {
         base.Update();
+        if (this.abstractPlayer is null) return;
+        if (this.abstractPlayer.slatedForDeletion)
+        {
+            this.Destroy();
+            return;
+        }
+
         Player player = this.RealizedPlayer;
         Room room = player.room;
         if (player != null && room != null)

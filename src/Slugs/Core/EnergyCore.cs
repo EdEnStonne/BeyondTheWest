@@ -811,7 +811,7 @@ public class EnergyCore : PhysicalObject, IDrawable
     {
         Player player = this.player;
         Room room = this.room;
-        if (player == null || room == null || !room.game.devToolsActive)
+        if (player == null || room == null || !room.game.devToolsActive || !BTWFunc.meadowCheatsAllowed)
         {
             return;
         }
@@ -1010,6 +1010,11 @@ public class EnergyCore : PhysicalObject, IDrawable
             if (!this.AEC.active && this.AEC.isMeadowFakePlayer)
             {
                 StateSyncFakePlayer();
+            }
+            if (!this.consideredDead && this.player.dead)
+            {
+                this.consideredDead = true;
+                BTWFunc.ResetCore(this.player);
             }
             if (this.consideredDead && !this.player.dead)
             {

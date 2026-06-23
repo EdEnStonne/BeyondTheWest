@@ -12,12 +12,13 @@ You may need a mod like [url=https://steamcommunity.com/sharedfiles/filedetails/
 I may make some in the future, but for now my main focus is balancing and debugging the slugcats.
 
 [h3][i]Will the slugcats be subject to change ?[/i][/h3]
-Most of the main features of all three slugcats will remains untouched. However, if I find a ground-breaking bug, or feel like some slugcats need more balancing, they may have their abilities tweaked alittle. Mostly the Core and the Spark will be affected by balancing patches since they have some complex interaction with their abilities.
+The slugcats are really close to be finalized. 1.5.0 should add the last touch and everything should be set.
 
-[h3][i]Can I make a suggestion ?[/i][/h3]
-I'm all ears ! I'm all for tips and suggestion, but I won't take them blindly either. I already have ideas in mind on the storyline and on what to add if I continue to update this project further.
-I will not more slugcats here though. 3 is enough for this mod.
+[h3][i]I found a bug/This mod isn't compatible with X[/i][/h3]
+Please report in the discussion thread below, I'll fix it when I can.
 
+[h3][i]Can I make a suggestion for the campaign/slugcat ?[/i][/h3]
+No. The campaign is already planed out and the 3 slugcats are close to be done.
 
 [h2]The Slugcats :[/h2]
 The mod introduce to 3 new slugcats : The Trailseeker, The Core and The Spark !
@@ -57,9 +58,9 @@ Will port into the local competitive when I get how to add some UIs in there.
 
 
 [h2]My plans :[/h2]
-For now, the top priority is fixing all bugs, balance issues and problem the mod has.
-If I decide to develop it more, I'll go and add new arenas and items, before finally heading toward the actual campaign of those 3.
-Let's see how far I go with this one.
+The slugcats are almost complete !
+The independant part of this mod will most likely be split off into modules and added as dependency for this mod in the next big update of 1.5.
+The campaign are STILL not the main focus currently, but we are close... hopefully.
 
 
 [h2]Credits :[/h2]

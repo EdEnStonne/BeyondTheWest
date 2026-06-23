@@ -248,7 +248,7 @@ public class StaticChargeManager
                 Vector2 dischargePos = pos + (player.bodyMode == Player.BodyModeIndex.WallClimb ? lookPos * -0.5f * range : lookPos * range * 0.5f);
                 bool success = Discharge(
                     range,
-                    overcharged ? 1.15f : 0.8f,
+                    overcharged ? 1.05f : 0.75f,
                     overcharged ? 50f : 35f,
                     dischargePos,
                     overcharged ? 0.9f : 0.75f
@@ -447,7 +447,7 @@ public class StaticChargeManager
     {
         Player player = this.Player;
         Room room = this.Room;
-        if (player == null || room == null || !room.game.devToolsActive)
+        if (player == null || room == null || !room.game.devToolsActive || !BTWFunc.meadowCheatsAllowed)
         {
             return;
         }
@@ -476,12 +476,25 @@ public class StaticChargeManager
         }
     }
     
+    public void Destroy()
+    {
+        if (this.AbstractPlayer is not null) { chargeManagers.Remove(this.AbstractPlayer); }
+        this.staticChargeBatteryUI?.Destroy();
+        this.AbstractPlayer = null;
+    }
     //-------------- Override Functions
     public void Update()
     {
         if (!this.init)
         {
             InitPlayerStaticCharge();
+            return;
+        }
+        
+        if (this.AbstractPlayer is null) return;
+        if (this.AbstractPlayer.slatedForDeletion)
+        {
+            this.Destroy();
             return;
         }
 
@@ -634,11 +647,15 @@ public class StaticChargeManager
                 };
                 room.AddObject( electricExplosion );
 
-                if (ModManager.MSC && (player.mainBodyChunk.pos - position).magnitude > 5f)
+                if (ModManager.MSC && (player.mainBodyChunk.pos - position).magnitude > 1f)
                 {
                     LightingArc arc = new(player.mainBodyChunk, position, 
-                        damage, Mathf.Clamp01(Mathf.Pow(damage, 2f)), (int)Mathf.Ceil(stun/40f), color);
+                        Mathf.Max(1.5f, 0.25f + damage), 0.5f, damage > 0.7f ? 20 : 7, color);
                     room.AddObject( arc );
+                    if (BTWPlugin.meadowEnabled && !this.isMeadowFakePlayer)
+                    {
+                        MeadowCalls.MSCCompat_RPCSyncLightnightArc(arc);
+                    }
                 }
             }
 
@@ -761,7 +778,7 @@ public class StaticChargeManager
 
             if (success && !this.isMeadowFakePlayer)
             {
-                this.dischargeCooldown = MaxBounceCooldown;
+                this.dischargeCooldown = MaxBounceCooldown * 2;
                 this.stopConsecutiveDischarge = true;
                 player.Jump();
                 if (overcharged)
@@ -910,7 +927,7 @@ public class StaticChargeManager
 
                     if (success && !this.isMeadowFakePlayer)
                     {
-                        this.dischargeCooldown = MaxDischargeCooldown;
+                        this.dischargeCooldown = MaxDischargeCooldown * 2;
                         this.Charge = 0;
                         player.room.PlaySound(SoundID.Rock_Hit_Creature, player.mainBodyChunk, false, 1f, UnityEngine.Random.Range(1.85f, 1.9f));
                         Vector2 flingVector = (player.mainBodyChunk.pos - dangerChunk.pos).normalized;
@@ -1069,6 +1086,7 @@ public class StaticChargeManager
     private const int MaxDischargeCooldown = 60;
     private const int MaxBounceCooldown = 10;
     private const int MaxWhiplashJumpBuffer = 5;
+    public const float ChargeToThrowSpear = 20f;
 
     public bool rocketJumpFromBounceJump = false;
     public bool particles = false;

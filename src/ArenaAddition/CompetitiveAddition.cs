@@ -26,7 +26,7 @@ public static class CompetitiveAddition
     private static void Player_ArenaDebug(On.Player.orig_ProcessDebugInputs orig, Player self)
     {
         orig(self);
-        bool targetLocal = !BTWPlugin.meadowEnabled || BTWFunc.IsLocal(self.abstractPhysicalObject);
+        bool targetLocal = BTWFunc.IsLocal(self.abstractPhysicalObject);
         if (self.room == null || !self.room.game.devToolsActive || !targetLocal)
         {
             return;

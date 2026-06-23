@@ -50,7 +50,6 @@
 		"select_menu_scene": "Slugcat_WIP_Empty",
 		"select_menu_scene_ascended": "Slugcat_WIP_Empty",
 
-		"world_state": "Red",
-		"start_room": "BTWSD_CAVE2"
+		"world_state": "Red"
 	}
 }

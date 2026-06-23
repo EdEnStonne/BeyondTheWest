@@ -263,12 +263,22 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
             this.ID = NewID();
         }
     }
-
+    
+    private bool IsSourceOrSpared(UpdatableAndDeletable updatable) => updatable == this.source || this.sparedList.Exists(x => x == updatable);
+    private bool ShouldBeSpared(UpdatableAndDeletable updatable)
+    {
+        return IsSourceOrSpared(updatable)
+        || ((updatable as EnergyCore)?.player is Player playerCore && IsSourceOrSpared(playerCore))
+        || (updatable is Player player && (
+            player.GetAEC()?.RealizedCore is EnergyCore energyCore && IsSourceOrSpared(energyCore)
+        ));
+    }
+        
     public float FinalScore(UpdatableAndDeletable updatable)
     {
         float score = updatable != null ? updatable.VoidConductiveScore() : 0;
 
-        if (updatable == this.source || this.sparedList.Exists(x => x == updatable))
+        if (ShouldBeSpared(updatable))
         {
             return 0;
         }
@@ -322,7 +332,7 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
         MakeDraggedSparks(this.room, 25f + 10f * this.damage, this.position, 
             (byte)(BTWFunc.RandInt(15, 25) + this.damage), this.color, 0.2f);
         
-        BTWPlugin.Log($"VoidSpark hit [{this.target}] for <{this.damage}> dmg !");
+        BTWPlugin.Log($"VoidSpark<{!this.fake}> hit [{this.target}] for <{this.damage}> dmg !");
 
         if (target is IReactToVoidFlux reactToVoidFlux)
         {
@@ -334,22 +344,6 @@ public class VoidSpark : UpdatableAndDeletable, IDrawable
         {
             MeadowCalls.BTWItems_VoidSparkHitSomething(this);
         }
-
-        // if (ModManager.MSC && HasAPosition(this.target, out Vector2 targetPos))
-        // {
-        //     this.lightingArc?.Destroy();
-        //     if (this.target is PhysicalObject targetPO)
-        //     {
-        //         this.lightingArc = new LightingArc(this.lastPosition, GetChunk(targetPO), 
-        //             Mathf.Log10(1 + this.damage), 0.5f + Mathf.Log10(1 + this.damage), this.lifetime.value, this.color);
-        //     }
-        //     else
-        //     {
-        //         this.lightingArc = new LightingArc(this.lastPosition, targetPos, 
-        //             Mathf.Log10(1 + this.damage), 0.5f + Mathf.Log10(1 + this.damage), this.lifetime.value, this.color);
-        //     }
-        //     this.room.AddObject(this.lightingArc);
-        // }
         
         StartDestruction();
     }

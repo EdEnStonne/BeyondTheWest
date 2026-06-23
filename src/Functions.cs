@@ -5,6 +5,7 @@ using BeyondTheWest.MeadowCompat;
 using RWCustom;
 using System.Linq;
 using BeyondTheWest.ArenaAddition;
+using System.Reflection;
 
 namespace BeyondTheWest;
 public struct RadiusCheckResultObject
@@ -24,6 +25,8 @@ public static class BTWFunc
 {
     public const int FrameRate = 40;
     public const int TileSize = 20;
+    public static bool meadowCheatsAllowed => 
+        (bool?)Type.GetType("RainMeadow.OnlineManager")?.GetProperty("CheatsAllowed", BindingFlags.Static | BindingFlags.Public)?.GetValue(null) ?? true;
     
     public static InGameTranslator Translator => Custom.rainWorld.inGameTranslator; // yoinked from Rain Meadow
     public static string Translate(string text)

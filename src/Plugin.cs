@@ -27,7 +27,7 @@ namespace BeyondTheWest
         public static bool compatFullyEnded = false;
         private static bool hooksInit = false;
         public static bool hooksFullyEnded = false;
-        static readonly bool debug = true;
+        public static bool debug = true;
         public static ManualLogSource logger; // Logger from glebi574
         public static bool meadowEnabled = false;
         public static bool oldInputConfigEnabled = false;
@@ -147,6 +147,7 @@ namespace BeyondTheWest
             {
                 ressourceInit = true;
 
+                BTWMenu.LoadResources();
                 BTWSkins.LoadSkins();
                 NewObjectsHooks.LoadIcons();
                 ArenaShieldHooks.LoadResources(self);

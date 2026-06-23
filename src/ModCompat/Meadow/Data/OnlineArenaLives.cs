@@ -11,6 +11,20 @@ namespace BeyondTheWest.MeadowCompat.Data;
 
 public class OnlineArenaLives : OnlineEntity
 {
+    public static bool CanBeRevived(ArenaLives arenaLives)
+    {
+        BTWPlugin.Log($"Checking if player can be revived... <{map.TryGetValue(arenaLives, out _)}><{!arenaLives.fake}><{map.TryGetValue(arenaLives, out var o) && o.isMine}><{!OnlineManager.recentEntities.ContainsKey(new EntityId(OnlineManager.mePlayer.inLobbyId, EntityId.IdType.apo, 0))}><{new EntityId(OnlineManager.mePlayer.inLobbyId, EntityId.IdType.apo, 0)}>");
+        if (map.TryGetValue(arenaLives, out var onlineArenaLives) && onlineArenaLives.isMine)
+        {
+            EntityId playerID = new EntityId(OnlineManager.mePlayer.inLobbyId, EntityId.IdType.apo, 0);
+            if (OnlineManager.recentEntities.ContainsKey(playerID))
+            {
+                BTWPlugin.Log($"Online apo {playerID} still exist, let's wait for it to clear up (counter at {arenaLives.reviveCounter})");
+                return false;
+            }
+        }
+        return true;
+    }
     public class OnlineArenaLivesDefinition : EntityDefinition
     {
         [OnlineField]

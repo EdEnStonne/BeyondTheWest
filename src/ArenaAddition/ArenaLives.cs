@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using UnityEngine.Assertions.Must;
 using System.Linq;
 using BeyondTheWest.MeadowCompat;
+using BeyondTheWest.MeadowCompat.Data;
 
 namespace BeyondTheWest.ArenaAddition;
 public class ArenaLives : UpdatableAndDeletable, IDrawable
@@ -151,8 +152,11 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
         {
             if (BTWPlugin.meadowEnabled && MeadowFunc.IsMeadowArena())
             {
-                MeadowFunc.ReviveOnlinePlayer(session, this.respawnExit);
-                this.abstractTarget = BTWFunc.GetPlayerFromArenaNumber(this.playerID, this.room.game.GetArenaGameSession);
+                if (OnlineArenaLives.CanBeRevived(this))
+                {
+                    MeadowFunc.ReviveOnlinePlayer(session, this.respawnExit);
+                    this.abstractTarget = BTWFunc.GetPlayerFromArenaNumber(this.playerID, this.room.game.GetArenaGameSession);
+                }
             }
             else
             {
@@ -181,7 +185,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
             else
             {
                 BTWPlugin.LogError($"Could not revive player <{this.playerID}> ?!");
-                this.reviveCounter += 20;
+                this.reviveCounter += 10;
             }
         }
         
@@ -497,7 +501,7 @@ public class ArenaLives : UpdatableAndDeletable, IDrawable
     public const int livesDisplayCounterMax = BTWFunc.FrameRate * 3;
     public int reviveTime = BTWFunc.FrameRate * 10;
     public int reviveAdditionnalTime = BTWFunc.FrameRate * 5;
-    public const int bodyDestructionCount = 10;
+    public const int bodyDestructionCount = 20;
     public const int bodyDestructionTime = BTWFunc.FrameRate * 3;
     public int killChain = 0;
     public bool fake = false;
@@ -594,7 +598,7 @@ public static class ArenaLivesHooks
                     {
                         sLeaser.sprites[i].shader = ArenaLives.destroyPlayerShader;
                     }
-                    sLeaser.sprites[i].alpha = BTWFunc.EaseIn(Mathf.Clamp01(
+                    sLeaser.sprites[i].alpha = 0.25f + 0.75f * BTWFunc.EaseIn(Mathf.Clamp01(
                         (arenaLives.reviveCounter - ArenaLives.bodyDestructionCount)/((float)ArenaLives.bodyDestructionTime)
                     ), 3);
                 }

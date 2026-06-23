@@ -80,6 +80,12 @@ public class ArenaShield : UpdatableAndDeletable, IDrawable
         {
             MeadowCalls.BTWArena_RPCArenaForcefieldDismiss(this);
         }
+        if (BTWPlugin.meadowEnabled && this.target?.abstractCreature is AbstractCreature abstractPlayer)
+        {
+            MeadowFunc.ResetDeathMessage(abstractPlayer);
+            MeadowFunc.ResetSlugcatIcon(abstractPlayer);
+            BTWPlugin.Log($"Player [{abstractPlayer}] icon and death message was reset !");
+        }
     }
     public override void Destroy()
     {

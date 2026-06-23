@@ -56,6 +56,7 @@ public class OnlineArenaLivesState : EntityState
     //--------- Functions
     public override void ReadTo(OnlineEntity onlineEntity)
     {
+        base.ReadTo(onlineEntity);
         if (onlineEntity is not OnlineArenaLives onlineArenaLives
             || onlineArenaLives.arenalives is not ArenaLives lives)
         {

@@ -1,3 +1,0 @@
-RandomItemDensity: 0.2065217
-PlacedObjects: DayNightSettings><100.0><100.0><76~8.660254~10~32,
-FadePalette: 18, 0.2065217

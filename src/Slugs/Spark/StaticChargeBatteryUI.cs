@@ -34,11 +34,12 @@ public class StaticChargeBatteryUI : UpdatableAndDeletable, IDrawable
     private void SetBatteryChargeSprite(RoomCamera.SpriteLeaser sLeaser, float pourcent)
     {
         float xpos = -6f + (6 + 5) * Mathf.Clamp01(pourcent);
+        bool LowOnCharge = this.SCM.endlessCharge <= 0 && this.SCM.Charge <= StaticChargeManager.ChargeToThrowSpear;
         TriangleMesh BatteryCharge = (TriangleMesh)sLeaser.sprites[2];
         BatteryCharge.MoveVertice(2, new Vector2(xpos, -4f));
         BatteryCharge.MoveVertice(3, new Vector2(xpos, 4f));
 
-        BatteryCharge.color = new Color(1f, 1f, 0.25f);
+        BatteryCharge.color = new Color(LowOnCharge ? 0.75f : 1f, LowOnCharge ? 0.75f : 1f, 0.25f);
         BatteryCharge.alpha = Mathf.Clamp01(pourcent * 10);
         sLeaser.sprites[2] = BatteryCharge;
     }
@@ -97,7 +98,11 @@ public class StaticChargeBatteryUI : UpdatableAndDeletable, IDrawable
     public void ApplyPalette(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, RoomPalette palette) { }
     public void DrawSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
-        if (this.SCM == null || this.SCM.Player == null || this.slatedForDeletetion || this.room != rCam.room)
+        if (this.SCM == null 
+            || this.SCM.Player == null 
+            || this.SCM.Player.abstractCreature.slatedForDeletion 
+            || this.slatedForDeletetion 
+            || this.room != rCam.room)
         {
             sLeaser.CleanSpritesAndRemove();
             this.SCM.staticChargeBatteryUI = null;

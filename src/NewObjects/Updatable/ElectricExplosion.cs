@@ -47,7 +47,7 @@ public class ElectricExplosion : UpdatableAndDeletable
         {
             LightingArc lightingArc = new (
                 sourceObject.firstChunk, closestBodyChunk,
-                Mathf.Clamp(damage / 4f, 0.1f, 1f), damage > 1 ? 1f : 0.5f, (int)(stun / 10f + 5), color
+                Mathf.Clamp(damage / 4f, 0.25f, 1f), damage > 1 ? 1f : 0.5f, (int)(stun / 10f + 5), color
             );
             target.room.AddObject(lightingArc);
         }
