@@ -8,6 +8,7 @@ public class BTWRemix : OptionInterface
     private const float spacingY = 35f;
     private const float textUpY = 4f;
     private const float columsSizeX = 320f;
+    private OpCheckBox toggleDebug;
     public override void Initialize()
     {
         base.Initialize();
@@ -86,11 +87,24 @@ public class BTWRemix : OptionInterface
 
             new OpCheckBox(ItemSpawnRandom, new Vector2(20f, basePosY - spacingY * 5)) { description = ItemSpawnRandom.info.description },
             new OpLabel(50f, basePosY - spacingY * 5 + textUpY, "Random Items") { description = ItemSpawnRandom.info.description },
+
+            toggleDebug = new OpCheckBox(EnableDebugLogging, new Vector2(20f, basePosY - spacingY * 7)) { description = EnableDebugLogging.info.description },
+            new OpLabel(50f, basePosY - spacingY * 7 + textUpY, "Enable Debug Logging") { description = EnableDebugLogging.info.description },
         });
+
+        toggleDebug.OnValueChanged += (UIconfig config, string value, string oldValue) =>
+        {
+            BTWPlugin.logger.LogInfo($"Debug logging set to {!EnableDebugLogging.Value}");
+            BTWPlugin.debug = !EnableDebugLogging.Value;
+        };
+        BTWPlugin.debug = EnableDebugLogging.Value;
     }
 
     public static BTWRemix instance = new();
 
+    public static Configurable<bool> EnableDebugLogging = instance.config.Bind("EnableDebugLogging", false, 
+        new ConfigurableInfo("Enable extensive debug logging. Good to find crash and bugs, at the cost of light performance debuff. Default false.")
+    );
     // Arena items
     public static Configurable<bool> NewItemSpawningSystem = instance.config.Bind("NewItemSpawningSystem", true, 
         new ConfigurableInfo("Check if the new spawning system is on, disable if you get incompatibility issues. Default true.")
@@ -212,6 +226,9 @@ public class BTWRemix : OptionInterface
     );
     public static Configurable<bool> MeadowCoreShockwave = instance.config.Bind("MeadowCoreShockwave", true,
         new ConfigurableInfo("Change if the Core will do a shockwave when charging a leap for too long. Default: true.")
+    );
+    public static Configurable<bool> MeadowCoreCellCollsion = instance.config.Bind("MeadowCoreCellCollsion", true,
+        new ConfigurableInfo("Change if the Core's cell can be hit by weapon. Default: true.")
     );
     
     // public static Configurable<int> MeadowSparkMaxCharge = instance.config.Bind("MeadowSparkMaxCharge", 100, 

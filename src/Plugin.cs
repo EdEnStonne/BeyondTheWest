@@ -1,17 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.CompilerServices;
 using BepInEx;
 using BepInEx.Logging;
+using BeyondTheWest.ArenaAddition;
 using BeyondTheWest.Items;
+using UnityEngine;
 
 namespace BeyondTheWest 
 {
     [BepInPlugin(MOD_ID, "Beyond The West", MOD_VERSION)]
     [BepInDependency("slime-cubed.slugbase")]
+    [BepInDependency("henpemaz.rainmeadow", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("pushtomeow", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("dressmyslugcat", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("SimplifiedMoveset", BepInDependency.DependencyFlags.SoftDependency)]
     class BTWPlugin : BaseUnityPlugin
     {
-        private const string MOD_ID = "edenstonne.beyondthewest";
-        public const string MOD_VERSION = "1.4.6";
+        public const string MOD_ID = "edenstonne.beyondthewest";
+        public const string MOD_VERSION = "1.4.9";
         private static bool isInit = false;
         private static bool ressourceInit = false;
         public static bool ressourceFullyEnded = false;
@@ -19,7 +27,7 @@ namespace BeyondTheWest
         public static bool compatFullyEnded = false;
         private static bool hooksInit = false;
         public static bool hooksFullyEnded = false;
-        static readonly bool debug = true;
+        public static bool debug = true;
         public static ManualLogSource logger; // Logger from glebi574
         public static bool meadowEnabled = false;
         public static bool oldInputConfigEnabled = false;
@@ -28,18 +36,21 @@ namespace BeyondTheWest
         public static bool simplifiedMovesetEnabled = false;
         public static bool DMSEnabled = false;
 
-        public static void Log(object data)
+        public static string GetTimeString() => DateTime.Now.Hour.ToString() +":"+ DateTime.Now.Minute.ToString() +":"+ DateTime.Now.Second.ToString() +"."+ DateTime.Now.Millisecond.ToString();
+        private static string TrimPath(string callerPath) { return (callerPath = callerPath.Substring(Mathf.Max(callerPath.LastIndexOf(Path.DirectorySeparatorChar), callerPath.LastIndexOf(Path.AltDirectorySeparatorChar)) + 1)).Substring(0, callerPath.LastIndexOf('.')); }
+
+        public static void Log(object data, [CallerMemberName] string callerName = "", [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerLine = 0)
         {
             if (logger != null && debug)
             {
-                logger.LogDebug("[BTWDebug "+ DateTime.Now.Hour.ToString() +":"+ DateTime.Now.Minute.ToString() +":"+ DateTime.Now.Second.ToString() +"."+ DateTime.Now.Millisecond.ToString() +"] : "+ data);
+                logger.LogDebug($"[{GetTimeString()}|{TrimPath(callerPath)}.{callerName}.{callerLine}] : "+ data);
             }
         }
-        public static void LogError(object data)
+        public static void LogError(object data, [CallerMemberName] string callerName = "", [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerLine = 0)
         {
             if (logger != null)
             {
-                logger.LogError("["+ DateTime.Now.Hour.ToString() +":"+ DateTime.Now.Minute.ToString() +":"+ DateTime.Now.Second.ToString() +"."+ DateTime.Now.Millisecond.ToString() +"] : "+ data);
+                logger.LogError($"[{GetTimeString()}|{TrimPath(callerPath)}.{callerName}.{callerLine}] : "+ data);;
             }
         }
         public static void LogAllRegisteredImage()
@@ -82,7 +93,7 @@ namespace BeyondTheWest
         }
 
         // Load the remix menu
-        private void RemixMenuInit(On.RainWorld.orig_OnModsInit orig, RainWorld self)
+        private static void RemixMenuInit(On.RainWorld.orig_OnModsInit orig, RainWorld self)
         {
             orig(self);
             MachineConnector.SetRegisteredOI(MOD_ID, BTWRemix.instance);
@@ -113,7 +124,7 @@ namespace BeyondTheWest
                 BTWCreatureDataHooks.ApplyHooks();
                 BTWPlayerDataHooks.ApplyHooks();
 
-                ArenaAddition.ArenaHookHelper.ApplyHooks();
+                ArenaHookHelper.ApplyHooks();
                 
                 hooksFullyEnded = true;
             }
@@ -136,8 +147,11 @@ namespace BeyondTheWest
             {
                 ressourceInit = true;
 
+                BTWMenu.LoadResources();
                 BTWSkins.LoadSkins();
                 NewObjectsHooks.LoadIcons();
+                ArenaShieldHooks.LoadResources(self);
+                ArenaLivesHooks.LoadResources(self);
 
                 ressourceFullyEnded = true;
             }

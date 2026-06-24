@@ -50,7 +50,7 @@ public class OnlineAbstractCoreData : OnlineEntity.EntityData
             this.energy = AEC.energy;
             this.boostingCount = AEC.boostingCount;
             this.antiGravityCount = AEC.antiGravityCount;
-            this.state = AEC.state;
+            this.state = (byte)AEC.state;
             this.grayScale = 0f;
             if (AEC.RealizedCore is EnergyCore energyCore)
             {
@@ -67,7 +67,7 @@ public class OnlineAbstractCoreData : OnlineEntity.EntityData
             AEC.energy = this.energy;
             AEC.boostingCount = this.boostingCount;
             AEC.antiGravityCount = this.antiGravityCount;
-            AEC.state = this.state;
+            AEC.state = (AbstractEnergyCore.CoreState)this.state;
             if (AEC.RealizedCore is EnergyCore energyCore)
             {
                 energyCore.grayScale = this.grayScale;

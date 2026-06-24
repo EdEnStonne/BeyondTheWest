@@ -8,9 +8,9 @@ using Mono.Cecil.Cil;
 namespace BeyondTheWest.MSCCompat;
 public static class MSCCalls
 {
-    public static void ExplodeArtificer(Creature creature)
+    public static void ExplodeArtificer(Player player)
     {
-        if (creature is Player player && MSCFunc.IsArtificer(player))
+        if (MSCFunc.IsArtificer(player))
         {
             player.PyroDeath();
         }

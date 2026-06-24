@@ -166,6 +166,12 @@ public static class MeadowFunc
     }
 
     // Arena
+    public static bool IsMeadowArenaStillWaitingForPlayers()
+    {
+        return IsMeadowArena(out var arenaOnline)
+            && arenaOnline.arenaPrepTimer is not null
+            && arenaOnline.arenaPrepTimer.showMode == ArenaPrepTimer.TimerMode.Waiting;
+    }
     public static bool ShouldHoldFireFromOnlineArenaTimer()
     {
         if (IsMeadowArena(out ArenaOnlineGameMode arenaOnlineGameMode))
@@ -214,22 +220,38 @@ public static class MeadowFunc
         }
         return RainMeadow.RainMeadow.rainMeadowOptions.ArenaCountDownTimer.Value * BTWFunc.FrameRate;
     }
-    public static int GetPlayerArenaOnlineNumber(Player player)
+    public static bool TryGetPlayerArenaOnlineNumber(Player player, out int number)
+    {
+        return TryGetPlayerArenaOnlineNumber(player?.abstractCreature, out number);
+    }
+    public static bool TryGetPlayerArenaOnlineNumber(AbstractCreature abstractPlayer, out int number)
     {
         if (IsMeadowArena(out var arenaOnline) 
-            && player?.abstractCreature?.GetOnlineCreature()?.owner is OnlinePlayer onlinePlayer)
+            && abstractPlayer?.GetOnlineCreature()?.owner is OnlinePlayer onlinePlayer)
         {
-            return ArenaHelpers.FindOnlinePlayerNumber(arenaOnline, onlinePlayer);
+            number = ArenaHelpers.FindOnlinePlayerNumber(arenaOnline, onlinePlayer);
+            return true;
         }
-        return player.abstractCreature.ID.number;
+        number = -1;
+        return false;
+    }
+    public static bool TryGetPlayerFromArenaOnlineNumber(int number, out AbstractCreature abstractPlayer)
+    {
+        if (IsMeadowArena(out var arenaOnline) 
+            && ArenaHelpers.FindOnlinePlayerByFakePlayerNumber(arenaOnline, number) is OnlinePlayer onlinePlayer)
+        {
+            abstractPlayer = arenaOnline.session.Players.FirstOrDefault(abs => abs.GetOnlineCreature()?.owner == onlinePlayer);
+            return true;
+        }
+        abstractPlayer = null;
+        return false;
     }
 
     // Arena extension
     public static void ResetDeathMessage(AbstractCreature abstractPlayer)
     {
         if (abstractPlayer.world?.game != null 
-            && abstractPlayer.GetOnlineObject() is OnlinePhysicalObject onlinePhysicalObject 
-            && onlinePhysicalObject != null)
+            && abstractPlayer.GetOnlineObject() is OnlinePhysicalObject onlinePhysicalObject)
         {
             var onlineHuds = abstractPlayer.world.game.cameras[0].hud.parts.OfType<PlayerSpecificOnlineHud>();
             foreach (var onlineHud in onlineHuds)
@@ -240,9 +262,7 @@ public static class MeadowFunc
     }
     public static void ResetSlugcatIcon(AbstractCreature abstractPlayer)
     {
-        if (abstractPlayer.world?.game != null 
-            && abstractPlayer.GetOnlineObject() is OnlinePhysicalObject onlinePhysicalObject 
-            && onlinePhysicalObject != null)
+        if (abstractPlayer.world?.game != null)
         {
             var onlineHuds = abstractPlayer.world.game.cameras[0].hud.parts.OfType<PlayerSpecificOnlineHud>();
             foreach (var onlineHud in onlineHuds)
@@ -275,107 +295,12 @@ public static class MeadowFunc
             arenaItemSpawnSetting.noSpears = settings.ArenaItems_NoSpear;
         }
     }
-    public static void ReviveOnlinePlayer(ArenaGameSession arenaGame, AbstractCreature abstractPlayer, int exit = 0)
+    public static void ReviveOnlinePlayer(ArenaGameSession arenaGame, int exit = 0)
     {
         if (!IsMeadowArena(out var arenaOnlineGameMode)) { BTWPlugin.logger.LogError($"uh the online arena is not here to revive on...?"); return; }
-        BTWPlugin.Log($"Reviving [{abstractPlayer}] in room [{arenaGame.room}], pipe <{exit}>, in meadow lobby !");
+        BTWPlugin.Log($"Reviving in room [{arenaGame.room}], pipe <{exit}>, in meadow lobby !");
 
-
-        // abstractPlayer.Room.AddEntity(abstractPlayer);
-
-        Room room = arenaGame.room;
-        if (room == null) { BTWPlugin.logger.LogError($"uh the room is not here...?"); return; }
-        if (room.abstractRoom.GetResource() == null) { BTWPlugin.logger.LogError($"uh the online room is not here...?"); }
-        OnlineCreature onlineCreature = abstractPlayer.GetOnlineCreature();
-        if (onlineCreature == null) { BTWPlugin.logger.LogError($"uh the onlineCreature is not here...?"); return; }
-        if (!onlineCreature.isMine) { BTWPlugin.logger.LogError($"uh the onlineCreature is not yours..."); return; }
-        abstractPlayer.Move(room.ToWorldCoordinate(BTWFunc.ExitPos(arenaGame, exit)));
-        abstractPlayer.pos.room = room.abstractRoom.index;
-        abstractPlayer.pos.abstractNode = room.ShortcutLeadingToNode(exit).destNode;
-
-        // arenaGame.game.world.GetResource().ApoEnteringWorld(abstractPlayer);
-
-        arenaGame.game.cameras[0].followAbstractCreature = abstractPlayer;
-
-        if (abstractPlayer.GetOnlineObject(out var oe) && oe.TryGetData<SlugcatCustomization>(out var customization))
-        {
-            abstractPlayer.state = new PlayerState(abstractPlayer, 0, customization.playingAs, isGhost: false);
-            BTWPlugin.Log($"Gave customization to slugcat !");  
-        }
-        else
-        {
-            RainMeadow.RainMeadow.Error("Could not get online owner for spawned player on BTW revive!");
-            abstractPlayer.state = new PlayerState(abstractPlayer, 0, arenaGame.arenaSitting.players[ArenaHelpers.FindOnlinePlayerNumber(arenaOnlineGameMode, OnlineManager.mePlayer)].playerClass, isGhost: false);
-        }
-
-        abstractPlayer.Realize();
-        onlineCreature.realized = true;
-        room.abstractRoom.GetResource()?.ApoEnteringRoom(abstractPlayer, abstractPlayer.pos);
-        BTWPlugin.Log($"Realized Creature !");
-        
-        ShortcutHandler.ShortCutVessel shortCutVessel = new(room.ShortcutLeadingToNode(exit).DestTile, 
-            abstractPlayer.realizedCreature, arenaGame.game.world.GetAbstractRoom(0), 0)
-        {
-            entranceNode = abstractPlayer.pos.abstractNode,
-            room = arenaGame.game.world.GetAbstractRoom(abstractPlayer.Room.name)
-        };
-        arenaGame.game.shortcuts.betweenRoomsWaitingLobby.Add(shortCutVessel);
-
-        if ((abstractPlayer.realizedCreature as Player).SlugCatClass == SlugcatStats.Name.Night)
-        {
-            (abstractPlayer.realizedCreature as Player).slugcatStats.throwingSkill = 1;
-        }
-        if (ModManager.MSC)
-        {
-            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == SlugcatStats.Name.Red)
-            {
-                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.All, -1, 0, -0.75f);
-                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.Scavengers, -1, 0, 0.5f);
-            }
-
-            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == SlugcatStats.Name.Yellow)
-            {
-                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.All, -1, 0, 0.75f);
-                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.Scavengers, -1, 0, 0.3f);
-            }
-
-            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == MoreSlugcats.MoreSlugcatsEnums.SlugcatStatsName.Artificer)
-            {
-                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.All, -1, 0, -0.5f);
-                arenaGame.creatureCommunities.SetLikeOfPlayer(CreatureCommunities.CommunityID.Scavengers, -1, 0, -1f);
-            }
-
-            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == MoreSlugcats.MoreSlugcatsEnums.SlugcatStatsName.Slugpup)
-            {
-                (abstractPlayer.realizedCreature as Player).slugcatStats.throwingSkill = 1;
-            }
-
-            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == MoreSlugcats.MoreSlugcatsEnums.SlugcatStatsName.Sofanthiel)
-            {
-                (abstractPlayer.realizedCreature as Player).slugcatStats.throwingSkill = arenaOnlineGameMode.painCatThrowingSkill;
-            }
-
-
-            if ((abstractPlayer.realizedCreature as Player).SlugCatClass == MoreSlugcats.MoreSlugcatsEnums.SlugcatStatsName.Saint)
-            {
-                if (!arenaOnlineGameMode.sainot)
-                {
-                    (abstractPlayer.realizedCreature as Player).slugcatStats.throwingSkill = 0;
-                }
-                else
-                {
-                    (abstractPlayer.realizedCreature as Player).slugcatStats.throwingSkill = 1;
-
-                }
-            }
-        }
-        if (ModManager.Watcher && (abstractPlayer.realizedCreature as Player).SlugCatClass == Watcher.WatcherEnums.SlugcatStatsName.Watcher)
-        {
-            (abstractPlayer.realizedCreature as Player).enterIntoCamoDuration = 40;
-        }
-
-        BTWPlugin.Log($"Player [{abstractPlayer.realizedCreature}] fully revived !");
-        // arenaGame.AddPlayer(abstractPlayer);
+        arenaOnlineGameMode.externalArenaGameMode.SpawnPlayer(arenaOnlineGameMode, arenaGame, arenaGame.room, [exit]);
     }
     public static void RemoveRestrictedItemsInArenaFromPool(ref ObjectDataPool itemPool)
     {

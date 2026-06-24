@@ -167,7 +167,19 @@ public class AbstractEnergyCore : AbstractPhysicalObject
 
     // Basic
     public float scale = 1f;
-    public byte state = 1;
+    public CoreState state = CoreState.Idle;
+    public enum CoreState
+    {
+        Deactivated,
+        Idle,
+        Boosting,
+        NoMoreBoost,
+        AntiGravOFF,
+        AntiGravON,
+        Slowdown,
+        OxygenON,
+        Meltdown = 10
+    };
     /// 0 : Deactivated
     /// 1 : Idle, 2 : Boosting, 3 : No Boost left
     /// 4 : Anti-Gravity OFF, 5 : Anti-gravity ON, 6 : SlowDown ON
@@ -182,27 +194,33 @@ public class AbstractEnergyCore : AbstractPhysicalObject
     public bool isMeadowFakePlayer = false;
     public bool isShockwaveEnabled = true;
     public bool isMeadowArenaTimerCountdown = false;
+    public bool hasCollision = true;
+    public bool lockBoostInput = false;
     
     public float energy = 100.0f;
     public int boostingCount = 0;
     public int repairCount = 0;
+    public const int FullRepairCount = 100;
     public int antiGravityCount = 0;
     public int oxygenCount = 0;
     public int slowModeCount = 0;
     public int waterCorrectionCount = 0;
     public int coreBoostLeft = 2;
 
-    public float CoreMaxEnergy = 1200.0f;
-    public float CoreEnergyRecharge = 40.0f;
-    public float CoreMeltdown = 600.0f;
-    public float CoreShockwavePower = 300.0f;
-    public float CoreOxygenEnergyUsage = 100.0f;
-    public float Core0GWaterEnergyUsage = 40.0f;
-    public float Core0GSpaceEnergyUsage = 10.0f;
-    public float CoreAntiGravity = 0.85f;
+    public float CoreMaxEnergy = 1000.0f;
     public int CoreMaxBoost = 2;
-    public int CoreAntiGravityStartUp = 5;
+    public const float CoreEnergyRecharge = 40.0f;
+    public const float CoreMeltdown = 600.0f;
+    public const float CoreShockwavePower = 300.0f;
+    public const float CoreOxygenEnergyUsage = 100.0f;
+    public const float Core0GWaterEnergyUsage = 250.0f;
+    public const float Core0GSpaceEnergyUsage = 200.0f;
+    public const float CoreAntiGravity = 0.85f;
+    public const int CoreAntiGravityStartUp = 5;
+    public const int CoreAntiGravityMaxTime = 40;
 
+    public int playerLeaserPos;
+    public FContainer playerContatiner;
     // Get - Set
     public Player Player
     {
@@ -234,7 +252,8 @@ public static class AbstractEnergyCoreHooks
         AbstractEnergyCore.EnergyCoreType = new("EnergyCore", true);
 
         On.Player.Jump += Player_CoreBetaJump;
-        IL.Weapon.Update += Weapon_PassThroughCore;
+        On.PlayerGraphics.AddToContainer += PlayerGraphics_AddToContainer_UpdateCoreContainer;
+        On.Weapon.HitThisObject += Weapon_HitThisObject_NoMoreCoreHit;
 
         On.PlayerGraphics.PlayerObjectLooker.HowInterestingIsThisObject += Interest_Exepection_Hook;
         On.Player.SpitOutOfShortCut += Player_MoveAbstractCore;
@@ -244,6 +263,22 @@ public static class AbstractEnergyCoreHooks
         On.Creature.Die += Player_ConsideredDead;
 
         BTWPlugin.Log("AbstractEnergyCoreHooks ApplyHooks Done !");
+    }
+
+    private static bool Weapon_HitThisObject_NoMoreCoreHit(On.Weapon.orig_HitThisObject orig, Weapon self, PhysicalObject obj)
+    {
+        return orig(self, obj) && (obj is not EnergyCore core || (core.AEC.hasCollision && self.thrownBy != core.player));
+    }
+
+    private static void PlayerGraphics_AddToContainer_UpdateCoreContainer(On.PlayerGraphics.orig_AddToContainer orig, PlayerGraphics self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, FContainer newContatiner)
+    {
+        orig(self, sLeaser, rCam, newContatiner);
+        if (self.player?.GetAEC() is AbstractEnergyCore abstractEnergyCore
+            && sLeaser.sprites[0]?.container is FContainer container)
+        {
+            abstractEnergyCore.playerLeaserPos = container.GetChildCount();
+            abstractEnergyCore.playerContatiner = container;
+        }
     }
 
     private static void Player_CoreBetaJump(On.Player.orig_Jump orig, Player self)
@@ -257,7 +292,7 @@ public static class AbstractEnergyCoreHooks
 
                 if (energyCore.allowJumpException)
                 {
-                    BTWPlugin.Log("Jump allowed by core, jumping...");
+                    // BTWPlugin.Log("Jump allowed by core, jumping...");
                 }
                 else
                 {
@@ -272,7 +307,7 @@ public static class AbstractEnergyCoreHooks
                                 predictedAnim == Player.AnimationIndex.LedgeCrawl ||
                                 predictedAnim == Player.AnimationIndex.Flip)))
                     {
-                        BTWPlugin.Log("Tech exception applied, no boosting");
+                        // BTWPlugin.Log("Tech exception applied, no boosting");
                     }
                     else
                     {
@@ -280,9 +315,7 @@ public static class AbstractEnergyCoreHooks
                     }
                 }
             }
-            
-            AEC.boostingCount = -20;
-            AEC.antiGravityCount = -10;
+            AEC.lockBoostInput = true;
         }
         orig(self);
         // Plugin.Log("Jumped ! (Core)");
@@ -291,10 +324,13 @@ public static class AbstractEnergyCoreHooks
     public static bool DoNotDeflect(Weapon weapon, SharedPhysics.CollisionResult result)
     {
         // Plugin.Log("Testing spear deflect with " + weapon + " by " + weapon.thrownBy + " hitting " + result.obj);
-        if (weapon != null && 
-            result.obj != null && weapon.thrownBy != null &&
-            weapon.thrownBy is Player player && player != null && result.obj is EnergyCore core
-            && player == core.player)
+        if (weapon != null && weapon.room is Room room && 
+            weapon.thrownBy is Player player && result.obj is EnergyCore core
+            && (
+                player == core.player
+                || (room.game.GetArenaGameSession is ArenaGameSession arena && !arena.GameTypeSetup.spearsHitPlayers)
+                || (room.game.IsStorySession && !Custom.rainWorld.options.friendlyFire)
+            ))
         {
             BTWPlugin.Log("Allowed spear to go through core");
             return true;
@@ -354,6 +390,7 @@ public static class AbstractEnergyCoreHooks
             && abstractEnergyCore.realizedObject != null)
         {
             abstractEnergyCore.RealizedCore.consideredDead = true;
+            BTWFunc.ResetCore(self as Player);
         }
     }
     private static bool Player_CoreSLAM(On.Player.orig_SlugSlamConditions orig, Player self, PhysicalObject otherObject)

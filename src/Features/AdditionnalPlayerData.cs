@@ -28,7 +28,7 @@ public class BTWPlayerData : AdditionnalTechManager<BTWPlayerData>
             MeadowCalls.BTWPlayerData_Init(this);
         }
     }
-
+    
     public override void Update()
     {
         base.Update();
@@ -51,15 +51,7 @@ public class BTWPlayerData : AdditionnalTechManager<BTWPlayerData>
             {
                 dangerGraspLastSpecButton = false;
             }
-
-            if (player.rollDirection == 0 
-                && !(player.isSlugpup && player.playerState.isPup)
-                && player.bodyChunkConnections[0].distance == 17f
-                && slugHeight != 17f)
-            {
-                player.bodyChunkConnections[0].distance = slugHeight;
-            }
-
+            
             if (this.dizzy > 0)
             {
                 this.dizzy--;
@@ -81,6 +73,12 @@ public class BTWPlayerData : AdditionnalTechManager<BTWPlayerData>
                 this.onlineBlind--;
                 player.Blink(5);
             }
+            if (this.exhausted > 0)
+            {
+                this.exhausted--;
+                player.slowMovementStun = 5;
+                player.Blink(5);
+            }
         }
     }
     
@@ -88,22 +86,136 @@ public class BTWPlayerData : AdditionnalTechManager<BTWPlayerData>
     public bool isSuperLaunchJump = false;
     public bool dangerGraspLastSpecButton = false;
     public Player.InputPackage dangerGraspCurrentInput = new();
-    public float slugHeight = 17f;
+    public float slugHeight = defaultSize;
+    public float SlugHeightRatio
+    {
+        get => slugHeight / defaultSize;
+        set => slugHeight = defaultSize * value;
+    }
+    public float slugPupHeight = defaultPupSize;
+    public float SlugPupHeightRatio
+    {
+        get => slugPupHeight / defaultPupSize;
+        set => slugPupHeight = defaultPupSize * value;
+    }
+    public const float defaultSize = 17f;
+    public const float defaultPupSize = 12f;
     public bool local = true;
     public int dizzy = 0;
+    public int exhausted = 0;
     public List<SporeCloud> sporecloudsHit = new();
     public int onlineBlind = 0;
+    public Vector2 bodySpritePos;
+    public Vector2 hipsSpritePos;
+    public Vector2 headSpritePos;
 }
 public static class BTWPlayerDataHooks
 {
     public static void ApplyHooks()
     {
         IL.Player.ctor += Player_BTWPlayerData_Init; //So it starts first garanteed
-        On.Player.Update += Player_BTWPlayerData_Update; //Same here
+        On.Player.Update += Player_BTWPlayerData_Update; 
         On.Player.Jump += Player_BTWPlayerData_OnJump;
+        On.Player.ThrownSpear += Player_SpearingExhaust;
+        IL.Player.ThrowObject += Player_WeaponExhaust;
+        On.PlayerGraphics.DrawSprites += PlayerGraphics_DrawSprites_GetBodySpritePos;
+        IL.Player.MovementUpdate += Player_MovementUpdate_ModifyHeight;
         BTWPlugin.Log("BTWPlayerDataHooks ApplyHooks Done !");
     }
 
+    private static float ChangeHeight(float orig, Player player)
+    {
+        if (player.GetBTWPlayerData() is BTWPlayerData bTWPlayerData)
+        {
+            bool pup = player.isSlugpup && player.playerState.isPup;
+            if (pup 
+                ? bTWPlayerData.slugPupHeight != BTWPlayerData.defaultPupSize 
+                : bTWPlayerData.slugHeight != BTWPlayerData.defaultSize)
+            {
+                return orig * (pup ? bTWPlayerData.SlugPupHeightRatio : bTWPlayerData.SlugHeightRatio);
+            }
+        }
+        return orig;
+    }
+    private static void Player_MovementUpdate_ModifyHeight(ILContext il)
+    {
+        BTWPlugin.Log("BTWPlayerData IL 3 starts");
+        try
+        {
+            BTWPlugin.Log("Trying to hook IL");
+            ILCursor cursor = new(il);
+            if (cursor.TryGotoNext(MoveType.After, 
+                x => x.MatchLdloc(4),
+                x => x.MatchConvR4()))
+            {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate(ChangeHeight);
+            }
+            else
+            {
+                BTWPlugin.LogError("Couldn't find IL hook :<");
+            }
+            BTWPlugin.Log("IL hook ended");
+        }
+        catch (Exception ex)
+        {
+            BTWPlugin.LogError(ex);
+        }
+        BTWPlugin.Log("BTWPlayerData IL 3 ends");
+    }
+
+    private static void PlayerGraphics_DrawSprites_GetBodySpritePos(On.PlayerGraphics.orig_DrawSprites orig, PlayerGraphics self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
+    {
+        orig(self, sLeaser, rCam, timeStacker, camPos);
+        if (self.player.GetBTWPlayerData() is BTWPlayerData bTWPlayerData)
+        {
+            bTWPlayerData.bodySpritePos = sLeaser.sprites[0].GetPosition();
+            bTWPlayerData.hipsSpritePos = sLeaser.sprites[1].GetPosition();
+            bTWPlayerData.headSpritePos = sLeaser.sprites[3].GetPosition();
+        }
+    }
+
+    public static bool IsExhausted(bool orig, Player player)
+    {
+        return orig || (player.GetBTWPlayerData() is BTWPlayerData bTWPlayerData && bTWPlayerData.exhausted > 0);
+    }
+    private static void Player_WeaponExhaust(ILContext il)
+    {
+        BTWPlugin.Log("BTWPlayerData IL 2 starts");
+        try
+        {
+            BTWPlugin.Log("Trying to hook IL");
+            ILCursor cursor = new(il);
+            if (cursor.TryGotoNext(MoveType.After,  
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>(nameof(Player.gourmandExhausted))))
+            {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate(IsExhausted);
+            }
+            else
+            {
+                BTWPlugin.logger.LogError("Couldn't find IL hook :<");
+            }
+            BTWPlugin.Log("IL hook ended");
+        }
+        catch (Exception ex)
+        {
+            BTWPlugin.logger.LogError(ex);
+        }
+        BTWPlugin.Log("BTWPlayerData IL 2 ends");
+    }
+
+    private static void Player_SpearingExhaust(On.Player.orig_ThrownSpear orig, Player self, Spear spear)
+    {
+        orig(self, spear);
+        if (self == null || self.room == null) { return; }
+        if (spear == null || spear.bugSpear) { return; }
+        if (self.GetBTWPlayerData() is BTWPlayerData bTWPlayerData && bTWPlayerData.exhausted > 0)
+        {
+            spear.spearDamageBonus = Mathf.Min(0.1f + self.slugcatStats.throwingSkill * 0.1f, spear.spearDamageBonus);
+        }
+    }
     private static void AddNewManager(AbstractCreature abstractPlayer)
     {
         if (!BTWPlayerData.TryGetManager(abstractPlayer, out _))

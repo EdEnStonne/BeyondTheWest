@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using BeyondTheWest.MeadowCompat;
 using RWCustom;
 using System.Linq;
+using BeyondTheWest.ArenaAddition;
+using System.Reflection;
 
 namespace BeyondTheWest;
 public struct RadiusCheckResultObject
@@ -23,6 +25,8 @@ public static class BTWFunc
 {
     public const int FrameRate = 40;
     public const int TileSize = 20;
+    public static bool meadowCheatsAllowed => 
+        (bool?)Type.GetType("RainMeadow.OnlineManager")?.GetProperty("CheatsAllowed", BindingFlags.Static | BindingFlags.Public)?.GetValue(null) ?? true;
     
     public static InGameTranslator Translator => Custom.rainWorld.inGameTranslator; // yoinked from Rain Meadow
     public static string Translate(string text)
@@ -105,18 +109,34 @@ public static class BTWFunc
 
     public static int GetPlayerArenaNumber(Player player)
     {
-        if (BTWPlugin.meadowEnabled)
+        return GetPlayerArenaNumber(player.abstractCreature);
+    }
+    public static int GetPlayerArenaNumber(AbstractCreature abstractPlayer)
+    {
+        if (BTWPlugin.meadowEnabled && MeadowFunc.TryGetPlayerArenaOnlineNumber(abstractPlayer, out int num))
         {
-            return MeadowFunc.GetPlayerArenaOnlineNumber(player);
+            return num;
         }
         else
         {
-            return player.abstractCreature.ID.number;
+            return abstractPlayer.ID.number;
         }
     }
     public static int GetPlayerNumber(Player player)
     {
         return player.room.game.IsArenaSession ? GetPlayerArenaNumber(player) : player.playerState.playerNumber;
+    }
+
+    public static AbstractCreature GetPlayerFromArenaNumber(int number, ArenaGameSession session)
+    {
+        if (BTWPlugin.meadowEnabled && MeadowFunc.TryGetPlayerFromArenaOnlineNumber(number, out var abstractPlayer))
+        {
+            return abstractPlayer;
+        }
+        else
+        {
+            return session.Players.FirstOrDefault(x => x.ID.number == number);
+        }
     }
 
     public static bool InRoomBounds(PhysicalObject physicalObject)
@@ -325,6 +345,7 @@ public static class BTWFunc
     public static bool IsObjectInRadius(PhysicalObject physicalObject, Vector2 position, float radius, out RadiusCheckResultObject radiusCheckResultObject)
     {
         radiusCheckResultObject = new(physicalObject);
+        if (ArenaShield.IsObjectIntangible(physicalObject)) return false;
 
         float dist = -1;
         BodyChunk cbody = null;
@@ -475,6 +496,7 @@ public static class BTWFunc
 
     public static void CustomKnockback(BodyChunk bodyChunk, Vector2 force, bool notifyMeadow = false)
     {
+        if (ArenaShield.IsObjectIntangible(bodyChunk?.owner)) return;
         bodyChunk.vel += force;
         if (notifyMeadow && BTWPlugin.meadowEnabled && !MeadowFunc.IsMine(bodyChunk.owner.abstractPhysicalObject))
         {
@@ -491,6 +513,7 @@ public static class BTWFunc
     }
     public static void CustomKnockback(PhysicalObject physicalObject, Vector2 force, bool notifyMeadow = false)
     {
+        if (ArenaShield.IsObjectIntangible(physicalObject)) return;
         foreach (BodyChunk bodyChunk in physicalObject.bodyChunks)
         { 
             CustomKnockback(bodyChunk, force); 
@@ -525,7 +548,9 @@ public static class BTWFunc
                 || physicalObject1.abstractPhysicalObject.rippleBothSides 
                 || physicalObject2.abstractPhysicalObject.rippleBothSides) 
             && !physicalObject1.slatedForDeletetion
-            && !physicalObject2.slatedForDeletetion;
+            && !physicalObject2.slatedForDeletetion
+            && !ArenaShield.IsObjectIntangible(physicalObject1)
+            && !ArenaShield.IsObjectIntangible(physicalObject2);
     }
 
     public static int RandomExit(Room room)

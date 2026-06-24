@@ -13,8 +13,8 @@ public class Tristor : Weapon, ElectricExplosion.IReactToElectricExplosion
     // Mostly taken from Rock code
     {
         this.bodyChunks = new BodyChunk[1];
-		this.bodyChunks[0] = new BodyChunk(this, 0, new Vector2(0f, 0f), 7f, 0.15f);
-		this.bodyChunkConnections = new BodyChunkConnection[0];
+		this.bodyChunks[0] = new BodyChunk(this, 0, new Vector2(0f, 0f), 6f, 0.15f);
+		this.bodyChunkConnections = [];
 		this.airFriction = 0.999f;
 		this.g = 0.95f;
 		this.bounce = 0.45f;
@@ -198,10 +198,6 @@ public class Tristor : Weapon, ElectricExplosion.IReactToElectricExplosion
 			this.Explode();
 			this.firstChunk.vel = this.firstChunk.vel * 2f 
 				+ BTWFunc.RandomCircleVector(this.firstChunk.vel.magnitude);
-			if (!this.Charged && this.collisionLayer == 1)
-			{
-				this.ChangeCollisionLayer(2);
-			}
 		}
 	}
 	public override void WeaponDeflect(Vector2 inbetweenPos, Vector2 deflectDir, float bounceSpeed)

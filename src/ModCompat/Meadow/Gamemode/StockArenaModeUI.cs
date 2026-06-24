@@ -18,7 +18,6 @@ using RainMeadow.Arena.ArenaOnlineGameModes.TeamBattle;
 namespace BeyondTheWest.MeadowCompat.Gamemodes;
 public partial class StockArenaMode : ExternalArenaGameMode
 {
-    public TabContainer.Tab myTab;
     public OnlineStockArenaModeSettingsInterface myStockSettingInterface;
 
     private int _livesDefaultAmount = BTWRemix.MeadowArenaLivesAmount.Value;
@@ -55,7 +54,7 @@ public partial class StockArenaMode : ExternalArenaGameMode
     public bool killGiveLife = BTWRemix.MeadowArenaLivesKill1UP.Value;
     public int killAmountForLife = BTWRemix.MeadowArenaLivesKill1UPAmount.Value;
     public int rainTimerToSuddentDeath = BTWRemix.MeadowArenaLivesRainTimerToSuddentDeath.Value;
-    public bool isTeamBattle = BTWRemix.MeadowArenaStockTeam.Value;
+    public bool isTeamBattle = false; //BTWRemix.MeadowArenaStockTeam.Value;
 
     public TeamBattleMode GetTeamBattleMode(ArenaMode arena)
     {

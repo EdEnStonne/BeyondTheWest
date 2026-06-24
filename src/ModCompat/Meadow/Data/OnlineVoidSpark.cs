@@ -49,9 +49,7 @@ public class OnlineVoidSpark : OnlineEntity // mostly copied from OnlinePhysical
     }
     public static OnlineVoidSpark NewFromVoidSpark(VoidSpark voidSpark)
     {
-        bool transferable = !RainMeadow.RainMeadow.sSpawningAvatar;
-
-        EntityId entityId = new EntityId(OnlineManager.mePlayer.inLobbyId, EntityId.IdType.custom, voidSpark.ID);
+        EntityId entityId = new EntityId(OnlineManager.mePlayer.inLobbyId, (EntityId.IdType)100, voidSpark.ID);
         if (OnlineManager.recentEntities.ContainsKey(entityId))
         {
             RainMeadow.RainMeadow.Error($"entity with repeated VoidSpark ID: {entityId}");
@@ -60,16 +58,18 @@ public class OnlineVoidSpark : OnlineEntity // mostly copied from OnlinePhysical
             RainMeadow.RainMeadow.Error($"set as: {entityId}");
         }
 
-        return new OnlineVoidSpark(voidSpark, entityId, OnlineManager.mePlayer, transferable);
+        return new OnlineVoidSpark(voidSpark, entityId, OnlineManager.mePlayer, false);
     }
-    protected virtual VoidSpark VoidSparkFromDef(OnlineVoidSparkDefinition newObjectEvent, OnlineResource inResource, OnlineVoidSparkState initialState)
+    protected VoidSpark VoidSparkFromDef(OnlineVoidSparkDefinition newObjectEvent, OnlineResource inResource, OnlineVoidSparkState initialState)
     {
         VoidSpark voidSpark = new(initialState.position, newObjectEvent.damage, initialState.lifetime, true)
         {
             lastPosition = initialState.lastPosition,
             color = newObjectEvent.color,
-            ID = newObjectEvent.VoidSparkID
+            ID = newObjectEvent.VoidSparkID,
+            target = initialState.onlineTarget?.apo?.realizedObject
         };
+        voidSpark.destructionTime.value = initialState.destructionTime;
         return voidSpark;
     }
 
@@ -192,12 +192,92 @@ public class OnlineVoidSpark : OnlineEntity // mostly copied from OnlinePhysical
         this.voidSpark.HitWall();
     }
     
-    [RPCMethod]
-    public static void HitSomething(OnlineVoidSpark onlineVoidSpark, OnlineEntity onlineTarget, ushort damageCent, Vector2 direction, Vector2 lastPosition, OnlineCreature onlineKilltagholder)
+    private static void HitSomething(VoidSpark voidSpark, UpdatableAndDeletable target, AbstractCreature killtagholder, ushort damageCent, Vector2 direction)
     {
-        if (onlineVoidSpark?.voidSpark is null || onlineVoidSpark?.voidSpark?.room == null)
+        voidSpark.target = target;
+        voidSpark.killTagHolder = killtagholder;
+        voidSpark.direction = direction;
+        voidSpark.position = VoidSpark.GetPosition(target);
+        voidSpark.damage = damageCent / 100f;
+        voidSpark.HitObject();
+    }
+    private static void HitSomethingSparkless(Room room, UpdatableAndDeletable target, AbstractCreature killtagholder, ushort damageCent, Vector2 direction, Vector2 lastPosition)
+    {
+        float damage = damageCent / 100f;
+        Vector2 position = VoidSpark.GetPosition(target);
+        VoidSpark.MakeDraggedSparks(room, 25f + 10f * damage, position, 
+            (byte)(BTWFunc.RandInt(15, 25) + damage), VoidSpark.defaultColor, 0.2f);
+        
+        BTWPlugin.Log($"VoidSpark (that was too quick to realize) hit [{target}] for <{damage}> dmg !");
+
+        if (ModManager.MSC)
         {
-            HitSomethingSparkless(onlineTarget, damageCent, direction, lastPosition, onlineKilltagholder);
+            LightingArc arc;
+            if (VoidSpark.GetChunk(target) is BodyChunk bodyChunk)
+            {
+                arc = new(bodyChunk, lastPosition, 
+                    damage / 2f, 0.5f + Mathf.Log10(1 + damage), 10, VoidSpark.defaultColor);
+            }
+            else
+            {
+                arc = new(position, lastPosition, 
+                    damage / 2f, 0.5f + Mathf.Log10(1 + damage), 10, VoidSpark.defaultColor);
+            }
+            room.AddObject(arc);
+        }
+        VoidSpark.HitSomethingWithVoidSpark(target, damage, direction, killtagholder);
+    }
+    [RPCMethod]
+    public static void RPC_HitSomethingWithEneryCore(OnlineVoidSpark onlineVoidSpark, OnlineEntity onlineTargetWithCore, ushort damageCent, Vector2 direction, Vector2 lastPosition, OnlineCreature onlineKilltagholder)
+    {
+        if (onlineVoidSpark?.voidSpark?.room == null)
+        {
+            RPC_HitSomethingSparkless(onlineTargetWithCore, damageCent, direction, lastPosition, onlineKilltagholder);
+        }
+        else
+        {
+            UpdatableAndDeletable target = null;
+            AbstractCreature killtagholder = null;
+            
+            if (((onlineTargetWithCore as OnlinePhysicalObject)?.apo?.realizedObject as Player).GetAEC()?.RealizedCore is EnergyCore energyCore)
+            {
+                target = energyCore;
+            }
+            if (onlineKilltagholder is not null)
+            {
+                killtagholder = onlineKilltagholder.abstractCreature;
+            }
+            
+            if (target is null) return;
+            HitSomething(onlineVoidSpark.voidSpark, target, killtagholder, damageCent, direction);
+        }
+    }
+    [RPCMethod]
+    public static void RPC_HitSomethingWithEneryCoreSparkless(OnlineEntity onlineTargetWithCore, ushort damageCent, Vector2 direction, Vector2 lastPosition, OnlineCreature onlineKilltagholder)
+    {
+        Room room = null;
+        UpdatableAndDeletable target = null;
+        AbstractCreature killtagholder = null;
+        
+        if (((onlineTargetWithCore as OnlinePhysicalObject)?.apo?.realizedObject as Player).GetAEC()?.RealizedCore is EnergyCore energyCore)
+        {
+            target = energyCore;
+            room = target?.room;
+        }
+        if (onlineKilltagholder is not null)
+        {
+            killtagholder = onlineKilltagholder.abstractCreature;
+        }
+        
+        if (target is null || room is null) return;
+        HitSomethingSparkless(room, target, killtagholder, damageCent, direction, lastPosition);
+    }
+    [RPCMethod]
+    public static void RPC_HitSomething(OnlineVoidSpark onlineVoidSpark, OnlineEntity onlineTarget, ushort damageCent, Vector2 direction, Vector2 lastPosition, OnlineCreature onlineKilltagholder)
+    {
+        if (onlineVoidSpark?.voidSpark?.room == null)
+        {
+            RPC_HitSomethingSparkless(onlineTarget, damageCent, direction, lastPosition, onlineKilltagholder);
         }
         else
         {
@@ -214,22 +294,15 @@ public class OnlineVoidSpark : OnlineEntity // mostly copied from OnlinePhysical
             }
             
             if (target is null) return;
-
-            onlineVoidSpark.voidSpark.target = target;
-            onlineVoidSpark.voidSpark.killTagHolder = killtagholder;
-            onlineVoidSpark.voidSpark.direction = direction;
-            onlineVoidSpark.voidSpark.position = VoidSpark.GetPosition(target);
-            onlineVoidSpark.voidSpark.damage = damageCent / 100f;
-            onlineVoidSpark.voidSpark.HitObject();
+            HitSomething(onlineVoidSpark.voidSpark, target, killtagholder, damageCent, direction);
         }
     }
     [RPCMethod]
-    public static void HitSomethingSparkless(OnlineEntity onlineTarget, ushort damageCent, Vector2 direction, Vector2 lastPosition, OnlineCreature onlineKilltagholder)
+    public static void RPC_HitSomethingSparkless(OnlineEntity onlineTarget, ushort damageCent, Vector2 direction, Vector2 lastPosition, OnlineCreature onlineKilltagholder)
     {
         Room room = null;
         UpdatableAndDeletable target = null;
         AbstractCreature killtagholder = null;
-        float damage = damageCent / 100f;
         
         if (onlineTarget is OnlinePhysicalObject onlinePhysicalObject)
         {
@@ -242,19 +315,6 @@ public class OnlineVoidSpark : OnlineEntity // mostly copied from OnlinePhysical
         }
         
         if (target is null || room is null) return;
-        
-        Vector2 position = VoidSpark.GetPosition(target);
-        VoidSpark. MakeDraggedSparks(room, 25f + 10f * damage, position, 
-            (byte)(BTWFunc.RandInt(15, 25) + damage), VoidSpark.defaultColor, 0.2f);
-        
-        BTWPlugin.Log($"VoidSpark (that was too quick to realize) hit [{target}] for <{damage}> dmg !");
-
-        if (ModManager.MSC)
-        {
-            LightingArc arc = new(position, lastPosition, 
-                    damage / 2f, 0.5f + Mathf.Log10(1 + damage), 10, VoidSpark.defaultColor);
-            room.AddObject(arc);
-        }
-        VoidSpark.HitSomethingWithVoidSpark(target, damage, direction, killtagholder);
+        HitSomethingSparkless(room, target, killtagholder, damageCent, direction, lastPosition);
     }
 }

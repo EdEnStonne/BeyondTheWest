@@ -183,8 +183,8 @@ public class ArenaItemSpawnManager
         List<PlacedObject> positionAvailables = new();
         foreach (var spotData in this.availableSpawn)
         {
-            if (!this.itemSpawns.Exists(x => (x.pos - spotData.pos).magnitude <= this.spawnerLimitRadius) 
-                && BTWFunc.GetAllObjectsInRadius(this.room, spotData.pos, this.objectLimitRadius).Count < this.objectLimit)
+            if (!this.itemSpawns.Exists(x => (x.pos - spotData.pos).magnitude <= spawnerLimitRadius) 
+                && BTWFunc.GetAllObjectsInRadius(this.room, spotData.pos, objectLimitRadius).Count < objectLimit)
             {
                 positionAvailables.Add(spotData);
             }
@@ -222,7 +222,7 @@ public class ArenaItemSpawnManager
                 && room.GetTile(XPtilePos).IsAir()
                 && room.GetTile(XntilePos).IsAir()
                 && room.GetTile(GroundtilePos).IsWalkable()
-                && !this.itemSpawns.Exists(x => (x.pos - this.room.MiddleOfTile(tilePos)).magnitude <= this.spawnerLimitRadius)
+                && !this.itemSpawns.Exists(x => (x.pos - this.room.MiddleOfTile(tilePos)).magnitude <= spawnerLimitRadius)
             )
             {
                 return true;
@@ -597,9 +597,9 @@ public class ArenaItemSpawnManager
     public int RandomSpawnAttemps = 5;
     public Counter respawnCount = new(BTWFunc.FrameRate * 60);
 
-    public int objectLimit = 5;
-    public float objectLimitRadius = 20;
-    public float spawnerLimitRadius = 50;
+    public const int objectLimit = 5;
+    public const float objectLimitRadius = 20;
+    public const float spawnerLimitRadius = 50;
 }
 
 public class ArenaItemSpawnManagerHooks

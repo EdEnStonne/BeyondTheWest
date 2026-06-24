@@ -99,6 +99,12 @@ public class LightingArc : UpdatableAndDeletable
         }
     }
 
+    public override void Destroy()
+    {
+        this.lightningArc?.Destroy();
+        base.Destroy();
+    }
+
     public LightningBolt lightningArc;
     public BodyChunk from;
     public BodyChunk target;

@@ -47,7 +47,7 @@ public class ElectricExplosion : UpdatableAndDeletable
         {
             LightingArc lightingArc = new (
                 sourceObject.firstChunk, closestBodyChunk,
-                Mathf.Clamp(damage / 4f, 0.1f, 1f), damage > 1 ? 1f : 0.5f, (int)(stun / 10f + 5), color
+                Mathf.Clamp(damage / 4f, 0.25f, 1f), damage > 1 ? 1f : 0.5f, (int)(stun / 10f + 5), color
             );
             target.room.AddObject(lightingArc);
         }
@@ -56,13 +56,11 @@ public class ElectricExplosion : UpdatableAndDeletable
         
         if (target.Local())
         {
-            target.Violence(sourceObject?.firstChunk, null, closestBodyChunk, null, Creature.DamageType.Electric, damage, stun);
-            
             if (!(target.GetBTWData() is BTWCreatureData data && data.electricExplosionImmune))
             {
                 if (doSpams)
                 {
-                    target.room.AddObject(new CreatureSpasmer(target, false, target.stun));
+                    target.room.AddObject(new CreatureSpasmer(target, false, (int)(stun * BTWFunc.FrameRate)));
                 }
                 if (damage > 1f)
                 {
@@ -79,9 +77,11 @@ public class ElectricExplosion : UpdatableAndDeletable
                         targettedPlayer.Die();
                     }
                     targettedPlayer.playerState.permanentDamageTracking += (damage / targettedPlayer.Template.baseDamageResistance) * 0.25f;
-                    BTWPlugin.Log($"Player Shocked <{targettedPlayer.Local()}> ! Took <{damage}> damage and has perma damage <{targettedPlayer.playerState.permanentDamageTracking}> (added +<{(damage / targettedPlayer.Template.baseDamageResistance) * 0.25f}>) !");
+                    BTWPlugin.Log($"Player Shocked ! Took <{damage}> damage and has perma damage <{targettedPlayer.playerState.permanentDamageTracking}> (added +<{(damage / targettedPlayer.Template.baseDamageResistance) * 0.25f}>) !");
                 }
             }
+
+            target.Violence(sourceObject?.firstChunk, null, closestBodyChunk, null, Creature.DamageType.Electric, damage, stun);
         }
 
         if (BTWPlugin.meadowEnabled && notifyMeadow)

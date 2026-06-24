@@ -8,7 +8,6 @@ using Mono.Cecil.Cil;
 
 public class BTWSkins
 {
-    public static ConditionalWeakTable<AbstractCreature, List<FSprite>> cwtPlayerSpriteInfo = new();
     public static void ApplyHooks()
     {
         On.PlayerGraphics.DrawSprites += Player_Sprite;
@@ -42,11 +41,6 @@ public class BTWSkins
     private static void Player_Sprite(On.PlayerGraphics.orig_DrawSprites orig, PlayerGraphics self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
         orig(self, sLeaser, rCam, timeStacker, camPos);
-
-        // Get Info
-        var psl = cwtPlayerSpriteInfo.GetOrCreateValue(self.player.abstractCreature);
-        psl.Clear();
-        foreach (var s in sLeaser.sprites) { psl.Add(s); }
 
         // Set Sprites
         if (PoleKickManager.TryGetManager(self.player.abstractCreature, out var PKM))

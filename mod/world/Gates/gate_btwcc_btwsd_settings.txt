@@ -1,3 +1,0 @@
-DangerType: None
-Effects: Darkness-0.25-7-295, 
-FadePalette: 1, 0.3586957

@@ -24,7 +24,11 @@ public class WallClimbManagerIndicatorUI : UpdatableAndDeletable, IDrawable
     public void ApplyPalette(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, RoomPalette palette) { }
     public void DrawSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
-        if (this.WCM == null || this.WCM.RealizedPlayer == null || this.slatedForDeletetion || this.room != rCam.room)
+        if (this.WCM == null 
+            || this.WCM.abstractPlayer == null 
+            || this.WCM.abstractPlayer.slatedForDeletion 
+            || this.slatedForDeletetion 
+            || this.room != rCam.room)
         {
             sLeaser.CleanSpritesAndRemove();
             this.WCM.indicatorUI = null;
@@ -50,8 +54,8 @@ public class WallClimbManagerIndicatorUI : UpdatableAndDeletable, IDrawable
             }
             foreach (FSprite sprite in sLeaser.sprites)
             {
-                sprite.x = pos.x;
-                sprite.y = pos.y;
+                sprite.x = pos.x - camPos.x;
+                sprite.y = pos.y - camPos.y;
                 sprite.scale = this.scale;
                 if (ignorePoleToggle)
                 {
@@ -102,17 +106,7 @@ public class WallClimbManagerIndicatorUI : UpdatableAndDeletable, IDrawable
 
     //-------------- Variables
     public WallClimbManager WCM;
-    public Vector2 SpriteHeadPos
-    {
-        get
-        {
-            if (this.WCM != null && this.WCM.RealizedPlayer != null && BTWSkins.cwtPlayerSpriteInfo.TryGetValue(this.WCM.abstractPlayer, out var psl))
-            {
-                return psl[3].GetPosition();
-            }
-            return Vector2.negativeInfinity;
-        }
-    }
+    public Vector2 SpriteHeadPos => WCM.abstractPlayer?.realizedCreature?.bodyChunks[0]?.pos ?? Vector2.negativeInfinity;
     public int MaxShowPoleIconFrames = 200;
     public int showPoleIcon = 0;
     public float scale = 0.5f;

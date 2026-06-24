@@ -6,6 +6,7 @@ using BeyondTheWest.MSCCompat;
 using System.Runtime.CompilerServices;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
+using BeyondTheWest.ArenaAddition;
 
 namespace BeyondTheWest;
 public class StaticChargeManager
@@ -120,8 +121,6 @@ public class StaticChargeManager
     private void BounceUpdate()
     {
         Player player = this.Player;
-        Player.InputPackage inputs = this.Player.input[0];
-        Player.InputPackage lastInputs = this.Player.input[1];
         Vector2 intInput = this.IntDirectionalInput;
 
         if (this.Landed)
@@ -130,25 +129,19 @@ public class StaticChargeManager
         }
         else if (this.eBounceLeft > 0 && this.dischargeCooldown <= 0 && player.stun <= 0)
         {
-            if (
-                (player.animation == Player.AnimationIndex.Flip || this.rocketJumpFromBounceJump) &&
-                inputs.spec && !lastInputs.spec
-            )
+            if ((player.animation == Player.AnimationIndex.RocketJump 
+                    || (player.animation == Player.AnimationIndex.Flip && intInput.y == -1)
+                    || (BTWPlayerData.TryGetManager(this.AbstractPlayer, out var BTWData) && BTWData.isSuperLaunchJump)) 
+                && this.wantToZap > 0 
+                && intInput.x * (player.bodyChunks[0].vel.x + player.bodyChunks[1].vel.x) < -6) // requires 3 speed
+            {
+                this.eBounceLeft--;
+                this.BounceBack();
+            }
+            else if (player.animation == Player.AnimationIndex.Flip && this.wantToZap > 0)
             {
                 this.eBounceLeft--;
                 this.BounceUp();
-            }
-            else if (
-                (
-                    player.animation == Player.AnimationIndex.RocketJump ||
-                    (BTWPlayerData.TryGetManager(this.AbstractPlayer, out var BTWData) && BTWData.isSuperLaunchJump)
-                ) &&
-                inputs.spec && !lastInputs.spec && intInput.x * player.mainBodyChunk.vel.x < 0
-            )
-            {
-                this.eBounceLeft--;
-                // BTWPlugin.Log("Spark Jump Tech");
-                this.BounceBack();
             }
         }
     }
@@ -176,8 +169,7 @@ public class StaticChargeManager
                     || player.animation == Player.AnimationIndex.Roll) 
                 && intInput.x != 0
                 && player.input[0].y == -1
-                && inputs.spec 
-                && !lastInputs.spec)
+                && this.wantToZap > 0)
             {
                 QuickStart();
             }
@@ -215,7 +207,7 @@ public class StaticChargeManager
                 ZapToGetFreeTrueCombo();
             }
         }
-        else if (inputs.spec && this.dischargeCooldown <= 0)
+        else if (this.wantToZap > 0 && this.dischargeCooldown <= 0)
         {
             if (player.bodyMode == Player.BodyModeIndex.ClimbingOnBeam)
             {
@@ -256,7 +248,7 @@ public class StaticChargeManager
                 Vector2 dischargePos = pos + (player.bodyMode == Player.BodyModeIndex.WallClimb ? lookPos * -0.5f * range : lookPos * range * 0.5f);
                 bool success = Discharge(
                     range,
-                    overcharged ? 1.15f : 0.8f,
+                    overcharged ? 1.05f : 0.75f,
                     overcharged ? 50f : 35f,
                     dischargePos,
                     overcharged ? 0.9f : 0.75f
@@ -264,7 +256,7 @@ public class StaticChargeManager
 
                 if (success && !this.isMeadowFakePlayer)
                 {
-                    player.Blink(this.MaxDischargeCooldown/2);
+                    player.Blink(MaxDischargeCooldown/2);
                     if (player.bodyMode != Player.BodyModeIndex.WallClimb)
                     {
                         foreach (BodyChunk b in player.bodyChunks)
@@ -321,32 +313,32 @@ public class StaticChargeManager
     }
     private void SlideUpdate()
     {
-        if (this.Player != null && this.Player.rollCounter > 8 && this.Player.animation == Player.AnimationIndex.BellySlide)
+        if (this.Player != null 
+            && this.Player.rollCounter >= 8 
+            && this.Player.animation == Player.AnimationIndex.BellySlide)
         {
-            bool overcharged = this.IsOvercharged;
             Player player = this.Player;
             BodyChunk bodyChunk = player.bodyChunks[0];
+            
+            if (player.longBellySlide && this.slideExtendingCooldown == 0)
+            {
+                this.slideExtendingCooldown = MaxSlideExtendCooldown;
+                this.slideStun = 10;
+                this.slideSpeedMult = SlideExtendMult;
+            }
 
-            player.rollCounter = 12;
-            bodyChunk.vel.x = this.CurrentSlideMomentum * player.rollDirection;
-
-            if (this.slideSpeedframes < this.SlideAccelerationFrames) { this.slideSpeedframes++; }
+            if (this.slideSpeedframes < SlideAccelerationFrames) { this.slideSpeedframes++; }
             if (this.slideSpearBounceFrames > 0) { this.slideSpearBounceFrames--; }
             if (this.slideSpeedMult > 1f) 
             { 
-                this.slideSpeedMult = Mathf.Clamp(Mathf.Lerp(this.slideSpeedMult, 1f, 0.01f), 1f, 5f); 
+                this.slideSpeedMult = Mathf.Clamp(Mathf.Lerp(this.slideSpeedMult, 1f, 0.02f), 1f, 5f); 
             }
-
-            if (this.slideStun > 0)
-            {
-                player.exitBellySlideCounter = 0;
-            }
-
+            
             if (player.whiplashJump)
             {
                 if (player.input[0].x == -player.rollDirection)
                 {
-                    this.whiplashJumpBuffer = this.MaxWhiplashJumpBuffer;
+                    this.whiplashJumpBuffer = MaxWhiplashJumpBuffer;
                 }
                 else
                 {
@@ -355,19 +347,20 @@ public class StaticChargeManager
                 }
             }
             else if (this.whiplashJumpBuffer > 0) { this.whiplashJumpBuffer = 0; }
-            if (this.slideStun > 0) { this.slideStun--; }
 
-            if (player.bodyChunks[0].ContactPoint.x == player.rollDirection)
+            if (this.slideStun > 0) { player.exitBellySlideCounter = 0; this.slideStun--; }
+            if (this.slideExtendingCooldown > 0)
             {
-                player.bodyChunks[0].vel.x *= -0.5f;
-                player.bodyChunks[1].vel.x *= -0.25f;
-                player.animation = Player.AnimationIndex.None;
-                player.stun = (int)Mathf.Max(0, this.CurrentSlideMomentum - 20);
+                this.slideExtendingCooldown--;
+                if (this.slideExtendingCooldown == 0) { player.longBellySlide = false; }
             }
+
+            player.rollCounter = 12;
+            bodyChunk.vel.x = this.CurrentSlideMomentum * player.rollDirection;
         }
         else
         {
-            // this.slideOverchargedBoost = false;
+            this.slideExtendingCooldown = 0;
             this.slideSpeedframes = 0;
             this.slideSpeedMult = 1f;
             this.slideSpearBounceFrames = 0;
@@ -413,7 +406,7 @@ public class StaticChargeManager
             float chargeFraction = this.CrawlChargeRatio;
             float chargelikeelectricRatio = this.Charge / (this.FullECharge > 0 ? this.FullECharge : this.MaxECharge);
 
-            this.dischargeCooldown = Mathf.Max(10, this.dischargeCooldown);
+            this.dischargeCooldown = Mathf.Max(MaxBounceCooldown, this.dischargeCooldown);
             if (!this.IsOvercharged)
             {
                 this.crawlCharge++;
@@ -454,7 +447,7 @@ public class StaticChargeManager
     {
         Player player = this.Player;
         Room room = this.Room;
-        if (player == null || room == null || !room.game.devToolsActive)
+        if (player == null || room == null || !room.game.devToolsActive || !BTWFunc.meadowCheatsAllowed)
         {
             return;
         }
@@ -483,12 +476,25 @@ public class StaticChargeManager
         }
     }
     
+    public void Destroy()
+    {
+        if (this.AbstractPlayer is not null) { chargeManagers.Remove(this.AbstractPlayer); }
+        this.staticChargeBatteryUI?.Destroy();
+        this.AbstractPlayer = null;
+    }
     //-------------- Override Functions
     public void Update()
     {
         if (!this.init)
         {
             InitPlayerStaticCharge();
+            return;
+        }
+        
+        if (this.AbstractPlayer is null) return;
+        if (this.AbstractPlayer.slatedForDeletion)
+        {
+            this.Destroy();
             return;
         }
 
@@ -523,7 +529,8 @@ public class StaticChargeManager
                     this.overchargeImmunity = Mathf.Max(this.overchargeImmunity, 10);
                 }
                 if (this.Room.game.devToolsActive) { DebugUpdate(); }
-                if (BTWPlugin.meadowEnabled && this.isMeadowArenaTimerCountdown && BTWFunc.OnlineArenaTimerOn())
+                if (ArenaShield.IsObjectIntangible(this.Player)
+                    || (BTWPlugin.meadowEnabled && this.isMeadowArenaTimerCountdown && BTWFunc.OnlineArenaTimerOn()))
                 {
                     this.overchargeImmunity = Mathf.Max(this.overchargeImmunity, 5);
                 }
@@ -532,6 +539,8 @@ public class StaticChargeManager
                     if (this.isMeadowArenaTimerCountdown) { this.isMeadowArenaTimerCountdown = false; }
                 }
 
+                if (this.wantToZap > 0) { this.wantToZap--; }
+                if (this.HitZapKeybind) { this.wantToZap = 5; }
                 if (this.dischargeCooldown > 0) { this.dischargeCooldown--; }
                 if (this.MaxEBounce > 0) { BounceUpdate(); }
                 QuickStartUpdate();
@@ -593,17 +602,17 @@ public class StaticChargeManager
     {
         if (this.Player == null || this.Room == null) { return false; }
         
-        Player pl = this.Player;
+        Player player = this.Player;
         Room room = this.Room;
-        Color color = pl.ShortCutColor();
-
+        Color color = player.ShortCutColor();
+        if (this.dischargeCooldown <= 0) { this.wantToZap = 0; }
         if (!this.stopConsecutiveDischarge && this.Charge >= chargeNeeded && this.dischargeCooldown <= 0)
         {
-            this.dischargeCooldown = this.MaxDischargeCooldown;
+            this.dischargeCooldown = MaxDischargeCooldown;
             this.Charge -= chargeNeeded;
             bool underwater = false;
 
-            if (BTWFunc.BodyChunkSumberged(pl.firstChunk))
+            if (BTWFunc.BodyChunkSumberged(player.firstChunk))
             {
                 reach *= 4;
                 damage *= 0.75f;
@@ -625,10 +634,10 @@ public class StaticChargeManager
             else
             {
                 int stun = (int)((Mathf.Pow(damage, 2) + reach * 0.01f + (underwater ? 2f : 0.5f)) * BTWFunc.FrameRate);
-                Vector2 knockbackdir = position - pl.mainBodyChunk.pos;
+                Vector2 knockbackdir = position - player.mainBodyChunk.pos;
 
-                ElectricExplosion electricExplosion = new(room, pl, position, 1, reach, 22f * damage,
-                    damage, stun, pl, 0, 0.7f, underwater, false, this.isMeadow && this.active)
+                ElectricExplosion electricExplosion = new(room, player, position, 1, reach, 22f * damage,
+                    damage, stun, player, 0, 0.7f, underwater, false, this.isMeadow && this.active)
                 {
                     color = color,
                     forcedKnockbackDirection = knockbackdir.magnitude > 10f ? knockbackdir.normalized : Vector2.zero,
@@ -637,6 +646,17 @@ public class StaticChargeManager
                     volume = volume
                 };
                 room.AddObject( electricExplosion );
+
+                if (ModManager.MSC && (player.mainBodyChunk.pos - position).magnitude > 1f)
+                {
+                    LightingArc arc = new(player.mainBodyChunk, position, 
+                        Mathf.Max(1.5f, 0.25f + damage), 0.5f, damage > 0.7f ? 20 : 7, color);
+                    room.AddObject( arc );
+                    if (BTWPlugin.meadowEnabled && !this.isMeadowFakePlayer)
+                    {
+                        MeadowCalls.MSCCompat_RPCSyncLightnightArc(arc);
+                    }
+                }
             }
 
             return true;
@@ -669,7 +689,7 @@ public class StaticChargeManager
 
             if (success && !this.isMeadowFakePlayer)
             {
-                this.dischargeCooldown = 10;
+                this.dischargeCooldown = MaxBounceCooldown;
                 this.stopConsecutiveDischarge = true;
 
                 player.room.PlaySound(SoundID.Slugcat_Flip_Jump, player.mainBodyChunk, false, 1.25f, BTWFunc.Random(1.2f, 1.35f));
@@ -705,7 +725,7 @@ public class StaticChargeManager
 
             if (success && !this.isMeadowFakePlayer)
             {
-                this.dischargeCooldown = 10;
+                this.dischargeCooldown = MaxBounceCooldown;
                 this.stopConsecutiveDischarge = true;
 
                 player.room.PlaySound(SoundID.Slugcat_Sectret_Super_Wall_Jump, player.mainBodyChunk, false, 1.5f, BTWFunc.Random(1.3f, 1.4f));
@@ -720,11 +740,12 @@ public class StaticChargeManager
                     player.rollDirection = -direction;
                     player.animation = Player.AnimationIndex.Flip;
                     player.flipFromSlide = true;
-                    yboost = overcharged ? 16.5f : 13f;
-                    xboost = -5f;
+                    yboost = overcharged ? 17f : 13.5f;
+                    xboost = overcharged ? -10f : -3f;
                 }
                 else
                 {
+                    player.rollDirection = 0;
                     player.jumpStun = -direction * 10;
                     player.animation = Player.AnimationIndex.RocketJump;
                     yboost = overcharged ? 12.5f : 11f;
@@ -757,7 +778,7 @@ public class StaticChargeManager
 
             if (success && !this.isMeadowFakePlayer)
             {
-                this.dischargeCooldown = 20;
+                this.dischargeCooldown = MaxBounceCooldown * 2;
                 this.stopConsecutiveDischarge = true;
                 player.Jump();
                 if (overcharged)
@@ -801,7 +822,7 @@ public class StaticChargeManager
 
             if (success && !this.isMeadowFakePlayer)
             {
-                this.dischargeCooldown = 5;
+                this.dischargeCooldown = MaxBounceCooldown;
                 this.stopConsecutiveDischarge = true;
                 player.animation = Player.AnimationIndex.Roll;
                 player.bodyMode = Player.BodyModeIndex.Default;
@@ -836,7 +857,7 @@ public class StaticChargeManager
 
             if (success && !this.isMeadowFakePlayer)
             {
-                this.dischargeCooldown = 5;
+                this.dischargeCooldown = MaxBounceCooldown;
                 this.stopConsecutiveDischarge = true;
                 this.slideSpearBounceFrames = 100;
                 player.animation = Player.AnimationIndex.BellySlide;
@@ -848,7 +869,7 @@ public class StaticChargeManager
                 player.room.PlaySound(SoundID.Slugcat_Belly_Slide_Init, player.mainBodyChunk, false, 1f, 1f);
                 
                 this.slideSpeedframes = 10;
-                this.slideSpeedMult = overcharged ? 1.55f : 1.20f;
+                this.slideSpeedMult = overcharged ? SlideOverchargeBoostMult : SlideBoostMult;
 
                 BodyChunk mainChuck = player.bodyChunks[0];
                 BodyChunk lowerChuck = player.bodyChunks[1];
@@ -906,7 +927,7 @@ public class StaticChargeManager
 
                     if (success && !this.isMeadowFakePlayer)
                     {
-                        this.dischargeCooldown = BTWFunc.FrameRate * 2;
+                        this.dischargeCooldown = MaxDischargeCooldown * 2;
                         this.Charge = 0;
                         player.room.PlaySound(SoundID.Rock_Hit_Creature, player.mainBodyChunk, false, 1f, UnityEngine.Random.Range(1.85f, 1.9f));
                         Vector2 flingVector = (player.mainBodyChunk.pos - dangerChunk.pos).normalized;
@@ -1037,6 +1058,8 @@ public class StaticChargeManager
 
     // Basic Variables
     private float charge = 0f;
+    private int whiplashJumpBuffer = 0;
+    private int wantToZap = 0;
 
     public int slideSpeedframes = 0;
     public int slideSpearBounceFrames = 0;
@@ -1046,25 +1069,26 @@ public class StaticChargeManager
     public int overchargeImmunity = 0;
     public int endlessCharge = 0;
     public int crawlCharge = 0;
-    public int whiplashJumpBuffer = 0;
     public int slideStun = 0;
     
     public float MaxECharge = 200.0f;
     public float FullECharge = 100.0f;
     public float RechargeMult = 3f;
-    public float InitSlideSpeed = 5f;
-    public float MaxSlideSpeed = 45f;
-    public int SlideAccelerationFrames = 200;
-    public float SlideBoostMult = 1.35f;
-    public float SlideOverchargeBoostMult = 1.65f;
-    public int MaxDischargeCooldown = 60;
     public int MaxEBounce = 3;
-    public int MaxWhiplashJumpBuffer = 5;
+    private int slideExtendingCooldown = 0;
+    private const float InitSlideSpeed = 5f;
+    private const float MaxSlideSpeed = 45f;
+    private const int SlideAccelerationFrames = 200;
+    private const float SlideBoostMult = 1.20f;
+    private const float SlideOverchargeBoostMult = 1.5f;
+    private const float SlideExtendMult = 1.8f;
+    private const int MaxSlideExtendCooldown = 20;
+    private const int MaxDischargeCooldown = 60;
+    private const int MaxBounceCooldown = 10;
+    private const int MaxWhiplashJumpBuffer = 5;
+    public const float ChargeToThrowSpear = 20f;
 
     public bool rocketJumpFromBounceJump = false;
-    public bool stopConsecutiveDischarge = true;
-    // public bool slideOverchargedBoost = false;
-    public bool displayBattery = false;
     public bool particles = false;
     public bool active = false;
     public bool DoDischargeDamagePlayers = true;
@@ -1076,11 +1100,14 @@ public class StaticChargeManager
     public bool isMeadowArena = false;
     public bool isMeadowArenaTimerCountdown = false;
     public bool consideredAlive = false;
+    private bool stopConsecutiveDischarge = true;
+    private bool displayBattery = false;
+    private Counter rollquickStartbuffer = new(5);
     public Vector2 oldpos = Vector2.zero;
     public Vector2 newpos = Vector2.zero;
-    public Counter rollquickStartbuffer = new(5);
 
     // Get Set Variables
+    public bool HitZapKeybind => this.Player is Player player && player.input[0].spec && !player.input[1].spec;
     public Player Player
     {
         get
@@ -1277,9 +1304,9 @@ public class StaticChargeManager
         get
         {
             return Mathf.Lerp(
-                this.InitSlideSpeed,
-                this.MaxSlideSpeed,
-                BTWFunc.EaseOut((float)this.slideSpeedframes / this.SlideAccelerationFrames, 2)
+                InitSlideSpeed,
+                MaxSlideSpeed,
+                BTWFunc.EaseOut((float)this.slideSpeedframes / SlideAccelerationFrames, 2)
             ) * this.slideSpeedMult;
         }
     }
@@ -1345,10 +1372,33 @@ public static class StaticChargeHooks
         On.Creature.Die += Player_StaticManager_ConsideredDead;
         IL.Centipede.Shock += Player_CentipedeShock_Absorb;
         IL.ZapCoil.Update += ZapCoil_StaticChargeManager_Absorb;
+        On.Player.TerrainImpact += Player_TerrainImpact_SlideFix;
 
         BTWPlugin.Log("StaticChargeHooks ApplyHooks Done !");
     }
-    
+
+    private static void Player_TerrainImpact_SlideFix(On.Player.orig_TerrainImpact orig, Player self, int chunk, IntVector2 direction, float speed, bool firstContact)
+    {
+        orig(self, chunk, direction, speed, firstContact);
+        if (StaticChargeManager.TryGetManager(self.abstractCreature, out var SCM) 
+            && self.animation == Player.AnimationIndex.BellySlide
+            && self.bodyMode != Player.BodyModeIndex.Stunned)
+        {
+            Vector2 oldVel0 = self.bodyChunks[0].vel;
+            Vector2 oldVel1 = self.bodyChunks[1].vel;
+
+            orig(self, chunk, direction, speed, firstContact);
+            
+            if (chunk == 0 && direction.x == self.rollDirection)
+            {
+                self.bodyChunks[0].vel = oldVel0 * -0.5f;
+                self.bodyChunks[1].vel = oldVel1 * -0.25f;
+                self.animation = Player.AnimationIndex.None;
+                self.stun = (int)Mathf.Max(0, SCM.CurrentSlideMomentum - 20);
+            }
+        }
+    }
+
     private static void Player_Electric_Charge_Update(On.Player.orig_Update orig, Player self, bool eu)
     {
         orig(self, eu);
