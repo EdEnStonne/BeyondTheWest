@@ -329,27 +329,27 @@ public static class MeadowFunc
             }
         }
     }
-    public static void HandleKarmaFlowerInArena(ArenaLives arenaLives)
-    {
-        if (IsMeadowArena(out var arenaOnline) && arenaOnline.IsStockArenaMode(out var stockArenaMode))
-        {
-            if (stockArenaMode.karmaFlowerGiveLife)
-            {
-                arenaLives.lifesleft++;
-                arenaLives.DisplayLives();
-            }
-            if (stockArenaMode.karmaFlowerGiveProtection && !arenaLives.reinforced)
-            {
-                arenaLives.reinforced = true;
-                arenaLives.DisplayLives();
-            }
-        }
-        else if (!arenaLives.reinforced)
-        {
-            arenaLives.reinforced = true;
-            arenaLives.DisplayLives();
-        }
-    }
+    // public static void HandleKarmaFlowerInArena(ArenaLives arenaLives)
+    // {
+    //     if (IsMeadowArena(out var arenaOnline) && arenaOnline.IsStockArenaMode(out var stockArenaMode))
+    //     {
+    //         if (stockArenaMode.karmaFlowerGiveLife)
+    //         {
+    //             arenaLives.lifesleft++;
+    //             arenaLives.DisplayLives();
+    //         }
+    //         if (stockArenaMode.karmaFlowerGiveProtection && !arenaLives.reinforced)
+    //         {
+    //             arenaLives.reinforced = true;
+    //             arenaLives.DisplayLives();
+    //         }
+    //     }
+    //     else if (!arenaLives.reinforced)
+    //     {
+    //         arenaLives.reinforced = true;
+    //         arenaLives.DisplayLives();
+    //     }
+    // }
 
     // Slug on back
     public static bool TryGetBottomPlayer(Player player, out Player bottom)

@@ -660,11 +660,12 @@ public static class ArenaLivesHooks
             && player.abstractCreature != null
             && ArenaLives.TryGetLives(BTWFunc.GetPlayerArenaNumber(player), out var lives))
         {
-            if (BTWPlugin.meadowEnabled)
-            {
-                MeadowFunc.HandleKarmaFlowerInArena(lives);
-            }
-            else if (!lives.reinforced)
+            // if (BTWPlugin.meadowEnabled)
+            // {
+            //     MeadowFunc.HandleKarmaFlowerInArena(lives);
+            // }
+            // else 
+            if (!lives.reinforced)
             {
                 lives.reinforced = true;
                 lives.DisplayLives();

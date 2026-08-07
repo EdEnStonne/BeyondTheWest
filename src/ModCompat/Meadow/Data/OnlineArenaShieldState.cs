@@ -32,6 +32,7 @@ public class OnlineArenaShieldState : EntityState
         //--------- Functions
         public override void ReadTo(OnlineEntity onlineEntity)
         {
+            if (onlineEntity is null) return;
             base.ReadTo(onlineEntity);
             if (onlineEntity is not OnlineArenaShield onlineArenaShield
                 || onlineArenaShield.arenaShield is not ArenaShield arenaShield) return;

@@ -9,7 +9,7 @@ using RainMeadow.UI.Components;
 using RainMeadow.UI;
 using System.Reflection;
 using BeyondTheWest.ArenaAddition;
-using BeyondTheWest.MeadowCompat.Gamemodes;
+// using BeyondTheWest.MeadowCompat.Gamemodes;
 
 namespace BeyondTheWest.MeadowCompat;
 
@@ -44,7 +44,7 @@ public class BTWMeadowArenaSettings
 
     public BTWMeadowArenaSettings(ArenaMode arena) { this.arena = arena; }
     public ArenaMode arena;
-    public ArenaStockClientSettings arenaStockClientSettings;
+    // public ArenaStockClientSettings arenaStockClientSettings;
 
     // TrailSeeker
     public bool Trailseeker_EveryoneCanPoleTech = BTWRemix.MeadowEveryoneCanPoleTech.Value;
@@ -96,7 +96,7 @@ public static class BTWMeadowArenaSettingsHooks
             ArenaDataHook();
             new Hook(typeof(OnlineSlugcatAbilitiesInterface).GetMethod(nameof(OnlineSlugcatAbilitiesInterface.AddAllSettings)), OnlineSlugcatAbilitiesInterface_AddAllSettings);
             new Hook(typeof(ArenaMode).GetConstructor(new[] { typeof(Lobby) }), ArenaMode_AddData);
-            new Hook(typeof(ArenaMode).GetMethod(nameof(ArenaMode.AddClientData)), ArenaMode_AddClientData);
+            // new Hook(typeof(ArenaMode).GetMethod(nameof(ArenaMode.AddClientData)), ArenaMode_AddClientData);
             new Hook(typeof(RainMeadow.UI.Pages.ArenaMainLobbyPage).GetMethod("ShouldOpenSlugcatAbilitiesTab"), ArenaMainLobbyPage_ShouldOpenSlugcatAbilitiesTab);
             new Hook(typeof(ArenaOnlineLobbyMenu).GetMethod(nameof(ArenaOnlineLobbyMenu.ShutDownProcess)), ArenaMode_SaveData);
             On.Creature.Violence += Player_InstantDeath;
@@ -158,16 +158,16 @@ public static class BTWMeadowArenaSettingsHooks
     {
         orig(self, lobby);
         BTWMeadowArenaSettings settings = BTWMeadowArenaSettings.AddSettings(self);
-        settings.arenaStockClientSettings = new();
+        // settings.arenaStockClientSettings = new();
     }
-    private static void ArenaMode_AddClientData(Action<ArenaMode> orig, ArenaMode self)
-    {
-        orig(self);
-        if (BTWMeadowArenaSettings.TryGetSettings(out var settings))
-        {
-            self.clientSettings.AddData(settings.arenaStockClientSettings);
-        }
-    }
+    // private static void ArenaMode_AddClientData(Action<ArenaMode> orig, ArenaMode self)
+    // {
+    //     orig(self);
+    //     if (BTWMeadowArenaSettings.TryGetSettings(out var settings))
+    //     {
+    //         self.clientSettings.AddData(settings.arenaStockClientSettings);
+    //     }
+    // }
     private static bool ArenaMainLobbyPage_ShouldOpenSlugcatAbilitiesTab(Func<RainMeadow.UI.Pages.ArenaMainLobbyPage, bool> orig, RainMeadow.UI.Pages.ArenaMainLobbyPage self)
     {
         return true;

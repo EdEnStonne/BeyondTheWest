@@ -10,7 +10,7 @@ using Menu;
 using ArenaBehaviors;
 using RainMeadow.Arena.ArenaOnlineGameModes.TeamBattle;
 using BeyondTheWest.ArenaAddition;
-using BeyondTheWest.MeadowCompat.Gamemodes;
+// using BeyondTheWest.MeadowCompat.Gamemodes;
 using BeyondTheWest.MeadowCompat.BTWMenu;
 using System.Linq;
 
@@ -23,7 +23,7 @@ public static class MeadowHookHelper
         MeadowDeniedSync.ApplyHooks();
         BTWMeadowArenaSettingsHooks.ApplyHooks();
         BTWVersionChecker.ApplyHooks();
-        StockArenaModeHook.ApplyHooks();
+        // StockArenaModeHook.ApplyHooks();
 
         new Hook (typeof(StoryOnlineMenu).GetMethod(nameof(StoryOnlineMenu.Update)), StoryOnlineMenu_LockWIPCampaigns);
         new Hook(typeof(ArenaOnlineGameMode).GetConstructor(new[] { typeof(Lobby) }), SetUpArenaDescription);

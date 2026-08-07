@@ -47,6 +47,7 @@ public class OnlineVoidSparkState : OnlineEntity.EntityState
 
     public override void ReadTo(OnlineEntity onlineEntity)
     {
+        if (onlineEntity is null) return;
         base.ReadTo(onlineEntity);
         if ((onlineEntity as OnlineVoidSpark)?.voidSpark is not VoidSpark voidSpark) return;
 

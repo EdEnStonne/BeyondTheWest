@@ -234,18 +234,18 @@ public static class MeadowRPCs
 
         BTWPlugin.Log("Added Arena Forced Death Effect to "+ target +" !");
     }
-    [RPCMethod]
-    public static void BTWStockArena_ChangeLifes(RPCEvent rpc, int lives)
-    {
-        if (MeadowFunc.IsMeadowArena(out var arenaOnline) 
-            && arenaOnline.IsStockArenaMode()
-            && BTWMeadowArenaSettings.TryGetSettings(out var arenaSettings)
-            && rpc.from == OnlineManager.lobby.owner)
-        {
-            arenaSettings.arenaStockClientSettings.lives = lives;
-            BTWPlugin.Log($"Changed current life count to <{lives}>");
-        }
-    }
+    // [RPCMethod]
+    // public static void BTWStockArena_ChangeLifes(RPCEvent rpc, int lives)
+    // {
+    //     if (MeadowFunc.IsMeadowArena(out var arenaOnline) 
+    //         && arenaOnline.IsStockArenaMode()
+    //         && BTWMeadowArenaSettings.TryGetSettings(out var arenaSettings)
+    //         && rpc.from == OnlineManager.lobby.owner)
+    //     {
+    //         arenaSettings.arenaStockClientSettings.lives = lives;
+    //         BTWPlugin.Log($"Changed current life count to <{lives}>");
+    //     }
+    // }
     [RPCMethod]
     public static void BTWItems_CrystalSpearPop(RPCEvent rpc, OnlinePhysicalObject onlineCrystalSpear, Vector2 pos)
     {

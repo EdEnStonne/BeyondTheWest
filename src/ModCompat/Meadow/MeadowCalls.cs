@@ -465,15 +465,15 @@ public static class MeadowCalls
     }
 
     // Life system
-    public static void BTWStockArena_RequestLifeChange(OnlinePlayer onlinePlayer, int lives)
-    {
-        if (MeadowFunc.IsMeadowArena(out var arenaOnline) 
-            && arenaOnline.IsStockArenaMode()
-            && OnlineManager.lobby.isOwner)
-        {
-            onlinePlayer.InvokeRPC(MeadowRPCs.BTWStockArena_ChangeLifes, lives);
-        }
-    }
+    // public static void BTWStockArena_RequestLifeChange(OnlinePlayer onlinePlayer, int lives)
+    // {
+    //     if (MeadowFunc.IsMeadowArena(out var arenaOnline) 
+    //         && arenaOnline.IsStockArenaMode()
+    //         && OnlineManager.lobby.isOwner)
+    //     {
+    //         onlinePlayer.InvokeRPC(MeadowRPCs.BTWStockArena_ChangeLifes, lives);
+    //     }
+    // }
 
     // Tristors
 

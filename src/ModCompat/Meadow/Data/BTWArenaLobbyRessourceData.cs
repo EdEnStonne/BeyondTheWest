@@ -56,38 +56,38 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
         // public int SP_MaxCharge;
         
         // Group: ArenaLives
-        [OnlineField(group = "ArenaLives")]
-        public int AL_Amount;
-        [OnlineField(group = "ArenaLives")]
-        public bool AL_EveryoneCanSet;
-        [OnlineField(group = "ArenaLives")]
-        public bool AL_BlockWin;
-        [OnlineField(group = "ArenaLives")]
-        public bool AL_Strict0Life;
-        [OnlineField(group = "ArenaLives")]
-        public int AL_ReviveTime;
-        [OnlineField(group = "ArenaLives")]
-        public int AL_AdditionalReviveTime;
-        [OnlineField(group = "ArenaLives")]
-        public bool AL_RespawnShieldToggle;
-        [OnlineField(group = "ArenaLives")]
-        public int AL_RespawnShieldDuration;
-        [OnlineField(group = "ArenaLives")]
-        public bool AL_KarmaLife;
-        [OnlineField(group = "ArenaLives")]
-        public bool AL_KarmaProtection;
-        [OnlineField(group = "ArenaLives")]
-        public bool AL_KillLife;
-        [OnlineField(group = "ArenaLives")]
-        public int AL_KillLifeAmount;
-        [OnlineField(group = "ArenaLives")]
-        public bool AL_KillProtection;
-        [OnlineField(group = "ArenaLives")]
-        public int AL_KillProtectionAmount;
-        [OnlineField(group = "ArenaLives")]
-        public int AL_RainTimerToSuddentDeath;
-        [OnlineField(group = "ArenaLives")]
-        public bool AL_IsTeamBattle;
+        // [OnlineField(group = "ArenaLives")]
+        // public int AL_Amount;
+        // [OnlineField(group = "ArenaLives")]
+        // public bool AL_EveryoneCanSet;
+        // [OnlineField(group = "ArenaLives")]
+        // public bool AL_BlockWin;
+        // [OnlineField(group = "ArenaLives")]
+        // public bool AL_Strict0Life;
+        // [OnlineField(group = "ArenaLives")]
+        // public int AL_ReviveTime;
+        // [OnlineField(group = "ArenaLives")]
+        // public int AL_AdditionalReviveTime;
+        // [OnlineField(group = "ArenaLives")]
+        // public bool AL_RespawnShieldToggle;
+        // [OnlineField(group = "ArenaLives")]
+        // public int AL_RespawnShieldDuration;
+        // [OnlineField(group = "ArenaLives")]
+        // public bool AL_KarmaLife;
+        // [OnlineField(group = "ArenaLives")]
+        // public bool AL_KarmaProtection;
+        // [OnlineField(group = "ArenaLives")]
+        // public bool AL_KillLife;
+        // [OnlineField(group = "ArenaLives")]
+        // public int AL_KillLifeAmount;
+        // [OnlineField(group = "ArenaLives")]
+        // public bool AL_KillProtection;
+        // [OnlineField(group = "ArenaLives")]
+        // public int AL_KillProtectionAmount;
+        // [OnlineField(group = "ArenaLives")]
+        // public int AL_RainTimerToSuddentDeath;
+        // [OnlineField(group = "ArenaLives")]
+        // public bool AL_IsTeamBattle;
         
         // Group: ArenaItems
         [OnlineField(group = "ArenaItems")]
@@ -146,25 +146,25 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
             this.SP_RiskyOvercharge = arenaSettings.Spark_RiskyOvercharge;
             this.SP_DeadlyOvercharge = arenaSettings.Spark_DeadlyOvercharge;
             
-            if (MeadowFunc.IsMeadowArena(out var arenaOnline) && arenaOnline.IsStockArenaMode(out var stockArenaMode))
-            {
-                this.AL_Amount = stockArenaMode.LivesDefaultAmount;
-                this.AL_EveryoneCanSet = stockArenaMode.everyoneCanModifyTheirLifeAmount;
-                this.AL_BlockWin = stockArenaMode.blockWin;
-                this.AL_Strict0Life = stockArenaMode.strictEnforceAfter0Lives;
-                this.AL_ReviveTime = stockArenaMode.reviveTime;
-                this.AL_AdditionalReviveTime = stockArenaMode.additionalReviveTime;
-                this.AL_RespawnShieldToggle = stockArenaMode.respawnShieldToggle;
-                this.AL_RespawnShieldDuration = stockArenaMode.respawnShieldDuration;
-                this.AL_KarmaLife = stockArenaMode.karmaFlowerGiveLife;
-                this.AL_KarmaProtection = stockArenaMode.karmaFlowerGiveProtection;
-                this.AL_KillLife = stockArenaMode.killGiveLife;
-                this.AL_KillLifeAmount = stockArenaMode.killAmountForLife;
-                this.AL_KillProtection = stockArenaMode.killGiveProtection;
-                this.AL_KillProtectionAmount = stockArenaMode.killAmountForProtection;
-                this.AL_RainTimerToSuddentDeath = stockArenaMode.rainTimerToSuddentDeath;
-                this.AL_IsTeamBattle = stockArenaMode.isTeamBattle;
-            }
+            // if (MeadowFunc.IsMeadowArena(out var arenaOnline) && arenaOnline.IsStockArenaMode(out var stockArenaMode))
+            // {
+            //     this.AL_Amount = stockArenaMode.LivesDefaultAmount;
+            //     this.AL_EveryoneCanSet = stockArenaMode.everyoneCanModifyTheirLifeAmount;
+            //     this.AL_BlockWin = stockArenaMode.blockWin;
+            //     this.AL_Strict0Life = stockArenaMode.strictEnforceAfter0Lives;
+            //     this.AL_ReviveTime = stockArenaMode.reviveTime;
+            //     this.AL_AdditionalReviveTime = stockArenaMode.additionalReviveTime;
+            //     this.AL_RespawnShieldToggle = stockArenaMode.respawnShieldToggle;
+            //     this.AL_RespawnShieldDuration = stockArenaMode.respawnShieldDuration;
+            //     this.AL_KarmaLife = stockArenaMode.karmaFlowerGiveLife;
+            //     this.AL_KarmaProtection = stockArenaMode.karmaFlowerGiveProtection;
+            //     this.AL_KillLife = stockArenaMode.killGiveLife;
+            //     this.AL_KillLifeAmount = stockArenaMode.killAmountForLife;
+            //     this.AL_KillProtection = stockArenaMode.killGiveProtection;
+            //     this.AL_KillProtectionAmount = stockArenaMode.killAmountForProtection;
+            //     this.AL_RainTimerToSuddentDeath = stockArenaMode.rainTimerToSuddentDeath;
+            //     this.AL_IsTeamBattle = stockArenaMode.isTeamBattle;
+            // }
             
             this.AT_ItemSpawnDiversity = arenaSettings.ArenaItems_ItemSpawnDiversity;
             this.AT_ItemSpawnMultiplierCent = arenaSettings.ArenaItems_ItemSpawnMultiplierCent;
@@ -207,25 +207,25 @@ public class BTWArenaLobbyRessourceData : OnlineResource.ResourceData
                 arenaSettings.Spark_RiskyOvercharge = this.SP_RiskyOvercharge;
                 arenaSettings.Spark_DeadlyOvercharge = this.SP_DeadlyOvercharge;
                 
-                if (MeadowFunc.IsMeadowArena(out var arenaOnline) && arenaOnline.IsStockArenaMode(out var stockArenaMode))
-                {
-                    stockArenaMode.LivesDefaultAmount = this.AL_Amount;
-                    stockArenaMode.everyoneCanModifyTheirLifeAmount = this.AL_EveryoneCanSet;
-                    stockArenaMode.blockWin = this.AL_BlockWin;
-                    stockArenaMode.strictEnforceAfter0Lives = this.AL_Strict0Life;
-                    stockArenaMode.reviveTime = this.AL_ReviveTime;
-                    stockArenaMode.additionalReviveTime = this.AL_AdditionalReviveTime;
-                    stockArenaMode.respawnShieldToggle = this.AL_RespawnShieldToggle;
-                    stockArenaMode.respawnShieldDuration = this.AL_RespawnShieldDuration;
-                    stockArenaMode.karmaFlowerGiveLife = this.AL_KarmaLife;
-                    stockArenaMode.karmaFlowerGiveProtection = this.AL_KarmaProtection;
-                    stockArenaMode.killGiveLife = this.AL_KillLife;
-                    stockArenaMode.killAmountForLife = this.AL_KillLifeAmount;
-                    stockArenaMode.killGiveProtection = this.AL_KillProtection;
-                    stockArenaMode.killAmountForProtection = this.AL_KillProtectionAmount;
-                    stockArenaMode.rainTimerToSuddentDeath = this.AL_RainTimerToSuddentDeath;
-                    stockArenaMode.isTeamBattle = this.AL_IsTeamBattle;
-                }
+                // if (MeadowFunc.IsMeadowArena(out var arenaOnline) && arenaOnline.IsStockArenaMode(out var stockArenaMode))
+                // {
+                //     stockArenaMode.LivesDefaultAmount = this.AL_Amount;
+                //     stockArenaMode.everyoneCanModifyTheirLifeAmount = this.AL_EveryoneCanSet;
+                //     stockArenaMode.blockWin = this.AL_BlockWin;
+                //     stockArenaMode.strictEnforceAfter0Lives = this.AL_Strict0Life;
+                //     stockArenaMode.reviveTime = this.AL_ReviveTime;
+                //     stockArenaMode.additionalReviveTime = this.AL_AdditionalReviveTime;
+                //     stockArenaMode.respawnShieldToggle = this.AL_RespawnShieldToggle;
+                //     stockArenaMode.respawnShieldDuration = this.AL_RespawnShieldDuration;
+                //     stockArenaMode.karmaFlowerGiveLife = this.AL_KarmaLife;
+                //     stockArenaMode.karmaFlowerGiveProtection = this.AL_KarmaProtection;
+                //     stockArenaMode.killGiveLife = this.AL_KillLife;
+                //     stockArenaMode.killAmountForLife = this.AL_KillLifeAmount;
+                //     stockArenaMode.killGiveProtection = this.AL_KillProtection;
+                //     stockArenaMode.killAmountForProtection = this.AL_KillProtectionAmount;
+                //     stockArenaMode.rainTimerToSuddentDeath = this.AL_RainTimerToSuddentDeath;
+                //     stockArenaMode.isTeamBattle = this.AL_IsTeamBattle;
+                // }
 
                 arenaSettings.ArenaItems_ItemSpawnDiversity = this.AT_ItemSpawnDiversity;
                 arenaSettings.ArenaItems_ItemSpawnMultiplierCent = this.AT_ItemSpawnMultiplierCent;
